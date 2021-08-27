@@ -1,0 +1,55 @@
+[
+
+{
+  "horas_deshabilitar_par"  : 1,
+  "reserva_btc_en_usd"      : 0,
+  "reserva_btc_en_usd_e8"   : 0,
+  "reserva_usdt"            : 0,
+  
+  "max_compras_simultaneas" : {"BUSD" : 2,
+                               "USDT" : 20,
+                               "BTC"  : 7
+                               },
+
+  "x_neg_patr_comp_ant" : -3,
+  "x_neg_patr"          : -5,
+  "x_gan_patr_sar"      : 2,
+  "x_gan_patr_ema"      : 15,
+
+  "max_inversion_btc"       : 0.8,
+  "max_inversion_usdt"      : 0.93,
+
+  "hay_pump"                :  {"velas":5,"xatr":7,"xvol":30} ,
+  
+  "volumen_minimo_btc"      : 650 ,
+  "volumen_minimo_usd"      : 820000000,
+  "x_min_notional"          : 1.25,
+  "riesgo_tomar_perdidas"   : -7,
+  "inc_px_atrb"             : 23,
+  "confirmacion_adx"        : 18,
+  "macd_min_rsi_verde"      : 29,
+  "macd_min_rsi__rojo"      : 24,
+  "valor_buscar_rsi_bajo"   : 31,
+  "resta_caza_rsi_bajo"     : 9,
+  "macd_min_rsi_deep_verde" : 23,
+  "macd_min_rsi_deep__rojo" : 19,
+  "rb_gan_infima"           : 0.5,
+  "rb_gan_segura"           : 1.5,
+  "ema_pendiente_maxima"    : {"1m"  : 0.0009,
+                               "5m"  : 0.00095,
+                               "15m" : 0.00098,
+                               "30m" : 0.00099,
+                               "1h"  : 0.001,
+                               "2h"  : 0.005,
+                               "4h"  : 0.007,
+                               "1d"  : 0.009,
+                               "1w"  : 0.01,
+                               "1M"  : 0.05
+                              }
+
+
+
+}
+
+
+]

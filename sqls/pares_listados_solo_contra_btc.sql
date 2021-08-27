@@ -1,0 +1,1 @@
+select * from pares where moneda_contra ='btc' and moneda in (select moneda from pares group by moneda having count(1)=1 )

@@ -1,0 +1,106 @@
+
+import datetime
+class Vela:
+    
+    def __init__(self,df=None,open_time=None): 
+
+        #print('------>df----->',df)
+        if df is None:
+            self.open_time=0
+            self.open=0
+            self.high=0
+            self.low=0
+            self.close=0
+            self.volume=0
+            self.close_time=0
+        else:
+            self.open_time=open_time
+            self.open=df.get('Open')
+            self.high=df.get('High')
+            self.low=df.get('Low')
+            self.close=df.get('Close')
+            self.volume=df.get('Volume')
+            self.close_time=df.get('close_time')
+        
+        self.set_signo()
+
+
+    def set_signo(self):
+        if self.close>self.open:
+            self.signo=1
+        else: 
+            self.signo=-1    
+
+    def __del__(self):
+        #del self.open_time
+        del self.open
+        del self.high
+        del self.low
+        del self.close
+        del self.volume
+        #del self.close_time  
+
+
+    
+    # def hayvariaciones(self,pvela): #sin no es la misma vela o si no hay variaciones, retorma false. Caso contrario true
+    #     ret=False
+    #     if (self.open_time != pvela.open_time): #los datos corresponden a la misma vela, seguimos revisando
+    #         ret=(self.volume    != pvela.volume or #pongo a volumen primero porque entiendo que es lo que seguro cambia en caso de ser una vela mas actual
+    #              self.open      != pvela.open or
+    #              self.high      != pvela.high or
+    #              self.low       != pvela.low or
+    #              self.close     != pvela.close)
+    #     return ret #    
+           
+    def cuerpo(self):
+        #print(self.open,self.close,abs(self.close-self.open),self.close-self.open)
+        return abs(self.close-self.open)    
+
+    def sombra_sup(self):
+        if self.open<=self.close:
+            return self.high-self.close
+        else:
+            return self.high-self.open
+   
+
+    def sombra_inf(self):
+        if self.open<=self.close:
+            return self.open-self.low
+        else:
+            return self.close-self.low
+
+    def sentido(self):
+        if self.open<=self.close:
+            return 1 # alcista
+        else:
+            return -1 #bajista
+
+        
+    def imprimir(self):
+        #print( 'open_time' , datetime.datetime.fromtimestamp(self.open_time/1000 ).strftime('%Y-%m-%d %H:%M:%S.%f'))
+        print( 'open' , self.open )
+        print( 'high', self.high )
+        print( 'low' , self.low )
+        print( 'close' , self.close )
+        print( 'volume' , self.volume )
+        #print( 'close_time' ,datetime.datetime.fromtimestamp(self.close_time/1000 ).strftime('%Y-%m-%d %H:%M:%S.%f')    )
+        print( '------------------------------------' )
+
+
+
+    # 	[
+#     [
+#         1499040000000,      # Open time
+#         "0.01634790",       # Open
+#         "0.80000000",       # High
+#         "0.01575800",       # Low
+#         "0.01577100",       # Close
+#         "148976.11427815",  # Volume
+#         1499644799999,      # Close time
+#         "2434.19055334",    # Quote asset volume
+#         308,                # Number of trades
+#         "1756.87402397",    # Taker buy base asset volume
+#         "28.46694368",      # Taker buy quote asset volume
+#         "17928899.62484339" # Can be ignored
+#     ]
+# ]

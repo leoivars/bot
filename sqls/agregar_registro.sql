@@ -1,0 +1,4 @@
+INSERT INTO `bot`.`pares`
+( moneda, moneda_contra, estado, estado_inicial, metodo_compra_venta, precio_compra, cantidad, ganancia_segura, pstoploss, xobjetivo, pstoploss_positivo, precio, porcentaje_cambio_precio, habilitado, ganancias, tendencia_minima_entrada, cantidad_de_reserva, veces_tendencia_minima, xvela_corpulenta, rsi15m, rsi4h, rsi1d, balance, quoteVolume, ganancia_infima, analisis_e7, incremento_volumen_bueno, shitcoin, stoploss_habilitado)
+VALUES
+('FET'  , 'BTC'        , NULL  , 'comprar'     , 'dinamico'           , '0'          , '25',     '7'           , '3'       , '5'    , NULL              , '0.0'  , '0'                    , '1'       , '0'      , '5'                     , '0'                , '4'                   , '7'               , '80', '69' , '65' , '0'    , '217.907'  , '2', '1,2', '1.2', '0', '0')
