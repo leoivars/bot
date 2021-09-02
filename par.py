@@ -19,7 +19,7 @@ from variables_globales import  VariablesEstado
 from pool_indicadores import Pool_Indicadores
 from calc_px_compra import Calculador_Precio_Compra
 from intentar_recuperar_venta_perdida import intentar_recuperar_venta_perdida
-
+from fpar.ganancias import calc_ganancia_minima
 
 
 from numpy import isnan
@@ -2096,10 +2096,12 @@ class Par:
         self.log.log(f'{filtro_ok} <--- {escala} rsi {rsi} ')
         return filtro_ok
 
-    def filtro_ema_rapida_lenta_para_salir(self,escala,gan):
+    def filtro_ema_rapida_lenta_para_salir(self,escala,gan,duracion_trade):
         self.log.log(f'senial de entrada {self.senial_entrada}')
         
-        if gan < 0.5:
+        gan_min = calc_ganancia_minima(self.g,0.5,self.escala_de_analisis,duracion_trade)
+        self.log.log(f'gan_min {gan_min}   gan {gan}')
+        if gan < gan_min:
             return False
 
         ind: Indicadores =self.ind
@@ -3260,7 +3262,7 @@ class Par:
 
         ####TOMAR GANANCIAS #####
         #if self.hay_que_tratar_de_tomar_ganancias(gan,atr):
-        if self.filtro_ema_rapida_lenta_para_salir(self.escala_de_analisis,gan):
+        if self.filtro_ema_rapida_lenta_para_salir(self.escala_de_analisis,gan,duracion_trade):
             self.log.log(  self.par,"cerrar_trade!" )
             self.vender_solo_en_positivo = False
             self.iniciar_estado( 4 )# vendemos

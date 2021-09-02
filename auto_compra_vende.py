@@ -60,7 +60,7 @@ c=True
 while c:
     try:
         #client = Client(pws.api_key, pws.api_secret,{ "timeout": 15})
-        client = Client(pws.api_key, pws.api_secret,{ "timeout": 15})
+        client = Client(pws.api_key, pws.api_secret,{ "timeout": 30})
         c=False
     except Exception as e:
         print('no se puede crear cliente')

@@ -1,6 +1,4 @@
-#Leo
-logs/
-actualizar.sh
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
@@ -131,3 +129,7 @@ dmypy.json
 # Pyre type checker
 .pyre/
 
+#Leo
+logs/
+actualizar.sh
+entorno.sh
