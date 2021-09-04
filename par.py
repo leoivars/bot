@@ -3100,9 +3100,9 @@ class Par:
             mientras durante el control.
         
         '''
-        if self.sobrecomprado():
-            self.log.log('Estoy sobrecomprado! No hay fondos, no podemos seguir comprado')    
-            return True
+        # if self.sobrecomprado():
+        #     self.log.log('Estoy sobrecomprado! No hay fondos, no podemos seguir comprado')    
+        #     return True
 
         self.log.log(  "Control de malas condiciones de compra estado_2 con indicadores" )
         salir = not self.super_decision_de_compra() 
@@ -3249,9 +3249,7 @@ class Par:
         self.actualizar_precio_ws()
         gan=self.ganancias() #creo esta variable para no llamar reiteradamente a la funcion
         self.set_tiempo_reposo(gan)
-        atr = ind.atr(self.escala_de_analisis)   
         
-
         self.log.log(  "___E.3 Esp.Ven. Ti:",tiempo_en_estado,self.par,self.escala_de_analisis,self.senial_entrada)
         
         # partir de acá controlo condiciones de venta o salida
@@ -4611,9 +4609,9 @@ class Par:
     # regresa True si los fondos que tengo para comprar alcanzan para un self.min_notional
     def fondos_para_comprar(self):
         
-        if self.sobrecomprado():
-            self.log.log('continuacion_alcistacomprado! No hay fondos')    
-            return False
+        #if self.sobrecomprado():
+        #    self.log.log('continuacion_alcistacomprado! No hay fondos')    
+        #    return False
 
         cant_posible=self.calcular_cantidad_posible_para_comprar()
         
@@ -4629,23 +4627,24 @@ class Par:
         return ret
 
 
-    def sobrecomprado(self):
-        '''
-        agrega a lo transado la compra actual y calcula cuanto estaríamos invertido
-        '''
-        esta_compra =  self.precio_compra * self.cant_moneda_compra
-        if self.moneda_contra == 'USDT':
-            transado = self.g.usdt_transado + esta_compra
-            invertido =  transado / (transado + self.g.usdt_operable) 
-            if invertido > self.g.max_inversion_usdt:
-                return True
-        elif self.moneda_contra == 'BTC':
-            transado = self.g.btc_transado + esta_compra
-            invertido =  transado / (transado + self.g.btc_operable) 
-            if invertido  > self.g.max_inversion_btc:
-                return True
-        else:
-            return False          
+    # esta funcion tendría que directamente al gestoer de posición
+    # def sobrecomprado(self):
+    #     '''
+    #     agrega a lo transado la compra actual y calcula cuanto estaríamos invertido
+    #     '''
+    #     esta_compra =  self.precio_compra * self.cant_moneda_compra
+    #     if self.moneda_contra == 'USDT':
+    #         transado = self.g.usdt_transado + esta_compra
+    #         invertido =  transado / (transado + self.g.usdt_operable) 
+    #         if invertido > self.g.max_inversion_usdt:
+    #             return True
+    #     elif self.moneda_contra == 'BTC':
+    #         transado = self.g.btc_transado + esta_compra
+    #         invertido =  transado / (transado + self.g.btc_operable) 
+    #         if invertido  > self.g.max_inversion_btc:
+    #             return True
+    #     else:
+    #         return False          
 
     def calcular_cantidad_posible_para_comprar(self):
         #en el caso que precio de compra sea 0, lo calculamos acá, esto es para salvar un división por cero que se produce en una llamada de auto_compra_vende  

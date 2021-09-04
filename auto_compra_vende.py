@@ -8,8 +8,8 @@ from datetime import datetime, timedelta
 import time
 from binance.client import Client #para el cliente
 import _thread
-import threading
-import json
+#import threading
+#import json
 from pws import Pws
 from indicadores2 import Indicadores
 from logger import *
@@ -98,11 +98,7 @@ def precio(par,escala):
             px = -1
         return px 
 
-
-
-        
-
-def actualizar_info_pares_deshabilitados_periodicamente(e,IndPool:Pool_Indicadores,conn,client):
+def actualizar_info_pares_deshabilitados_periodicamente(e:VariablesEstado,IndPool:Pool_Indicadores,conn,client):
     time.sleep(300)# espero 5 minutitos antes de empezar a hacer algo 
     db = Acceso_DB(log,conn.pool)
     while e.trabajando:
@@ -122,7 +118,7 @@ def actualizar_info_pares_deshabilitados_periodicamente(e,IndPool:Pool_Indicador
 
         time.sleep(1800 + tiempo) 
 
-def materializar_pares_desde_db(inico=False,db:Acceso_DB=None,e=None):
+def materializar_pares_desde_db(inico=False,db:Acceso_DB=None,e:VariablesEstado=None):
 
     log.log('materializar_pares_desde_db.ini')
     #poner_pares_control_en_falso, luego si está query pasa a verdadero
@@ -163,9 +159,6 @@ def materializar_pares_desde_db(inico=False,db:Acceso_DB=None,e=None):
             else:
                 time.sleep(.01) 
             #mostrar_informacion()
-
-            
-
         
     e.cant_pares_activos = pares_activos
     
@@ -304,7 +297,6 @@ def log_pares_estado_ordenado_por_ganancia(estado,cant=15):
         c = c +1
         if c > cant: #solo motrar los primeros cant
             break
-
     
     return lin        
     #log.log(lin)
@@ -456,8 +448,8 @@ def reporte_de_ciclo():
     #txt_btc_volatil='_' if IndPool.btc_apto_para_altcoins else '!'
     #estado_general = mo_pre.estado_general()
   
-    reporte+=linea('invertido en btc ...........:', round(e.invertido_btc*100,2) ,'max',round(e.max_inversion_btc * 100 ,2) )
-    reporte+=linea('invertido en usdt...........:', round(e.invertido_usdt *100,2), 'max', round(e.max_inversion_usdt * 100 ,2) ) 
+    #reporte+=linea('invertido en btc ...........:', round(e.invertido_btc*100,2) ,'max',round(e.max_inversion_btc * 100 ,2) )
+    #reporte+=linea('invertido en usdt...........:', round(e.invertido_usdt *100,2), 'max', round(e.max_inversion_usdt * 100 ,2) ) 
     # reporte+=linea('btc_apto_para_altcoins......:',IndPool.btc_apto_para_altcoins)
     # reporte+=linea('btc_alcista.................:',IndPool.btc_alcista)
     # reporte+=linea('btc_macd_ok.................:',IndPool.btc_macd_ok)
@@ -484,7 +476,7 @@ def reporte_de_ciclo():
 
 
 
-def esperar_correcto_funcionamiento():
+def esperar_correcto_funcionamiento(e:VariablesEstado):
     # esperamos el corremto funcionamiento del systema
     
     while True:
@@ -621,7 +613,7 @@ def deshabiliar_pares_en_compra_temporalmente(e,log):
                         log.log('deteniendo...',p.moneda,p.moneda_contra,x[1])
                         break
                 
-def deshabiliar_pares_en_compra_temporalmente_periodicamente(e):
+def deshabiliar_pares_en_compra_temporalmente_periodicamente(e:VariablesEstado):
     periodo = 600
     time.sleep( periodo )  # unos segundos para que levante todo
     loglocal=Logger('deshabiliar_pares_en_compra_temporalmente_periodicamente.log')
@@ -639,9 +631,6 @@ def deshabiliar_pares_en_compra_temporalmente_periodicamente(e):
         time.sleep( periodo )  # unos segundos para que levante todo
 
 
-
-
-
 try:
     #cuenta de reinicios pasado como parámetros
     cuenta_de_reinicios= int(sys.argv[1])
@@ -652,16 +641,13 @@ except:
     inicio_funcionamiento = datetime.datetime.now()
 
 
-
-
-
 # deshabilito todo para ir habilitando en la medida de lo positble
 # hpdb.deshabilitar_todos_los_pares()
 
 #habilito los pares que tengo
 #hpdb.habilitar_pares_que_tengo()
 
-esperar_correcto_funcionamiento()
+esperar_correcto_funcionamiento(e)
 
 #web soket de monitor de precios
 #mo_pre=MonitorPreciosWs(log)
@@ -686,7 +672,7 @@ materializar_pares_desde_db(True,hpdb,e)
 #_thread.start_new_thread(deshabiliar_pares_en_compra_temporalmente_periodicamente,(e,)) 
 
 # actualizo la posicion global
-_thread.start_new_thread(actualizar_posicion_periodicamente,(e,gestor_de_posicion)) 
+#_thread.start_new_thread(actualizar_posicion_periodicamente,(e,gestor_de_posicion)) 
 
 # hilo actualizador de estadísticas para los pares que no están habilitados
 #_thread.start_new_thread(actualizar_info_pares_deshabilitados_periodicamente,(e,IndPool,conn,client))
@@ -702,11 +688,9 @@ _thread.start_new_thread(actualizar_posicion_periodicamente,(e,gestor_de_posicio
 #_thread.start_new_thread(habilitar_pares_muy_activos_periodicamente,()) 
 
 
-
 ti_mail = Controlador_De_Tiempo(14400)
 #ti_mail = Controlador_De_Tiempo(600)
 reporte_correo()
-
 
 #bucle princpipal
 while e.trabajando:
@@ -731,15 +715,13 @@ while e.trabajando:
         log.log('Error', str(exppal))   
 
     time.sleep(49)
-    esperar_correcto_funcionamiento()
+    esperar_correcto_funcionamiento(e)
     
     # si trabajando en config.json = 0, hace un shutdown
     log.log('cargar_configuraciones_json')
     e.cargar_configuraciones_json()
     log.log('controlar_correcto_funcionamiento')
     #controlar_correcto_funcionamiento()  
-    
-
 
 
 log.log("Cerrando todo...")

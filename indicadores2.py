@@ -113,10 +113,7 @@ class Indicadores:
             if vmin[i]<min:
                 min=vmin[i]
         return min
-        
    
-   
-
     def buscar_precio_max_rsi(self,escala,rsi_superior,rsi_inferior):
         '''estableze un rango buscando primero un rsi_superior y luego un rsi_inferior,
         luego retorna el precio maximo en ese rango y la variacion con rescpecto al precio actual'''
@@ -221,8 +218,7 @@ class Indicadores:
                 print(    strtime_a_fecha(  df.iloc[i]['close_time'] )   )
                 picos +=1
         return picos        
-    
-
+   
     def volumen_por_encima_media(self,escala,cvelas,xvol = 1):
         ''' suma el volumen de las ultimas cvelas multipolicado por xvol
          y lo compara con el volumen promedio si es mayor

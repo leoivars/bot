@@ -1,4 +1,4 @@
-from gestor_de_posicion import Gestor_de_Posicion
+#from gestor_de_posicion import Gestor_de_Posicion
 import time
 import json
 from threading import Lock
@@ -32,12 +32,12 @@ class VariablesEstado:
     max_inversion_btc  = 0.20
     max_inversion_usdt = 0.20
 
-    invertido_btc=0   # se actualiza en auto_compra_vende
-    invertido_usdt=0  # se actualiza en auto_compra_vende
-    btc_operable=0
-    btc_transado=0
-    usdt_operable=0
-    usdt_trandado=0
+    # invertido_btc=0   # se actualiza en auto_compra_vende
+    # invertido_usdt=0  # se actualiza en auto_compra_vende
+    # btc_operable=0
+    # btc_transado=0
+    # usdt_operable=0
+    # usdt_trandado=0
 
     
     
@@ -108,7 +108,7 @@ class VariablesEstado:
     def __init__(self,gestor_de_posicion):
         self.cargar_configuraciones_json()
         self.max_pares_activos = self.max_pares_activos_config
-        self.gestor_de_posicion: Gestor_de_Posicion = gestor_de_posicion
+        #self.gestor_de_posicion: Gestor_de_Posicion = gestor_de_posicion
     
     def cargar_parametros_json_de_par(self):
         parconfig = self.cargar_config_json('par.json')
@@ -148,9 +148,9 @@ class VariablesEstado:
 
 
 
-    def actualizar_posicion(self):
-        btc_operable,btc_transado,usdt_operable,usdt_transado = self.gestor_de_posicion.actualizar_posicion()
-        self.set_posicion(btc_operable,btc_transado,usdt_operable,usdt_transado)
+    # def actualizar_posicion(self):
+    #     btc_operable,btc_transado,usdt_operable,usdt_transado = self.gestor_de_posicion.actualizar_posicion()
+    #     self.set_posicion(btc_operable,btc_transado,usdt_operable,usdt_transado)
 
     def calculo_ganancia_total(self,pxcompra,pxventa,cantidad):
         comision  = pxcompra * cantidad * self.fee
@@ -201,16 +201,16 @@ class VariablesEstado:
 
         return t 
     
-    def set_posicion(self,btc_operable,btc_transado,usdt_operable,usdt_transado):
+    # def set_posicion(self,btc_operable,btc_transado,usdt_operable,usdt_transado):
     
-        self.btc_operable = btc_operable
-        self.btc_transado = btc_transado
+    #     self.btc_operable = btc_operable
+    #     self.btc_transado = btc_transado
         
-        self.usdt_operable = usdt_operable
-        self.usdt_transado = usdt_transado
+    #     self.usdt_operable = usdt_operable
+    #     self.usdt_transado = usdt_transado
 
-        self.invertido_btc  =  btc_transado / (btc_transado + btc_operable)
-        self.invertido_usdt =  usdt_transado / (usdt_transado + usdt_operable) 
+    #     self.invertido_btc  =  btc_transado / (btc_transado + btc_operable)
+    #     self.invertido_usdt =  usdt_transado / (usdt_transado + usdt_operable) 
 
     
 

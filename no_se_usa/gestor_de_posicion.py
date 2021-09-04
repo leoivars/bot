@@ -53,6 +53,8 @@ class Gestor_de_Posicion:
         # print('invertido_btc',invertido_btc)
         # print('invertido_usdt',invertido_usdt)
 
+        # esto está mal, hay que conservar esto valores dentro del gestor de posición propiamente dicho
+        # no está bueno que tire los valores a otro lado.
         return btc_operable,btc_transado,usdt_operable,usdt_transado
     
 #TEST
