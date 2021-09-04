@@ -340,4 +340,4 @@ class Calculador_Precio_Compra:
             if v < valor:
                 ret=v
                 break
-        return ret      
+        return ret

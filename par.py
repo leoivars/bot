@@ -7,7 +7,6 @@ from logger import Logger #clase para loggear
 from correo import Correo
 from LectorPrecios import LectorPrecios #clase para tomar precios de todos los pares 
 from LibroOrdenes import LibroOrdenes
-from analizador import Analizador,Analizador_Patrones
 from datetime import datetime, timedelta
 from comandos_interprete import ComandosPar
 

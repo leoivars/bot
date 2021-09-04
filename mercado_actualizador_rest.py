@@ -1,7 +1,6 @@
 # # -*- coding: UTF-8 -*-
 # pragma pylint: disable=no-member
 
-import talib
 from velaset import VelaSet
 from vela import Vela
 # from vela import *

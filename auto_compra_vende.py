@@ -27,8 +27,6 @@ from variables_globales import  VariablesEstado
 
 from funciones_utiles import memoria_consumida,cpu_utilizada,calc_tiempo
 
-
-
 from actualizar_info_pares_deshabilitados import actualizar_info_pares_deshabilitados,actualizar_ranking_por_volumen_global
 from reconfigurar_pares_top import reconfigurar_pares_top
 
@@ -44,12 +42,8 @@ import types
 
 #tracemalloc.start()
 
-
-
-
 # import logging 
 # logging.basicConfig(filename='./logs/auto_compra_vende.log',level=logging.DEBUG)
-
 
 
 pws=Pws()

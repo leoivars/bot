@@ -5,7 +5,6 @@ from acceso_db_conexion_mysqldb import Conexion_DB
 from logger import Logger
 from acceso_db_mysqldb import Acceso_DB
 from os import register_at_fork
-import talib
 from velaset import VelaSet
 from vela import Vela
 # from vela import *

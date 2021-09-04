@@ -1,4 +1,3 @@
-import sqlite3
 from acceso_db import Acceso_DB
 from acceso_db_conexion import Conexion_DB
 from logger import *
@@ -18,13 +17,15 @@ client = Client(pws.api_key, pws.api_secret)
 #apertura del pull de conexiones
 conn=Conexion_DB(log)
 #objeto de acceso a datos
-db=Acceso_DB(log,conn.pool)
+if conn.pool:
 
-id_par_escala = db.get_id_par_escala('btcusdt','1m') 
-ret = db.crear_actualizar_vela(id_par_escala,1,1,1,1,1,1,1)
-print(ret)
-ret = db.crear_actualizar_vela(id_par_escala,1,1,1,1,1,1,2)
-print(ret)
+    db=Acceso_DB(log,conn.pool)
+
+    id_par_escala = db.get_id_par_escala('btcusdt','1m') 
+    ret = db.crear_actualizar_vela(id_par_escala,1,1,1,1,1,1,1)
+    print(ret)
+    ret = db.crear_actualizar_vela(id_par_escala,1,1,1,1,1,1,2)
+    print(ret)
 
 
 
