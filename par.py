@@ -984,7 +984,7 @@ class Par:
 
     def registrar_orden_parcialmente_jecutada(self,orden):
         if orden['side']  == 'BUY':
-            self.db.trade_persistir(self.moneda,self.moneda_contra,self.escala_de_analisis,self.escala_de_analisis +' '+ self.analisis_provocador_entrada+'_'+self.calculo_precio_compra,float(orden['executedQty']),float(orden['price']),2,4,-4,self.texto_analisis_par(),strtime_a_fecha(orden['time']),orden['orderId'])
+            self.db.trade_persistir(self.moneda,self.moneda_contra,self.escala_de_analisis,  self.analisis_provocador_entrada+'_'+self.calculo_precio_compra,float(orden['executedQty']),float(orden['price']),2,4,-4,self.texto_analisis_par(),strtime_a_fecha(orden['time']),orden['orderId'])
         else: 
             if self.idtrade>0:
                self.db.trade_sumar_ejecutado( self.idtrade, orden['ejecutado'], orden['precio'],strtime_a_fecha(orden['time']),orden['orderId'])
@@ -3082,7 +3082,7 @@ class Par:
 
         self.log.log('persistiendo trade...')
 
-        self.db.trade_persistir(self.moneda,self.moneda_contra,self.escala_de_analisis,self.escala_de_analisis +' '+ self.analisis_provocador_entrada,can_comprada,precio_orden,gi,gs,tp,self.texto_analisis_par(),strtime_a_fecha(orden['time']),orden['orderId'])
+        self.db.trade_persistir(self.moneda,self.moneda_contra,self.escala_de_analisis,self.analisis_provocador_entrada,can_comprada,precio_orden,gi,gs,tp,self.texto_analisis_par(),strtime_a_fecha(orden['time']),orden['orderId'])
         
         #se compró, hay que pasar al estado de esperar a que suba 
         self.log.log('enviar_correo_filled_compra...')
@@ -4572,11 +4572,6 @@ class Par:
         self.log.log('enviar_correo_filled_compra recuperada...')
         self.enviar_correo_filled_compra('COMPRA RECUPERADA')
        
-
-
-
-
-
 
 
     #version vieja de sincronizar 
