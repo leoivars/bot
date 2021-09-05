@@ -1929,13 +1929,13 @@ class Par:
                 esc = self.entradas_a_escala(self.temporalidades,entradas)
                 self.log.log(f'escala {esc}')
                 
-                ret = self.buscar_ema_positiva(esc)
-                if ret[0]:
-                    #if ind.control_de_inconsistemcias(esc) == -1: #no hay inconsitencias
-                    self.escala_de_analisis = ret[1]
-                    self.sub_escala_de_analisis = ret[1]
-                    self.analisis_provocador_entrada='buscar_ema_positiva'
-                    comprar = True
+                # ret = self.buscar_ema_positiva(esc)
+                # if ret[0]:
+                #     #if ind.control_de_inconsistemcias(esc) == -1: #no hay inconsitencias
+                #     self.escala_de_analisis = ret[1]
+                #     self.sub_escala_de_analisis = ret[1]
+                #     self.analisis_provocador_entrada='buscar_ema_positiva'
+                #     comprar = True
                 
                 if not comprar: 
                     ret = self.buscar_rsi_bajo(esc)
