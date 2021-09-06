@@ -30,6 +30,10 @@ class Acceso_DB:
     mon_pares_top___='select moneda,moneda_contra,volumen  from pares  where habilitable=1  and moneda_contra=%s order by volumen desc limit %s'
     par_puede_habili='SELECT moneda,moneda_contra from pares where habilitable=1 and habilitado=0 and no_habilitar_hasta < NOW() and concat(moneda,moneda_contra)=%s'
     habilitar_______='UPDATE pares set habilitado= %s WHERE habilitable=1 AND moneda= %s AND moneda_contra= %s'
+    __habilitar_habilitables = 'UPDATE pares set habilitado= 1 WHERE habilitable=1 and habilitado=0'
+    __deshabilitar_pares_sin_trades = ''' update pares set habilitado=0 where habilitado=1 and (moneda,moneda_contra) not in 
+                                         (select moneda,moneda_contra as cantidad from trades where ejecutado=0 group by moneda,moneda_contra)
+                                      '''
     trade_persistir_='INSERT INTO trades (fecha,orderid,moneda,moneda_contra,escala,senial_entrada,cantidad,precio,ganancia_infima,ganancia_segura,tomar_perdidas,ejecutado,analisis) VALUES (%s,%s,%s, %s, %s,%s,%s,%s,%s,%s,%s,0,%s)'
     trade_borrar____='DELETE from trades where moneda=%s'
     trade_avg_______='SELECT sum( (cantidad-ejecutado)*precio )/sum(cantidad-ejecutado) as pcompra from trades where cantidad-ejecutado>0 moneda=%s and moneda_contra=%s'
@@ -39,6 +43,10 @@ class Acceso_DB:
     trade_venta_orid='SELECT idtrade,cantidad,precio,fecha,ganancia_infima,ganancia_segura,tomar_perdidas,escala,senial_entrada,ejecutado from trades where ejec_orderid=%s limit 1'
     trade_compr_orid='SELECT idtrade,cantidad,precio,fecha,ganancia_infima,ganancia_segura,tomar_perdidas,escala,senial_entrada,ejecutado from trades where orderid=%s limit 1'
     trade_ultimo____='SELECT idtrade,ejec_precio,ejec_fecha,tomar_perdidas from trades where moneda=%s and moneda_contra=%s and ejecutado>0 order by ejec_fecha desc limit 1'
+    trades_pares_act=''' select count(1) as cant_pares_activos from (
+                        select moneda,moneda_contra as cantidad from trades where ejecutado=0 group by moneda,moneda_contra) as pares_en_trades 
+                     '''
+    
     trade_id________='SELECT * from trades where idtrade=%s'
     trades_cantidad_='select count(1) as cantidad  from trades where moneda=%s and moneda_contra=%s and ejecutado = 0'
     trade_borrar_id_='DELETE from trades where idtrade=%s'
@@ -229,12 +237,19 @@ class Acceso_DB:
         sql='update trades set ejecutado=cantidad where moneda=%s and moneda_contra=%s and ejecutado<cantidad'
         self.ejecutar_sql(sql,(moneda,moneda_contra))
 
-    def trades_cantidad(self,moneda,moneda_contra):
-        return self.ejecutar_sql_ret_1_valor(self.trades_cantidad_,(moneda,moneda_contra))
 
     def trade_duracion_en_segundos(self,idtrade):
         sql='select time_to_sec(timediff(ejec_fecha,fecha)) from trades where idtrade=%s'   
         return self.ejecutar_sql_ret_1_valor(sql,(idtrade,))
+
+    def trades_cantidad_de_pares_con_trades(self):
+        ''' entrega la cantidad de pares que tienen trades (suma 1 por cada para que exista en trades abiertos) sin importar 
+        la cantidad de trades abiertos existentes por cada par'''
+        return self.ejecutar_sql_ret_1_valor(self.trades_pares_act)
+
+    def trades_cantidad(self,moneda,moneda_contra):
+        ''' retorna la cantidad de trades que hay en un par'''
+        return self.ejecutar_sql_ret_1_valor(self.trades_cantidad_,(moneda,moneda_contra))    
 
     def total_moneda_en_trades(self,moneda):
          
@@ -450,10 +465,14 @@ class Acceso_DB:
         sql="UPDATE pares set habilitado=0 ,habilitable=1, no_habilitar_hasta=%s  WHERE moneda= %s AND moneda_contra= %s"
         self.ejecutar_sql(sql,(fecha_futura,moneda,moneda_contra) )
 
-
     def habilitar(self,habilitar_on_off,moneda,moneda_contra):
         self.ejecutar_sql(self.habilitar_______,(habilitar_on_off,moneda,moneda_contra) )
-
+    
+    def habilitar_habilitables(self): 
+        self.ejecutar_sql(self.__habilitar_habilitables )
+    
+    def deshabilitar_pares_sin_trades(self):
+        self.ejecutar_sql(self.__deshabilitar_pares_sin_trades )
 
     def get_habilitables_lindos(self):
         r=self.ejecutar_sql_ret_dict(self.mon_habilita_lin)

@@ -1,6 +1,7 @@
 [
 
 {
+  "maxima_cantidad_de_pares_con_trades" : 5,
   "horas_deshabilitar_par"  : 1,
   "reserva_btc_en_usd"      : 0,
   "reserva_btc_en_usd_e8"   : 0,

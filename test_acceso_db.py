@@ -21,11 +21,8 @@ if conn.pool:
 
     db=Acceso_DB(log,conn.pool)
 
-    id_par_escala = db.get_id_par_escala('btcusdt','1m') 
-    ret = db.crear_actualizar_vela(id_par_escala,1,1,1,1,1,1,1)
-    print(ret)
-    ret = db.crear_actualizar_vela(id_par_escala,1,1,1,1,1,1,2)
-    print(ret)
+    print ('trades_cantidad_de_pares_con_trades', db.trades_cantidad_de_pares_con_trades() )
+    print ('trades_cantidad',db.trades_cantidad('PNT','USDT')  )
 
 
 

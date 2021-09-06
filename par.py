@@ -1921,6 +1921,11 @@ class Par:
         y que luego de ejecutan constantemente  en estado 2
         para mantener el estado de compra
         '''
+        
+        # ya se ha superado la cantidad máxima de  pares con trades, solo esperamos.
+        if self.db.trades_cantidad_de_pares_con_trades() >= self.g.maxima_cantidad_de_pares_con_trades and\
+           self.db.trades_cantidad(self.moneda,self.moneda_contra) == 0:
+            return False 
 
         comprar= False
         entradas = self.db.trades_cantidad(self.moneda,self.moneda_contra)

@@ -58,6 +58,7 @@ class VariablesEstado:
     macd_min_rsi_deep__rojo=24
     rb_gan_infima=1
     rb_gan_segura=1.5
+    maxima_cantidad_de_pares_con_trades=1
 
 
     #variables multiplicadoras de patr
@@ -105,7 +106,7 @@ class VariablesEstado:
 
     metricas = Metricas()
 
-    def __init__(self,gestor_de_posicion):
+    def __init__(self,gestor_de_posicion=None):
         self.cargar_configuraciones_json()
         self.max_pares_activos = self.max_pares_activos_config
         #self.gestor_de_posicion: Gestor_de_Posicion = gestor_de_posicion
@@ -141,6 +142,7 @@ class VariablesEstado:
                 VariablesEstado.x_gan_patr_sar            = float(parconfig[0]['x_gan_patr_sar'])
                 VariablesEstado.x_gan_patr_ema            = parconfig[0]['x_gan_patr_ema'] 
                 VariablesEstado.x_neg_patr_comp_ant       = parconfig[0]['x_neg_patr_comp_ant'] 
+                VariablesEstado.maxima_cantidad_de_pares_con_trades = parconfig[0]['maxima_cantidad_de_pares_con_trades'] 
             except Exception as e:
                 print ( "cargar_parametros_json_de_par:",str(e) )     
                 

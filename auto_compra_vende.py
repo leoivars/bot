@@ -24,13 +24,14 @@ from controlador_de_tiempo import Controlador_De_Tiempo
 from correo import Correo
 from reporte_estado import ReporteEstado
 from variables_globales import  VariablesEstado
+from fauto_compra_vende.habilitar_pares import habilitar_deshabilitar_pares_periodicamente,habilitar_deshabilitar_pares
 
 from funciones_utiles import memoria_consumida,cpu_utilizada,calc_tiempo
 
 from actualizar_info_pares_deshabilitados import actualizar_info_pares_deshabilitados,actualizar_ranking_por_volumen_global
 from reconfigurar_pares_top import reconfigurar_pares_top
 
-from gestor_de_posicion import Gestor_de_Posicion
+#from gestor_de_posicion import Gestor_de_Posicion
 
 from sensor_de_rendimieno import sensar_rendimiento_periodicamente
 
@@ -68,8 +69,8 @@ conn=Conexion_DB(log)
 #objeto de acceso a datos
 hpdb = Acceso_DB(log,conn.pool)  #hpdb hilo principal db
 
-gestor_de_posicion = Gestor_de_Posicion(log,client,conn)
-e = VariablesEstado(gestor_de_posicion)
+#gestor_de_posicion = Gestor_de_Posicion(log,client,conn)
+e = VariablesEstado()
 
 logm=Logger('merado.log') 
 logm.set_log_level(e.log_level)
@@ -662,6 +663,9 @@ esperar_correcto_funcionamiento(e)
 
 #Actualizacion inicial del ranking, necesaria antes de empezar a materializar pares
 #actualizar_ranking_por_volumen_global(e,IndPool,conn,client)
+
+# habilitador de pares
+_thread.start_new_thread( habilitar_deshabilitar_pares_periodicamente, (e,hpdb) ) 
 
 materializar_pares_desde_db(True,hpdb,e)
 

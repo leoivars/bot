@@ -1,4 +1,4 @@
-from gestor_de_posicion import Gestor_de_Posicion
+#from gestor_de_posicion import Gestor_de_Posicion
 from ordenes_binance import OrdenesExchange
 from acceso_db import Acceso_DB
 from funciones_utiles import strtime_a_time,strtime_a_fecha
