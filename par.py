@@ -3295,7 +3295,7 @@ class Par:
     def momento_de_recomprar(self,escala,gan):
         #gan_atr = round ( atr/self.precio * 100 * self.g.x_neg_patr,2 ) #multiplicador de atr negativo para recomprar cuando se pasa cierta perdida
         self.log.log( f'momento_de_recomprar?  gan {gan}' )
-        recomprar =  gan < -1.5
+        recomprar =  gan < -.5
         ret = False            
         if recomprar:
             self.log.log( 'Intento recomprar---> Sí')

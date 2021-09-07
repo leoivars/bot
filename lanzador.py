@@ -5,9 +5,6 @@ import time
 import datetime
 import json
 
-
-
-
 def cargar_config_json():
     with open('config.json','r') as f:
         try:
@@ -38,7 +35,7 @@ while trabajando:
 
     trabajando = cargar_trabajando_de_config_json()
     if trabajando:
-        print("Lanzador: espero 10 segundos y relanzo")
+        print("Lanzador: espero 10 segundos y lanzo")
         time.sleep(10)
         cuenta_de_reinicios += 1
     else:
