@@ -1,5 +1,6 @@
 # # -*- coding: UTF-8 -*-
 #from binance.enums import * #para  create_order
+from mercado_actualizador_socket import Mercado_Actualizador_Socket
 from vela import Vela
 from binance.client import Client # Cliente python para acceso al exchangue
 from indicadores2 import Indicadores #Clase que toma datos de las velas del exchange y produce información (la version1 deprecated)
@@ -19,6 +20,7 @@ from pool_indicadores import Pool_Indicadores
 from calc_px_compra import Calculador_Precio_Compra
 from intentar_recuperar_venta_perdida import intentar_recuperar_venta_perdida
 from fpar.ganancias import calc_ganancia_minima
+from mercado import Mercado
 
 
 from numpy import isnan
@@ -50,7 +52,7 @@ class Par:
     txt_llamada_de_accion='accion---->'
     
 
-    def __init__(self, client,moneda,moneda_contra,conn,obj_global,mercado): # este método se llama cuando se inicia una clase
+    def __init__(self, client,moneda,moneda_contra,conn,obj_global,mercado): 
         #variables de instancia
         self.par=moneda+moneda_contra
         
@@ -144,6 +146,7 @@ class Par:
         self.log.loguear=True #False-->solo loguea log.err 
         
         self.ind:Indicadores =Indicadores(self.par,self.log,obj_global,mercado)
+        self.mercado:Mercado =mercado
         
         self.libro=LibroOrdenes(client,moneda,moneda_contra,25) #cleación del libro
         self.cola_mensajes=[]
@@ -1383,6 +1386,7 @@ class Par:
 
         self.log.log(self.par,"--->finalizando...")
         self.cancelar_todas_las_ordenes_activas()
+        self.mercado.desuscribir_todas_las_escalas(self.par)
         self.imprimir()
         
         #limpio memoria

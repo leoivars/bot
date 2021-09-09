@@ -23,6 +23,7 @@ class Mercado_Actualizador_Socket(Thread):
         self.tiempo_maximo_sin_recibir_datos=60
         
         self.activo = False
+        self.vivo = True
 
         self.par_escala_ws_v=par_escala_ws_v
         self.g:VariablesEstado = estado_general
@@ -37,11 +38,12 @@ class Mercado_Actualizador_Socket(Thread):
            self.time_conexion = time.time()
            while self.activo:
                self.recibir()
-               #self.mantener_vivo()
                self.renovar_conexion_fea()
                time.sleep(self.espera)
 
-           self.ws.close    
+           self.ws.close
+           self.vivo = False 
+             
         except Exception as e:
             print('Error,run()',str(e)) 
             tb = traceback.format_exc()

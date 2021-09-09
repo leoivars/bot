@@ -20,27 +20,38 @@ class Mercado:
 
         self.g:VariablesEstado = estado_general
         self.log=log
-        self.cliente = cliente
-        
-        self.par_escala_ws_v={} # en que soket está el par escala self.par_escala_ws[par][escala]=[ws,Velaset]
-        self.sockets=[] # lista de socket abiertos
+        self.cliente = cliente 
         
         self.max_suscripciones_por_ws = 1 # hasta 1024 #hay que encontrar un nro que se a posible de procesar al tiempo que no me llene d esockets abiertos
-
-       # self.actualizador_rest= Actualizador_rest(par,log,estado_general,cliente,self.velas,self.actualizado,self.lock_actualizado)    
-
-        # carga inicial
-        #self.actualizador_rest.actualizar_velas(escala)
-
-        #inicio del actualización via socket
-
-    def suscribir(self,par,escala):
+        self.par_escala_ws_v={} # en que soket está el par escala self.par_escala_ws[par][escala]=[ws,Velaset]
+        self.sockets=[] #   sockets abiertos
+       
+    def __suscribir(self,par,escala):
         ws=self.get_ws(par,escala)
         if ws is  None:
-            ws = self.encontrar_socket_libre()  
+            ws = self.__encontrar_socket_libre()  
 
-        self.registrar_ws(ws,par,escala)  
+        self.__agregar_ws(ws,par,escala)  
         ws.suscribir(par,escala)
+
+    def __desubribir(self,par,escala):
+        ws:Mercado_Actualizador_Socket = self.get_ws(par,escala)
+        if ws:
+            ws.desuscribir(par,escala)
+            self.__eliminar_ws(par,escala)
+            if self.get_suscripciones(ws) == 0:
+                ws.detener()
+                while ws.vivo:
+                    time.sleep(.25)
+
+    def desuscribir_todas_las_escalas(self,par):
+        if par in self.par_escala_ws_v:
+            escalas=[] # cargo las escalas en un vector porque, desuscribir modifica a self.par_escala_ws_v[par]
+            for esc in self.par_escala_ws_v[par]:
+                escalas.append(esc)
+            for esc in escalas:
+                self.__desubribir(par,esc)
+
 
     def get_ws(self,par,escala):
         ''' obtiene el ws de la estructura self.par_escala_ws_v si no lo encuentra retorna None'''
@@ -50,46 +61,69 @@ class Mercado:
             ws=None
         return ws    
 
-    def registrar_ws(self,ws,par,escala):
+    def __agregar_ws(self,ws,par,escala):
         if par in self.par_escala_ws_v:
             self.par_escala_ws_v[par][escala]=[ws,None]
         else:
             self.par_escala_ws_v[par] = {escala : [ws,None]}
 
-    def eliminar_ws(self,par,escala):
+    def __eliminar_ws(self,par,escala):
         if len(self.par_escala_ws_v[par]) == 1:
             del self.par_escala_ws_v[par]
         else:
             del self.par_escala_ws_v[par][escala] 
-    
-    def desuscribir_todas_las_escalas(self,par):
-        pass
+
+    def get_suscripciones(self,ws:Mercado_Actualizador_Socket):
+        cant=0
+        for p in self.par_escala_ws_v:
+            for e in self.par_escala_ws_v[p]:
+                if ws==self.par_escala_ws_v[p][e][0]:
+                    cant += 1
+        return cant
 
     def agregar_nuevo_socket(self):
         sock =  Mercado_Actualizador_Socket(self.log,self.g,self.par_escala_ws_v,self.cliente) 
-        self.sockets.append(sock)
         sock.start()
         #esparear hasta que se establezca la conexión
         while not sock.activo:
             time.sleep(1)
         return sock
 
-    def encontrar_socket_libre(self):
+    def __encontrar_socket_libre(self):
         libre  = None
-        for sock  in self.sockets:
-            if len( sock.subscripciones ) < self.max_suscripciones_por_ws:
-                libre = sock
+        sockets= self.__get_sockets_abiertos()
+        for ws  in sockets:
+            if sockets[ws] < self.max_suscripciones_por_ws:
+                libre = ws
                 break
 
         if libre is None: #no hay libres, creo uno nuevo
             libre = self.agregar_nuevo_socket()
         
         return libre
+    
+    def __get_sockets_abiertos(self):
+        sockets={}
+        for p in self.par_escala_ws_v:
+            for e in self.par_escala_ws_v[p]:
+                ws = self.par_escala_ws_v[p][e][0]
+                if ws in sockets:
+                    sockets[ws] += 1
+                else:
+                    sockets[ws] = 1
+
+        return sockets
+
+
+
 
     def detener_sockets(self):
         for ws in self.sockets:
            ws.detener()
 
+    
+    
+    
     def get_vector_np_open(self,par,escala,cant_valores=None):
         vs: VelaSet = self.get_velaset(par,escala)
         return vs.valores_np_open(cant_valores)
@@ -114,6 +148,8 @@ class Mercado:
         vs: VelaSet = self.get_velaset(par,escala)
         return vs.panda_df(cant_valores)
 
+    
+
     def get_velaset(self,par,escala):
         ''' asegura que un velaset esté suscripto y si no es así, lo susbribe'''
         if par in self.par_escala_ws_v:
@@ -125,7 +161,7 @@ class Mercado:
             suscribir = True
 
         if suscribir:
-            self.suscribir(par,escala)
+            self.__suscribir(par,escala)
 
         vs = self.par_escala_ws_v[par][escala][1]
 
