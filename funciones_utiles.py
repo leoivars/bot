@@ -123,7 +123,6 @@ def signo(numero):
     else:
         return -1        
 
-
 def linea(*args):
         lin = ' '.join([str(a) for a in args])       
         return lin        

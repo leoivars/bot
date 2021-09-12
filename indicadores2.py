@@ -68,7 +68,7 @@ class Indicadores:
         
         
         self.par=par
-        self.log=log
+        self.log:Logger = log
         self.retardo=5
         self.errores=0
         self.tiempo_actualizacion=25
@@ -592,9 +592,14 @@ class Indicadores:
         de ambas emas son positivas  retorna True, tambien retorna datos para log..
         si pendientes_positivas=True exige que las pendientes sean positivas al mismo tiempo que se de la diferencia porcentual''' 
         
+        
         df=self.mercado.get_panda_df(self.par,escala,per_lenta+50)
-        df_emar=ta.ema(df['Close'],length=per_rapida) 
-        df_emal=ta.ema(df['Close'],length=per_lenta)  
+        try:
+            df_emar=ta.ema(df['Close'],length=per_rapida) 
+            df_emal=ta.ema(df['Close'],length=per_lenta)  
+        except Exception as e:
+            self.log.err('Error ema_rapida_mayor_lenta2',str(e)) 
+            return (   False,0,0,0   )   
 
         # r = df_emar.iloc[-1] 
         # l = df_emal.iloc[-1] 

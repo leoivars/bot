@@ -2,6 +2,7 @@ from time import time
 from variables_globales import VariablesEstado
 from acceso_db import Acceso_DB
 import time
+
 def habilitar_deshabilitar_pares(g:VariablesEstado,db:Acceso_DB):
     ''' si se pueden realizar mas entradas, se activan todos los pares
         retorna cantidad de pares habilitados

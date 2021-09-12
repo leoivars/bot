@@ -167,7 +167,13 @@ class Mercado:
 
         return vs
             
-
+    def precio(self,par,escala):
+        try:
+            vs: VelaSet = self.get_velaset(par,escala)
+            px = vs.ultima_vela().close
+        except:
+            px = -1
+        return px 
 
 
 
