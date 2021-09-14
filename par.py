@@ -2001,11 +2001,22 @@ class Par:
         #if self.filtro_ema_rapida_lenta(self.g.zoom_out(escala,1), 50,200, 0.01):
         rsi_inf = self.determinar_rsi_minimo_para_comprar(escala)
         if  self.filtro_de_rsi_minimo_cercano(escala, rsi_inf  ,pos_rsi_inferior=(1,2),max_rsi=60):
-            ret = [True,escala,'buscar_rsi_bajo']
+            if self.filtro_volumen_calmado():
+                ret = [True,escala,'buscar_rsi_bajo']
 
         self.log.log('----------------------')    
 
         return ret 
+
+    def buscar_rebote_rsi(self,escala):
+        ret=[False,'xx']
+        self.log.log('---buscar_rebote_rsi',escala)
+        if  self.filtro_de_rsi_minimo_cercano(escala, 30 ,pos_rsi_inferior=(1,3),max_rsi=60):
+            if self.filtro_ultima_vela_cerrada_alcista(escala):
+                if self.filtro_volumen_encima_del_promedio(escala,3,2):
+                    ret = [True,escala,'buscar_rebote_rsi']
+        self.log.log('----------------------')            
+        return ret  
 
 
 
@@ -2039,15 +2050,7 @@ class Par:
         self.log.log( f'{ret}<---volumen_encima_del_promedio {escala} {cvelas} {xvol}   ')
         return ret
     
-    def buscar_rebote_rsi(self,escala):
-        ret=[False,'xx']
-        self.log.log('---buscar_rebote_rsi',escala)
-        if  self.filtro_de_rsi_minimo_cercano(escala, 30 ,pos_rsi_inferior=(1,3),max_rsi=60):
-            if self.filtro_ultima_vela_cerrada_alcista(escala):
-                if self.filtro_volumen_encima_del_promedio(escala,3,2):
-                    ret = [True,escala,'buscar_rebote_rsi']
-        self.log.log('----------------------')            
-        return ret    
+      
 
     def determinar_rsi_minimo_para_comprar(self,escala):
         ind: Indicadores =self.ind
