@@ -626,6 +626,11 @@ class Indicadores:
         return ret
 
 
+ 
+
+
+
+
     def emas_ordenadas(self,escala,per_ema1,per_ema2,per_ema3):
         ''' True cuando ema1> ema2 > ema3''' 
         df=self.mercado.get_panda_df(self.par,escala,per_ema3+50)

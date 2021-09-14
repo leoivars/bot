@@ -70,7 +70,7 @@ class Vela:
             return self.close-self.low
 
     def sentido(self):
-        if self.open<=self.close:
+        if self.open <= self.close:
             return 1 # alcista
         else:
             return -1 #bajista

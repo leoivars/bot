@@ -33,7 +33,6 @@ import time
 #from rsi0 import *
 import traceback
 
-
 class Par:
     #variables de clase
     client=''
@@ -155,7 +154,7 @@ class Par:
         
         self.hora_ultima_senial=0
         
-        self.db = Acceso_DB(self.log,conn.pool)
+        self.db:Acceso_DB = Acceso_DB(self.log,conn.pool)
         
         if Par.lector_precios == None:
             Par.lector_precios=LectorPrecios(self.client)
@@ -259,7 +258,7 @@ class Par:
 
         self.oe = OrdenesExchange(self.client,self.par,self.log,obj_global)
         
-        self.actualizador = ActualizadorInfoPar(conn, self.oe ,self.log)
+        #self.actualizador = ActualizadorInfoPar(conn, self.oe ,self.log) #13/9/2021 no actualizamo  mas por ahora 
 
 
         self.comandos=ComandosPar(self.log,conn,self) #self: le paso la instancia mima del para para que lo pueda manipular
@@ -1392,7 +1391,7 @@ class Par:
         #limpio memoria
         #self.eliminar_indicador(self.par)
         #self.eliminar_analizador(self.par)
-        del self.actualizador
+        #del self.actualizador
         del self.comandos
         del self.ultima_orden
         del self.libro
@@ -1525,7 +1524,7 @@ class Par:
             
             
 
-    def actualizar_estadisticas(self):
+    def __no_se_esta_usando____actualizar_estadisticas(self):
         #self.log.log(self.txt_llamada_de_accion+'actualizar_estadisticas')
         ind=self.ind
         escala='1d'
@@ -1935,43 +1934,43 @@ class Par:
         entradas = self.db.trades_cantidad(self.moneda,self.moneda_contra)
         if entradas < len(self.temporalidades):  
             if not comprar: # and self.moneda=='BTC' or self.moneda=='BTCDOWN' or self.moneda=='BTCUP': 
-                esc = self.entradas_a_escala(self.temporalidades,entradas)
-                self.log.log(f'escala {esc}')
+                escalas_a_probar = self.entradas_a_escalas(self.temporalidades,entradas)
+                self.log.log(f'escala {escalas_a_probar}')
                 
-                # ret = self.buscar_ema_positiva(esc)
-                # if ret[0]:
-                #     #if ind.control_de_inconsistemcias(esc) == -1: #no hay inconsitencias
-                #     self.escala_de_analisis = ret[1]
-                #     self.sub_escala_de_analisis = ret[1]
-                #     self.analisis_provocador_entrada='buscar_ema_positiva'
-                #     comprar = True
-                
-                if not comprar: 
-                    ret = self.buscar_rsi_bajo(esc)
-                    if ret[0]:
-                        self.escala_de_analisis = ret[1]
-                        self.sub_escala_de_analisis = ret[1]
-                        self.analisis_provocador_entrada='buscar_rsi_bajo'
-                        comprar = True
-                
-                if not comprar:        
-                    ret = self.buscar_rebote_rsi(esc)
-                    if ret[0]:
-                        self.escala_de_analisis = ret[1]
-                        self.sub_escala_de_analisis = ret[1]
-                        self.analisis_provocador_entrada='buscar_rebote_rsi'
-                        comprar = True
-                        #break 
+                for esc in escalas_a_probar:
+                    if not comprar: 
+                        ret = self.buscar_rsi_bajo(esc)
+                        if ret[0]:
+                            self.escala_de_analisis = ret[1]
+                            self.sub_escala_de_analisis = ret[1]
+                            self.analisis_provocador_entrada='buscar_rsi_bajo'
+                            comprar = True
+                            break
+                    
+                    if not comprar:        
+                        ret = self.buscar_rebote_rsi(esc)
+                        if ret[0]:
+                            self.escala_de_analisis = ret[1]
+                            self.sub_escala_de_analisis = ret[1]
+                            self.analisis_provocador_entrada='buscar_rebote_rsi'
+                            comprar = True
+                            break 
             
         return comprar        
         
-    def entradas_a_escala(self,escalas,entradas):
+    def entradas_a_escalas(self,escalas,entradas):
         if entradas <0:
-            ret = escalas[0]
+            esc = escalas[0]
         elif entradas > len(escalas) - 1:
-            ret = escalas[-1]
+            esc = escalas[-1]
         else:
-            ret = escalas[ entradas ]    
+            esc = escalas[ entradas ]   
+
+        if esc=='**': #todas las escalas
+            ret=['1m','5m','15m','30m','1h','2h']
+        else:
+            ret=[esc]    
+
         return ret     
 
     def buscar_dos_emas_rsi(self,escala):   
@@ -2030,8 +2029,8 @@ class Par:
     def filtro_ultima_vela_cerrada_alcista(self,escala):
         ind: Indicadores =self.ind
         v:Vela = ind.ultima_vela_cerrada(escala)
-        ret = v.sentido ==1
-        self.log.log( f'{ret}<---UltimaVelaCerrada')
+        ret = v.sentido() == 1
+        self.log.log( f'{ret}<---UltimaVelaCerrada, open {v.open}, close {v.close}')
         return ret
 
     def filtro_volumen_encima_del_promedio(self,escala,cvelas,xvol):
@@ -2118,19 +2117,20 @@ class Par:
             self.log.log('rsi escala >65 , volumen_cammado')
             return True
 
-        esc_sup = self.g.zoom_out(self.escala_de_analisis,1)
-        if ind.rsi(esc_sup)>90:
-            self.log.log('rsi escala sup >90')
+        esc_inf = self.g.zoom(escala,1)
+        if ind.rsi(esc_inf)>90:
+            self.log.log(f'rsi escala inf({esc_inf}) >90')
             return True
 
         if 'buscar_ema_positiva' in self.senial_entrada:            
             salir,dif,pl,pr = ind.ema_rapida_menor_lenta2(escala, 10,50, 0, pendientes_negativas=True ) 
             self.log.log(f'    {escala} 10,50  diferencia% {dif}, pend rapida {pr} pend lenta {pl}')
+            return True
 
-        else:
-            salir = self.filtro_pico_maximo_ema_maximos(self.escala_de_analisis,4,1) 
+        #else:
+        #    salir = self.filtro_pico_maximo_ema_maximos(self.escala_de_analisis,4,1) 
         
-        return salir    
+        return False 
 
     def filtro_pico_minimo_ma_minimos(self,escala,cvelas_bajada=7,posicion_minimo=1,control_volumen=True):
         ind: Indicadores =self.ind
@@ -2148,7 +2148,7 @@ class Par:
 
     def filtro_pico_maximo_ema_maximos(self,escala,cvelas_subida=7,posicion_maximo=1):
         ind: Indicadores =self.ind
-        pmaximo, velas_subida = ind.maximo_en_ema(escala,7,'Close',cvelas=posicion_maximo+1) 
+        pmaximo, velas_subida = ind.maximo_en_ema(escala,periodos=7,datos='Close',cvelas=posicion_maximo+1) 
         filtro_ok = pmaximo >= posicion_maximo and velas_subida >=cvelas_subida
         self.log.log(f'{filtro_ok} <--ok_filtro_pico_maximo_ema_maximos: {cvelas_subida}')
         self.log.log(f'    maximo en {pmaximo}, velas en subida {velas_subida}')
@@ -2714,11 +2714,8 @@ class Par:
     def filtro_pendiente_ema_negativa(self,escala,periodos):
         ind: Indicadores =self.ind
         pen=ind.pendientes_ema(escala,periodos,1)
-        if pen[0] < self.g.ema_pendiente_maxima[escala]:
-            return True
-        else:
-            return False    
-    
+        positva = ind.pendiente_positiva_ema(escala,periodos)
+        return not positva
     
     # 26/6/2020 si la ema de minimos de 25 periodos es mayor que la ema de 55 periodos quiere decir que 
     # se está produciendo un rechazo en el precio 
@@ -4131,12 +4128,9 @@ class Par:
         #tomar_ganancias = self.filtro_rechazo_alcista(self.escala_de_analisis) and\
         #                    self.filtro_rsi_mayor(self.escala_de_analisis,rsi_min)
 
-        
-
         if not tomar_ganancias: 
             tomar_ganancias = self.filtro_pico_maximo_ema_maximos(escala,cvelas_subida=7,posicion_maximo=2) and\
                             self.filtro_rsi_mayor(self.escala_de_analisis,rsi_min)
-
 
         if not tomar_ganancias:  
             tomar_ganancias= gan > 1 and self.filtro_pendiente_ema_negativa(self.escala_de_analisis,20)
@@ -4145,13 +4139,7 @@ class Par:
             tomar_ganancias = self.filtro_rsi_mayor(self.escala_de_analisis,70) or\
                               self.filtro_rsi_mayor(self.g.zoom_out(self.escala_de_analisis,1),70)     
 
-
         return tomar_ganancias
-
-
-            
-        
-
 
     def calc_ganancia_minima(self,escala):
         ind:Indicadores=self.ind
@@ -5232,11 +5220,7 @@ class Par:
 
             st+=' ' + tiempo_trade # + ' ' + str(round(self.pstoploss,2))
 
-            ri=self.format_valor_truncando( self.rango[0],self.moneda_precision)
-            pc=self.format_valor_truncando( self.rango[1],self.moneda_precision)
-            rs=self.format_valor_truncando( self.rango[2],self.moneda_precision)
-
-            return self.linea( "Px:", self.format_valor_truncando( self.precio,8), self.ganancias(),st ,self.escala_de_analisis ,'RR' ,ri,pc,rs )    
+            return self.linea( f"Px: {self.format_valor_truncando( self.precio,8)}  {self.ganancias()} {st} {self.escala_de_analisis} " )    
         except Exception as e:
             return str(e)   
     

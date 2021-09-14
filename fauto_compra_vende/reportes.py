@@ -35,7 +35,7 @@ def reporte_de_muerte(log):
     correo=Correo(log)
     correo.enviar_correo(titulo,texto)
 
-def reporte_correo(log:Logger,conn:Conexion_DB,e:VariablesEstado,mercado:Mercado,inicio_funcionamiento,cuenta_de_reinicios):
+def reporte_correo(log:Logger,db:Acceso_DB,e:VariablesEstado,mercado:Mercado,inicio_funcionamiento,cuenta_de_reinicios):
     
     reporte  = reporte_de_ciclo(e,mercado,inicio_funcionamiento,cuenta_de_reinicios) +'\n'
     
@@ -51,7 +51,7 @@ def reporte_correo(log:Logger,conn:Conexion_DB,e:VariablesEstado,mercado:Mercado
  
     
     #reporte del mes actual
-    rep = ReporteEstado(log,conn,e)
+    rep = ReporteEstado(log,db,e)
     hoy = datetime.today()
     mes = hoy.month
     anio = hoy.year

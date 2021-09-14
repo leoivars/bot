@@ -4,6 +4,7 @@
 import time
 from threading import Lock
 from datetime import datetime
+from dbutils.pooled_db import PooledDB
 #import traceback
 
 
@@ -11,7 +12,6 @@ class Acceso_DB:
     
     lock_cola= Lock()
     cola=[]
-     
 
     actualiza_estado='UPDATE pares set precio_compra= %s,estado= %s, funcion= %s WHERE moneda= %s AND moneda_contra= %s'
     actualiza_func__='UPDATE pares set estado= %s, funcion= %s WHERE moneda= %s AND moneda_contra= %s'
@@ -121,7 +121,7 @@ class Acceso_DB:
 
     def __init__(self,log,pool):
 
-        self.pool=pool
+        self.pool: PooledDB =pool
         self.log=log
         self.conexion=None
         self.cursor=None
@@ -184,21 +184,19 @@ class Acceso_DB:
     def cursor_obtener(self):
         while True:
             try: 
-                
                 self.conexion=self.pool.connection()
                 self.cursor=self.conexion.cursor()
-
-                break # tomo hermoso salimos del bucle
+                
+                break     # tomo hermoso salimos del bucle
 
             except Exception as e:
                 error = str(e) 
+                self.log.err(  'error: cursor_obtener',error)
                 if 'Error: Too many connections' in error:
                     #no hay mas cursores de momento, esperemos un poco y reintentamos
                     time.sleep(1)
                 else:
-                    #no erro que no se como manejar, lo muestro y me voy a estudiar..
-                    self.log.err(  'error: cursor_obtener',error)
-                    break
+                    time.sleep(5)
         return    
 
     def cursor_liberar(self): 
@@ -207,7 +205,6 @@ class Acceso_DB:
             self.conexion.close()
         except Exception as e:
             self.log.err(  'error: cursor_liberar',e)
-
         self.conexion=None
         self.cursor=None
     
@@ -690,22 +687,25 @@ class Acceso_DB:
         return ret    
 
     def ejecutar_sql_ret_dict(self,sql,paramentros=None):
-        self.cursor_obtener()
-        try:
-            if paramentros == None:
-                self.cursor.execute(sql)
-            else:
-                self.cursor.execute(sql,paramentros)
+        while True:
+            self.cursor_obtener()
+            try:
+                if paramentros == None:
+                    self.cursor.execute(sql)
+                else:
+                    self.cursor.execute(sql,paramentros)
+                ret=self.cursor2dict(self.cursor)
+
+                break
                 
-            ret=self.cursor2dict(self.cursor)
-            
-        except Exception as e:
-            self.log.err(  'error: ejecutar_sql_ret_dict',str(e),sql,paramentros)
-            #tb = traceback.format_exc()
-            #self.log.err( tb )
-            time.sleep(1)
-            ret={}
-        self.cursor_liberar()     
+            except Exception as e:
+                self.log.err(  'error: ejecutar_sql_ret_dict',str(e),sql,paramentros)
+                #tb = traceback.format_exc()
+                #self.log.err( tb )
+                time.sleep(1)
+                ret={}
+            self.cursor_liberar()     
+        
         return ret
 
     def ejecutar_sql_ret_cursor(self,sql,paramentros=None): #renombrar en el futuro como ret_all
@@ -731,17 +731,20 @@ class Acceso_DB:
 
 
     def ejecutar_sql_ret_1_valor(self,sql,paramentros=None):
-        self.cursor_obtener()
-        try:
-            self.cursor.execute(sql,paramentros)
-            ret = self.cursor.fetchone()[0]    
-        except Exception as e:
-            self.log.err(  'error: ejecutar_sql_ret_1_valor',e,sql,paramentros)
-            #tb = traceback.format_exc()
-            #self.log.err( tb )
-            ret = None
-            time.sleep(1)
-        self.cursor_liberar()  
+        while True:
+            self.cursor_obtener()
+            try:
+                self.cursor.execute(sql,paramentros)
+                ret = self.cursor.fetchone()[0]    
+                break
+            except Exception as e:
+                self.log.err(  'error: ejecutar_sql_ret_1_valor',e,sql,paramentros)
+                #tb = traceback.format_exc()
+                #self.log.err( tb )
+                ret = None
+                time.sleep(1)
+            self.cursor_liberar()  
+        
         return ret
 
     

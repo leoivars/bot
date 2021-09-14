@@ -9,7 +9,7 @@ import time
 
 import gc
 
-def materializar_pares_desde_db(inico,log:Logger,db:Acceso_DB,conn:Conexion_DB,e:VariablesEstado,mercado,client):
+def materializar_pares_desde_db(inico,log:Logger,db:Acceso_DB,conn,e:VariablesEstado,mercado,client):
 
     log.log('materializar_pares_desde_db.ini',inico)
     #poner_pares_control_en_falso, luego si está query pasa a verdadero

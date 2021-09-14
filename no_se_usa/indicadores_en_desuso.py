@@ -1731,22 +1731,7 @@ def stoploss_emas_escalas_minimos(self,escala):
         return ret
     
 
-    def pendientes_ema(self,escala,periodos,cpendientes):
-        
-        ret=[]
-        try:
-            close=self.mercado.get_vector_np_close (self.par,escala,max(periodos,cpendientes) + 10 )
-            vema=talib.EMA(close, timeperiod=periodos)
-            l=vema.size-1
-            unidad=vema[l-1]
-            for i in range(l-cpendientes,l):
-                m= round(   (vema[i] - vema[i-1]) /unidad ,8)
-                ret.append(m) 
-                #print(close[i],vema[i])
-        except Exception as e: 
-            self.log.err(str(e))       
-
-        return ret    
+  
     def compara_emas1(self,escala,periodos,cant_emas):
         ''' retorna un vector con la diferencias de la ema actual
         menos la ema anterior. Si el valor es positivo, esta subiendo 
@@ -2463,7 +2448,22 @@ def rango_ema(self,escala,periodos,prango_max=2,cvelas=None):
                     ret = True
         return ret  
     
+   def pendientes_ema(self,escala,periodos,cpendientes):
         
+        ret=[]
+        try:
+            close=self.mercado.get_vector_np_close (self.par,escala,max(periodos,cpendientes) + 10 )
+            vema=talib.EMA(close, timeperiod=periodos)
+            l=vema.size-1
+            unidad=vema[l-1]
+            for i in range(l-cpendientes,l):
+                m= round(   (vema[i] - vema[i-1]) /unidad ,8)
+                ret.append(m) 
+                #print(close[i],vema[i])
+        except Exception as e: 
+            self.log.err(str(e))       
+
+        return ret          
                 
 
 

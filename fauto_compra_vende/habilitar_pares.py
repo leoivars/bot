@@ -1,3 +1,4 @@
+from logger import Logger
 from time import time
 from variables_globales import VariablesEstado
 from acceso_db import Acceso_DB
@@ -14,7 +15,9 @@ def habilitar_deshabilitar_pares(g:VariablesEstado,db:Acceso_DB):
         db.deshabilitar_pares_sin_trades()
 
 
-def habilitar_deshabilitar_pares_periodicamente(g:VariablesEstado,db:Acceso_DB):
+def habilitar_deshabilitar_pares_periodicamente(g:VariablesEstado,conn):
+    log = Logger('habilitar_deshabilitar.log')
+    db:Acceso_DB = Acceso_DB(log,conn.pool)
     while g.trabajando:
         habilitar_deshabilitar_pares(g,db)
         time.sleep(300)     

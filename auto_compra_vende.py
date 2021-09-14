@@ -40,12 +40,12 @@ except:
     cuenta_de_reinicios=0
     inicio_funcionamiento = datetime.now()   
 
-_thread.start_new_thread( habilitar_deshabilitar_pares_periodicamente, (e,hpdb) )       # habilitador de pares
+_thread.start_new_thread( habilitar_deshabilitar_pares_periodicamente, (e,conn) )       # habilitador de pares
 
 materializar_pares_desde_db(True,log,hpdb,conn,e,mercado,client)     #materializacion inicial de pares
 
 ti_mail = Controlador_De_Tiempo(14400)           #para enviar mails periódicamente
-reporte_correo(log,conn,e,mercado,inicio_funcionamiento,cuenta_de_reinicios)                       #mail al inicio, situación de arranque    
+reporte_correo(log,hpdb,e,mercado,inicio_funcionamiento,cuenta_de_reinicios)                       #mail al inicio, situación de arranque    
 
 while e.trabajando:                              #bucle princpipal 
     try:
@@ -55,7 +55,7 @@ while e.trabajando:                              #bucle princpipal
         mostrar_informacion(e,log)
 
         if ti_mail.tiempo_cumplido():
-            reporte_correo()
+            reporte_correo(log,hpdb,e,mercado,inicio_funcionamiento,cuenta_de_reinicios) 
             #ti_mail.intervalo += 60 #voy subiendo para darle cada vez menos bola
 
         materializar_pares_desde_db(False,log,hpdb,conn,e,mercado,client)

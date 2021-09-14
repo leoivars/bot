@@ -9,8 +9,8 @@ from numpy import isnan
 
 class ActualizadorInfoPar:
     
-    def __init__(self,conn, oe,log):
-        self.db  : Acceso_DB = Acceso_DB(log,conn.pool)
+    def __init__(self,db:Acceso_DB, oe,log):
+        self.db  : Acceso_DB = db  # Acceso_DB(log,conn.pool)
         self.oe  : OrdenesExchange = oe
         self.oe.prioridad = 0 #hace  se meta al final de la cola
         self.log = log
