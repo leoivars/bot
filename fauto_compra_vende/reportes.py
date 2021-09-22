@@ -72,7 +72,6 @@ def reporte_correo(log:Logger,db:Acceso_DB,e:VariablesEstado,mercado:Mercado,ini
 
 def reporte_de_ciclo(e:VariablesEstado,mercado:Mercado,inicio_funcionamiento,cuenta_de_reinicios):
     reporte= linea ('T.Func:', calc_tiempo(inicio_funcionamiento,datetime.now()),' Reinicios:',cuenta_de_reinicios,'\n')
-    reporte+=linea('..M:',memoria_consumida(),'GB CPU=',cpu_utilizada(),'.e49s.','\n')
     #cola = IndPool.estado_cola()
     #demora = IndPool.demora_cola()
     #demora_de_cola = int(cola * demora)
@@ -80,5 +79,8 @@ def reporte_de_ciclo(e:VariablesEstado,mercado:Mercado,inicio_funcionamiento,cue
     reporte+=linea('::PARES activos',len(e.pares),'max',e.max_pares_activos,'BTCUSDT',round(mercado.precio('BTCUSDT','1m'),2),'\n' )
     #if demora_de_cola > 60:
     #    IndPool.loggeame_la_cola() #hay que mirar el log del pool de indicadores para ver este logueo.
+    
+    
+    reporte+=linea('..M:',memoria_consumida(),'GB CPU=',cpu_utilizada(),'.e49s.','\n')
     return reporte
 

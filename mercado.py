@@ -1,6 +1,7 @@
 # # -*- coding: UTF-8 -*-
 # pragma pylint: disable=no-member
 
+from vela import Vela
 from velaset import VelaSet
 from binance.client import Client
 import time
@@ -174,6 +175,14 @@ class Mercado:
         except:
             px = -1
         return px 
+
+    def vela(self,par,escala,posicion):
+        try:
+            vs: VelaSet = self.get_velaset(par,escala)
+            ret:Vela = vs.get_vela(posicion)
+        except:
+            ret = None
+        return ret    
 
 
 

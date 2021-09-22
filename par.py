@@ -949,16 +949,17 @@ class Par:
         exito=False
         if self.ultima_orden['orderId']>0:       
             orden = self.oe.cancelar_orden(self.ultima_orden['orderId']) # Si fracasa el cancelar hago esfuerzo por cancelar todo
-            exito = self.procesar_orden_cancelada(orden)
+            
+            #exito = self.procesar_orden_cancelada(orden)
 
-            if exito:
-                self.ultima_orden={'orderId':0}#orden nula
-            else:
-                pass     
+            #if exito:
+            #    self.ultima_orden={'orderId':0}#orden nula
+            #else:
+            #    pass     
                 #self.db.set_no_habilitar_hasta(self.calcular_fecha_futura(1440),self.moneda,self.moneda_contra)
                 #self.detener()
 
-        return exito # verdadero si hubo exito en cancelar
+        return True #exito # verdadero si hubo exito en cancelar
     
     
     
@@ -1025,7 +1026,11 @@ class Par:
 
     def crear_orden_venta_limit(self,cantidad,precio):
         ret,self.ultima_orden = self.oe.crear_orden_venta_limit(cantidad,precio)
-        return ret                
+        return ret 
+
+    def crear_orden_venta_market(self,cantidad):
+        ret,self.ultima_orden = self.oe.crear_orden_venta_market(cantidad)
+        return ret                    
 
 
     # ORDER_STATUS_NEW = 'NEW'
@@ -2000,8 +2005,8 @@ class Par:
         
         #if self.filtro_ema_rapida_lenta(self.g.zoom_out(escala,1), 50,200, 0.01):
         rsi_inf = self.determinar_rsi_minimo_para_comprar(escala)
-        if  self.filtro_de_rsi_minimo_cercano(escala, rsi_inf  ,pos_rsi_inferior=(1,2),max_rsi=60):
-            if self.filtro_volumen_calmado():
+        if  self.filtro_de_rsi_minimo_cercano(escala, rsi_inf  ,pos_rsi_inferior=(1,5),max_rsi=60):
+            if self.filtro_volumen_calmado(escala,3):
                 ret = [True,escala,'buscar_rsi_bajo']
 
         self.log.log('----------------------')    
@@ -2111,18 +2116,26 @@ class Par:
         
         gan_min = calc_ganancia_minima(self.g,0.5,self.escala_de_analisis,duracion_trade)
         self.log.log(f'gan_min {gan_min}   gan {gan}')
-        if gan < gan_min:
+        if gan < 2:
             return False
 
         ind: Indicadores =self.ind
             
-        if ind.rsi(escala)>65 and self.filtro_volumen_calmado(self.escala_de_analisis):
-            self.log.log('rsi escala >65 , volumen_cammado')
+        if ind.rsi(escala)>80 and gan>gan_min: ## and self.filtro_volumen_calmado(self.escala_de_analisis):
+            self.log.log('rsi escala >80')
+            return True  
+        
+        if ind.rsi(escala)>65  and self.filtro_volumen_calmado(self.escala_de_analisis,2):
+            self.log.log('rsi escala >65 , volumen_calmado 2')
             return True
 
-        esc_inf = self.g.zoom(escala,1)
-        if ind.rsi(esc_inf)>90:
-            self.log.log(f'rsi escala inf({esc_inf}) >90')
+        if ind.rsi(escala)>50  and ind.no_sube(self.escala_de_analisis) and self.filtro_volumen_calmado(self.escala_de_analisis,3):
+            self.log.log('rsi escala >50 ,no_sube ,volumen_calmado 3')
+            return True
+
+        esc_sup = self.g.zoom(escala,1)
+        if ind.rsi(esc_sup)>90:
+            self.log.log(f'rsi escala inf({esc_sup}) >90')
             return True
 
         if 'buscar_ema_positiva' in self.senial_entrada:            
@@ -2157,10 +2170,10 @@ class Par:
         self.log.log(f'    maximo en {pmaximo}, velas en subida {velas_subida}')
         return filtro_ok
 
-    def filtro_volumen_calmado(self,escala):
+    def filtro_volumen_calmado(self,escala,cvelas):
         ind: Indicadores =self.ind
-        filtro_ok = ind.volumen_calmado(escala)
-        self.log.log(f'{filtro_ok} <--ok_filtro_volumen_calmado')
+        filtro_ok = ind.volumen_calmado(escala,cvelas)
+        self.log.log(f'{filtro_ok} <--ok_filtro_volumen_calmado  cvelas {cvelas}')
         return filtro_ok   
 
     def filtro_rsi_mayor(self,escala,rsi_mayor_que=50):
@@ -4429,11 +4442,11 @@ class Par:
             self.log.err('ERROR--> vender positivo activado y self.precio_venta < self.precio_salir_derecho')
             return False
 
-
         ret=False
         self.log.log(  "Vender:", self.cant_moneda_compra, "precio:",self.precio_venta )
         if self.monto_moneda_contra_es_suficiente_para_min_motional(self.cant_moneda_compra,self.precio_venta):
-            resultado=self.crear_orden_venta_limit(self.cant_moneda_compra,self.precio_venta) ## aca hay que ver bien cual es la cantidad de moneda que se vende, por ahora self.cant_moneda_compra que sería la misma cantidad que compré
+            #resultado=self.crear_orden_venta_limit(self.cant_moneda_compra,self.precio_venta) ## aca hay que ver bien cual es la cantidad de moneda que se vende, por ahora self.cant_moneda_compra que sería la misma cantidad que compré
+            resultado=self.crear_orden_venta_market(self.cant_moneda_compra)          ## aca hay que ver bien cual es la cantidad de moneda que se vende, por ahora self.cant_moneda_compra que sería la misma cantidad que compré
             if resultado !='OK': # hay algo que no podemos manejar
                 self.log.err("estado_4_orden_vender error:",resultado)
                 self.enviar_correo_error('ERR VTA EST 4')

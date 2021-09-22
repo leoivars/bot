@@ -53,7 +53,7 @@ class Mercado_Actualizador_Socket(Thread):
         while True:
             try:
                 ws = create_connection("wss://stream.binance.com:9443/ws")       
-                ws.settimeout(59)
+                ws.settimeout(300)
                 self.log.log('conectado',str(ws)) 
                 break
             except Exception as e:
@@ -66,7 +66,7 @@ class Mercado_Actualizador_Socket(Thread):
             result =  self.ws.recv()
             self.procesar_recibido(result) 
         except  Exception as e:
-            self.log.log('error recibir()', str(e))
+            self.log.log('recibir()', str(e))
             self.renovar_conexion()
 
     def renovar_conexion_fea(self):

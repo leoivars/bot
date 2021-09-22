@@ -79,7 +79,7 @@ class Indicadores:
         #self.lock_actualizador= Lock()
         self.prioridad = 0
         
-        self.mercado = mercado
+        self.mercado:Mercado = mercado
 
         self.cache={}
 
@@ -193,6 +193,14 @@ class Indicadores:
             v=vs.get_vela(i)
 
             self.log.log(i, v.open, v.high, v.low, v.close, v.volume, v.open_time, v.close_time)
+
+    def no_sube(self,escala):
+        v1:Vela = self.mercado.vela(self.par,escala,-1)
+        v0:Vela = self.mercado.vela(self.par,escala,-2)
+        ret = False
+        if not v0 is None and not v1 is None:
+            ret = v0.close > v1.close and v0.high > v1.high
+        return ret    
 
     def rsi_contar_picos_minimos(self,escala,cvelas,menor_de):
         ''' cuanta la cantidad de picos minimos desde el final por cvelas 
@@ -379,33 +387,26 @@ class Indicadores:
 
         return    ret
     
-    def volumen_calmado(self,escala):
-        ''' considera calmado al volumen de ultima vela cerrada
-            si se encuentra por debajo del promedio
+    def volumen_calmado(self,escala,cvelas=1):
+        ''' considera calmado al volumen de las ultimas cvela cerradas
+            si se encuentran por debajo del promedio
         '''
-        df=self.mercado.get_panda_df(self.par, escala, 90) #self.velas[escala].panda_df(cvelas + 60)
+        df=self.mercado.get_panda_df(self.par, escala, 90)     #self.velas[escala].panda_df(cvelas + 60)
         df_ema=ta.ma('ma',df['Volume'],length=20)
         
-        if df.iloc[-1]["closed"]:
-            i = -1
-        else:
-            i= -2
-        ret =  df.iloc[i]["Volume"] < df_ema.iloc[i]
-
-        #self.log.log(f'vol {df.iloc[i]["Volume"]} < ema-vol {df_ema.iloc[i]}') 
-        return ret
+        ivela = -1    #indice para recorrer en forma negativa
+        ic=0          #velas cerradas
+        calmado=True
+        while ic < cvelas:
+            if df.iloc[ivela]["closed"]:
+                if df.iloc[ivela]["Volume"] > df_ema.iloc[ivela]:
+                    calmado = False
+                    break
+                ic +=1    
+            ivela -= 1
         
-
-
-    
-
-
-    
-    
-
-    
-
-   
+        return calmado
+        
     
     def busca_pico_loma_hist(self,hist,high,low,psigno_loma,principio,velas_minimas_de_la_loma=5):
         ''' Busca la posición de la prime loma del histograma del macd que cumpla con el sigo + o - según psigno_loma y que tenga

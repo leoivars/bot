@@ -2,8 +2,10 @@ from variables_globales import VariablesEstado
 def calc_ganancia_minima(g:VariablesEstado,ganancia_inicial,escala,tiempo_trade):
     #proporcional a lo minimo ganado en un minuto
     ganancia= g.escala_ganancia[escala]
-    #ganancia_por_tiempo =  g.escala_ganancia['1M'] / g.escala_tiempo)                  * tiempo_trade
-    #ganancia_minima=max(ganancia,ganancia_por_tiempo)
-    #?
+
+    if tiempo_trade > g.escala_tiempo[escala] * 30  + 7200:    # ha pasado mucho tiempo, quiere decir que no subió lo que se pensaba
+        ganancia = ganancia * .3                               # bajamos la ganancia para vender
+
+    
     return ganancia 
 

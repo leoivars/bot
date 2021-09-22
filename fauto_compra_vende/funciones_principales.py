@@ -22,7 +22,7 @@ def esperar_correcto_funcionamiento(client:Client,e:VariablesEstado,log:Logger):
     # esperamos el corremto funcionamiento del systema
     
     while True:
-        
+        log.log( 'esperar_correcto_funcionamiento' )
         try:
             if client.get_system_status() ['status']==0:
                 print('Sistema OK. Comenzamos!')
