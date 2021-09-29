@@ -20,25 +20,24 @@ def crear_cliente(pws):
 
 def esperar_correcto_funcionamiento(client:Client,e:VariablesEstado,log:Logger):
     # esperamos el corremto funcionamiento del systema
-    
+   
     while True:
-        log.log( 'esperar_correcto_funcionamiento' )
+        
         try:
             if client.get_system_status() ['status']==0:
                 print('Sistema OK. Comenzamos!')
                 e.se_puede_operar = True
                 break
             else:
-                print('Sistema en mantenimiento...')
+                log.err('Sistema en mantenimiento...')
                 t=300
                 e.se_puede_operar = False
         except:
-            print('no responde client.get_system_status()...')
+            log.err('no responde client.get_system_status()...')
             t=10
 
         time.sleep(t)
-    e.se_puede_operar = True
-    log.log( 'todo ok, se puede operar' )    
+    e.se_puede_operar = True  
 
 def controlar_estado0(e:VariablesEstado,log:Logger):
      # detener inactivos
