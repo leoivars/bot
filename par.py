@@ -2129,7 +2129,7 @@ class Par:
             self.log.log('rsi escala >65 , volumen_calmado 2')
             return True
 
-        if ind.rsi(escala)>50  and ind.no_sube(self.escala_de_analisis) and self.filtro_volumen_calmado(self.escala_de_analisis,3):
+        if ind.rsi(escala)>55  and ind.no_sube(self.escala_de_analisis) and self.filtro_volumen_calmado(self.escala_de_analisis,3):
             self.log.log('rsi escala >50 ,no_sube ,volumen_calmado 3')
             return True
 
