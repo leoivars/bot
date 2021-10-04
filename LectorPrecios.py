@@ -58,7 +58,7 @@ class LectorPrecios:
 
     def  valor_usdt(self, cantidad,par):
 
-        pxpar=self.tomar_precio(par)
+        pxpar = self.tomar_precio(par)
         if par.endswith('USDT') or par.endswith('PAX') or par.endswith('DAI'):
             px=1    
         elif par.endswith('BTC'):

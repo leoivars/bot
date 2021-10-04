@@ -819,9 +819,9 @@ class Par:
     
 
     def calculo_ganancias_usdt(self,pxcompra,pxventa,cantidad):
-        comision=pxcompra*cantidad*self._fee
-        comision+=pxventa*cantidad*self._fee
-        cant_final=cantidad *(pxventa - pxcompra) - comision 
+        comision = pxcompra * cantidad * self._fee
+        comision += pxventa * cantidad * self._fee
+        cant_final = cantidad * (pxventa - pxcompra) - comision 
         return Par.lector_precios.valor_usdt(cant_final,self.moneda_contra+'USDT')
 
     def calculo_ganancias_moneda_contra(self,pxcompra,pxventa,cantidad):
@@ -1933,11 +1933,14 @@ class Par:
         # ya se ha superado la cantidad máxima de  pares con trades, solo esperamos.
         if self.db.trades_cantidad_de_pares_con_trades() >= self.g.maxima_cantidad_de_pares_con_trades and\
            self.db.trades_cantidad(self.moneda,self.moneda_contra) == 0:
+            self.log.log(f'maxima_cantidad_de_pares_con_trades superada')   
             return False 
 
         comprar= False
         entradas = self.db.trades_cantidad(self.moneda,self.moneda_contra)
-        if entradas < len(self.temporalidades):  
+        cant_temporalidades = len(self.temporalidades)
+        self.log.log(f'entradas {entradas}, cant.temporalidades {cant_temporalidades}')
+        if entradas < cant_temporalidades:  
             if not comprar: # and self.moneda=='BTC' or self.moneda=='BTCDOWN' or self.moneda=='BTCUP': 
                 escalas_a_probar = self.entradas_a_escalas(self.temporalidades,entradas)
                 self.log.log(f'escala {escalas_a_probar}')
@@ -2060,22 +2063,24 @@ class Par:
     def determinar_rsi_minimo_para_comprar(self,escala):
         ind: Indicadores =self.ind
         esc_sup = self.g.zoom_out(escala,1)
-        ema5, difp5,pendr5,pendl5 = ind.ema_rapida_mayor_lenta2( esc_sup , 50,200,0.05) # en temporalidad superior está alcista
-        self.log.log(f'ema {esc_sup}: {ema5}, dif {difp5},pendr {pendr5},pendl {pendl5}')
-        ema1, difp1,pendr1,pendl1 = ind.ema_rapida_mayor_lenta2( escala, 20,50,0.5,pendientes_positivas=True) 
-        self.log.log(f'ema {escala}: {ema1}, dif {difp1},pendr {pendr1},pendl {pendl1}')
-        if ema5:
+        rsi_sup = ind.rsi(esc_sup)
+        #ema5, difp5,pendr5,pendl5 = ind.ema_rapida_mayor_lenta2( esc_sup , 10,50,0.05) # en temporalidad superior está alcista
+        #self.log.log(f'ema {esc_sup}: {ema5}, dif {difp5},pendr {pendr5},pendl {pendl5}')
+        ema1, difp1,pendr1,pendl1 = ind.ema_rapida_mayor_lenta2( escala, 20,50,0.5,pendientes_positivas=False) 
+        self.log.log(f'ema {escala}: {ema1}, dif {difp1},pendr {pendr1},pendl {pendl1} rsi_sup {rsi_sup}')
+        if 50 < rsi_sup <= 70:
             if ema1:
-                ret = 45 
+                ret = 56
             else:
                 ret = 30
-        else:
+        elif 35 < rsi_sup <= 50:
             if ema1:
-                ret = 35
-            else:
-                ret = 23
+                ret = 53 
+            else: 
+                ret = 25
+        else: 
+            ret = 23             
         return ret        
-
 
     def calc_rsi_inferior(self,escala,emas_ok):
         ind: Indicadores =self.ind
@@ -2130,7 +2135,7 @@ class Par:
             return True
 
         if ind.rsi(escala)>55  and ind.no_sube(self.escala_de_analisis) and self.filtro_volumen_calmado(self.escala_de_analisis,3):
-            self.log.log('rsi escala >50 ,no_sube ,volumen_calmado 3')
+            self.log.log('rsi escala >55 ,no_sube ,volumen_calmado 3')
             return True
 
         esc_sup = self.g.zoom(escala,1)
