@@ -387,9 +387,10 @@ class Indicadores:
 
         return    ret
     
-    def volumen_calmado(self,escala,cvelas=1):
-        ''' considera calmado al volumen de las ultimas cvela cerradas
-            si se encuentran por debajo del promedio
+    def volumen_calmado(self,escala,cvelas=1,coef_volumen=1):
+        ''' considera calmado al volumen  de las ultimas cvela cerradas
+            si se encuentran por debajo del (promedio * coef_volumen)
+            puedo usar a coef_volumen para disminuir aumentar el  promedio
         '''
         df=self.mercado.get_panda_df(self.par, escala, 90)     #self.velas[escala].panda_df(cvelas + 60)
         df_ema=ta.ma('ma',df['Volume'],length=20)
@@ -399,7 +400,7 @@ class Indicadores:
         calmado=True
         while ic < cvelas:
             if df.iloc[ivela]["closed"]:
-                if df.iloc[ivela]["Volume"] > df_ema.iloc[ivela]:
+                if df.iloc[ivela]["Volume"] * coef_volumen > df_ema.iloc[ivela]:
                     calmado = False
                     break
                 ic +=1    

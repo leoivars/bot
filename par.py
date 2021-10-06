@@ -2008,8 +2008,8 @@ class Par:
         
         #if self.filtro_ema_rapida_lenta(self.g.zoom_out(escala,1), 50,200, 0.01):
         rsi_inf = self.determinar_rsi_minimo_para_comprar(escala)
-        if  self.filtro_de_rsi_minimo_cercano(escala, rsi_inf  ,pos_rsi_inferior=(1,5),max_rsi=60):
-            if self.filtro_volumen_calmado(escala,3):
+        if  self.filtro_de_rsi_minimo_cercano(escala, rsi_inf  ,pos_rsi_inferior=(1,2),max_rsi=60):
+            if self.filtro_volumen_calmado(escala, 2 , 0.9):
                 ret = [True,escala,'buscar_rsi_bajo']
 
         self.log.log('----------------------')    
@@ -2175,9 +2175,9 @@ class Par:
         self.log.log(f'    maximo en {pmaximo}, velas en subida {velas_subida}')
         return filtro_ok
 
-    def filtro_volumen_calmado(self,escala,cvelas):
+    def filtro_volumen_calmado(self,escala,cvelas,coef_volumen):
         ind: Indicadores =self.ind
-        filtro_ok = ind.volumen_calmado(escala,cvelas)
+        filtro_ok = ind.volumen_calmado(escala,cvelas,coef_volumen)
         self.log.log(f'{filtro_ok} <--ok_filtro_volumen_calmado  cvelas {cvelas}')
         return filtro_ok   
 
