@@ -1,8 +1,8 @@
 from binance.client import Client
 from variables_globales import VariablesEstado
 from logger import Logger
-from time import time
 from datetime import datetime
+import time
 
 def crear_cliente(pws):
     client = None

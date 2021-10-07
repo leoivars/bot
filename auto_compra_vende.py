@@ -49,7 +49,6 @@ reporte_correo(log,hpdb,e,mercado,inicio_funcionamiento,cuenta_de_reinicios)    
 
 while e.trabajando:                              #bucle princpipal 
     try:
-        
         mostrar_informacion(e,log)
 
         if ti_mail.tiempo_cumplido():
@@ -60,17 +59,18 @@ while e.trabajando:                              #bucle princpipal
         controlar_estado0(e,log)
         
         log.log( reporte_de_ciclo(e,mercado,inicio_funcionamiento,cuenta_de_reinicios) )
-       
+
+        time.sleep(49)
+        esperar_correcto_funcionamiento(client,e,log)
+    
+        # si trabajando en config.json = 0, hace un shutdown
+        log.log('cargar_configuraciones_json')
+        e.cargar_configuraciones_json()
+
     except Exception as ex:
         log.log('Error', str(ex))   
 
-    time.sleep(49)
-    esperar_correcto_funcionamiento(client,e,log)
     
-    # si trabajando en config.json = 0, hace un shutdown
-    log.log('cargar_configuraciones_json')
-    e.cargar_configuraciones_json()
-
 log.log("Cerrando todo...")
 esperar_a_que_todos_mueran(e,log)
 log.log('FIN - FIN - Me morí.')
