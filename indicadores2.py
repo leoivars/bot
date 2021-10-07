@@ -386,6 +386,42 @@ class Indicadores:
         self.cache_add( (escala,cvelas),ret )
 
         return    ret
+
+    def rsi_maximo_y_pos(self,escala,cvelas):
+        ''' retorna el rsi maximo de las c velas, su posición y el rsi actual
+        '''
+        df=self.mercado.get_panda_df(self.par, escala, cvelas + 90) #self.velas[escala].panda_df(cvelas + 60)
+        rsi = df.ta.rsi()
+      
+        maximo = 0
+        l=len(rsi)
+        mi = 0
+        
+        try:
+            lneg = l * -1
+            i = -1
+            maximo = rsi.iloc[-1]
+            mi = 1
+            cvel = 1
+            # print(f'if {rsi.iloc[-2]} < {rsi.iloc[-1]}:')
+            while i > lneg:
+                i -= 1
+                cvel += 1
+                if cvel > cvelas:
+                    break
+                # print(f'if {rsi.iloc[i-1]} > {rsi.iloc[i]}:')
+                if rsi.iloc[i] > maximo:
+                    mi = i
+                    maximo = rsi.iloc[i]
+            
+        except Exception as e:
+            self.log.log(str(e)) 
+
+        ret =  (maximo,mi*-1,rsi.iloc[-1])    
+        self.cache_add( (escala,cvelas),ret )
+
+        return    ret
+        
     
     def volumen_calmado(self,escala,cvelas=1,coef_volumen=1):
         ''' considera calmado al volumen  de las ultimas cvela cerradas

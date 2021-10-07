@@ -2125,16 +2125,22 @@ class Par:
             return False
 
         ind: Indicadores =self.ind
-            
-        if ind.rsi(escala)>80 and gan>gan_min: ## and self.filtro_volumen_calmado(self.escala_de_analisis):
+
+        rsi_max,rsi_max_pos,rsi = ind.rsi_maximo_y_pos(escala,3)
+
+        if rsi > 70 and rsi_max>=rsi and rsi_max_pos < 3: 
+            self.log.log('pico rsi >70')
+            return True
+
+        if rsi > 80 and gan>gan_min: ## and self.filtro_volumen_calmado(self.escala_de_analisis):
             self.log.log('rsi escala >80')
             return True  
         
-        if ind.rsi(escala)>65  and self.filtro_volumen_calmado(self.escala_de_analisis,2):
+        if rsi > 65  and self.filtro_volumen_calmado(escala,2):
             self.log.log('rsi escala >65 , volumen_calmado 2')
             return True
 
-        if ind.rsi(escala)>55  and ind.no_sube(self.escala_de_analisis) and self.filtro_volumen_calmado(self.escala_de_analisis,3):
+        if rsi > 55  and ind.no_sube(escala) and self.filtro_volumen_calmado(escala,3):
             self.log.log('rsi escala >55 ,no_sube ,volumen_calmado 3')
             return True
 
@@ -2175,7 +2181,7 @@ class Par:
         self.log.log(f'    maximo en {pmaximo}, velas en subida {velas_subida}')
         return filtro_ok
 
-    def filtro_volumen_calmado(self,escala,cvelas,coef_volumen):
+    def filtro_volumen_calmado(self,escala,cvelas,coef_volumen=1):
         ind: Indicadores =self.ind
         filtro_ok = ind.volumen_calmado(escala,cvelas,coef_volumen)
         self.log.log(f'{filtro_ok} <--ok_filtro_volumen_calmado  cvelas {cvelas}')
