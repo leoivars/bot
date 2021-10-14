@@ -5,13 +5,14 @@ import time
 
 class Logger:
     
-    def __init__(self, nombrearchivolog=None,dirlog="./logs/"):
+    def __init__(self, nombrearchivolog=None,dirlogs="./logs/"):
         self.loguear= nombrearchivolog != None
-        self.nlog=dirlog+nombrearchivolog
+        self.dirlogs = dirlogs
+        self.nombrearchivolog = nombrearchivolog
+        self.nlog=dirlogs+nombrearchivolog
         self.log_level=2
         self.__ultimas_lineas__=[]
         self.horario_actualizado=time.time()
-        
 
     def __del__(self):
         for l in  self.__ultimas_lineas__:

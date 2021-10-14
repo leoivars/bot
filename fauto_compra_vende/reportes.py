@@ -1,4 +1,5 @@
 
+from fauto_compra_vende.reporte_resumen_errores import reporte_resumen_errores
 from mercado import Mercado
 from variables_globales import VariablesEstado
 from acceso_db import Acceso_DB
@@ -38,6 +39,8 @@ def reporte_de_muerte(log):
 def reporte_correo(log:Logger,db:Acceso_DB,e:VariablesEstado,mercado:Mercado,inicio_funcionamiento,cuenta_de_reinicios):
     
     reporte  = reporte_de_ciclo(e,mercado,inicio_funcionamiento,cuenta_de_reinicios) +'\n'
+
+    reporte += reporte_resumen_errores()
     
     reporte += reporte_de_inactivos(e) +'\n' #reporto pares inactivos por mas de 30 minutos (1800 s)
 
@@ -57,7 +60,7 @@ def reporte_correo(log:Logger,db:Acceso_DB,e:VariablesEstado,mercado:Mercado,ini
     anio = hoy.year
     
     #reporte de meses anteriores
-    for _ in range(0,24):
+    for _ in range(0,6):
         reporte += ' *********** Mes ' + str(mes) + ' Año ' + str(anio)  +'************\n' 
         reporte += rep.reporte(mes,anio)  +'\n'
         mes -= 1
