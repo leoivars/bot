@@ -1792,11 +1792,6 @@ class Par:
             #comprar=self.super_decision_de_compra()
             comprar=self.super_decision_de_compra()
 
-        
-        if comprar:
-            self.e7_filtros_superados+=1
-            comprar=self.filtro_rsi(self.escala_de_analisis,85)    
-        
        
         self.log.log( f'{comprar}<--comprar solo señares {solo_senial}')
         self.imprimir_mini_estado_par_en_compra()    
@@ -2062,24 +2057,28 @@ class Par:
 
     def determinar_rsi_minimo_para_comprar(self,escala):
         ind: Indicadores =self.ind
-        esc_sup = self.g.zoom_out(escala,1)
-        rsi_sup = ind.rsi(esc_sup)
+        #esc_sup = self.g.zoom_out(escala,1)
+        rsi_sup = ind.rsi('1d')
         #ema5, difp5,pendr5,pendl5 = ind.ema_rapida_mayor_lenta2( esc_sup , 10,50,0.05) # en temporalidad superior está alcista
         #self.log.log(f'ema {esc_sup}: {ema5}, dif {difp5},pendr {pendr5},pendl {pendl5}')
-        ema1, difp1,pendr1,pendl1 = ind.ema_rapida_mayor_lenta2( escala, 20,50,0.5,pendientes_positivas=False) 
-        self.log.log(f'ema {escala}: {ema1}, dif {difp1},pendr {pendr1},pendl {pendl1} rsi_sup {rsi_sup}')
+        ema, difp,pendr,pendl = ind.ema_rapida_mayor_lenta2( '1d', 10,50,0.5,pendientes_positivas=True) 
+        self.log.log(f'ema {escala}: {ema}, dif {difp},pendr {pendr},pendl {pendl} rsi_sup {rsi_sup}')
         if 50 < rsi_sup <= 70:
-            if ema1:
-                ret = 56
+            if ema and pendr > 0 and pendl > 0:
+                ret = 40
             else:
-                ret = 30
+                ret = 35
         elif 35 < rsi_sup <= 50:
-            if ema1:
-                ret = 53 
+            if ema:
+                ret = 30 
             else: 
-                ret = 25
+                ret = 27
         else: 
-            ret = 23             
+            ret = 25       
+
+        if not ema: # la cosa está bajista solo compro con caidas muy pronunciadas
+            ret -= 10
+
         return ret        
 
     def calc_rsi_inferior(self,escala,emas_ok):
@@ -2118,35 +2117,43 @@ class Par:
 
     def filtro_ema_rapida_lenta_para_salir(self,escala,gan,duracion_trade):
         self.log.log(f'senial de entrada {self.senial_entrada}')
-        
+        ind: Indicadores =self.ind
         gan_min = calc_ganancia_minima(self.g,0.5,self.escala_de_analisis,duracion_trade)
-        self.log.log(f'gan_min {gan_min}   gan {gan}')
-        if gan < 2:
+        precio_bajista = self.el_precio_es_bajista('1d')
+        precio_no_sube = ind.no_sube(escala)
+        self.log.log(f'gan_min {gan_min} gan {gan} px_bajista {precio_bajista} px_no_sube {precio_no_sube}')
+        
+        if gan < 0.3:
+            return False
+        elif gan < gan_min and not precio_bajista:
             return False
 
-        ind: Indicadores =self.ind
-
-        rsi_max,rsi_max_pos,rsi = ind.rsi_maximo_y_pos(escala,3)
-
-        if rsi > 70 and rsi_max>=rsi and rsi_max_pos < 3: 
-            self.log.log('pico rsi >70')
-            return True
+        rsi_max,rsi_max_pos,rsi = ind.rsi_maximo_y_pos(escala,4)
+        self.log.log(f'rsi {rsi} rsi_max {rsi_max} rsi_max_pos {rsi_max_pos}')
 
         if rsi > 80 and gan>gan_min: ## and self.filtro_volumen_calmado(self.escala_de_analisis):
-            self.log.log('rsi escala >80')
-            return True  
-        
-        if rsi > 65  and self.filtro_volumen_calmado(escala,2):
-            self.log.log('rsi escala >65 , volumen_calmado 2')
+            self.log.log('*** rsi escala >80')
             return True
 
-        if rsi > 55  and ind.no_sube(escala) and self.filtro_volumen_calmado(escala,3):
-            self.log.log('rsi escala >55 ,no_sube ,volumen_calmado 3')
+        if rsi > 70 and rsi_max>=rsi and rsi_max_pos <= 3: 
+            self.log.log('*** pico rsi >70')
             return True
+        
+        if rsi > 65  and self.filtro_volumen_calmado(escala,2):
+            self.log.log('*** rsi escala >65 , volumen_calmado 2')
+            return True
+
+        if rsi > 53  and precio_bajista and precio_no_sube:
+            self.log.log('*** rsi escala >53 ,precio_bajista ,ind.no_sube({escala})')
+            return True
+
+        if rsi_max > 45 and rsi_max <3 and precio_bajista and precio_no_sube:
+            self.log.log('*** rsi rsi_max > 45 and rsi_max <3 and precio_bajista and precio_no_sube')
+            return True    
 
         esc_sup = self.g.zoom(escala,1)
         if ind.rsi(esc_sup)>90:
-            self.log.log(f'rsi escala inf({esc_sup}) >90')
+            self.log.log(f'*** rsi escala inf({esc_sup}) >90')
             return True
 
         if 'buscar_ema_positiva' in self.senial_entrada:            
@@ -2158,6 +2165,22 @@ class Par:
         #    salir = self.filtro_pico_maximo_ema_maximos(self.escala_de_analisis,4,1) 
         
         return False 
+
+
+
+
+    def el_precio_es_bajista(self,escala):
+        ''' trato de definir si el precio es bajista cuando el precio es mayor que la ema de 50. 
+        Tratando de evitar la que el resultado sea dudoso ante la compresión de emas (ema 20 muy cerca de ema50) para lo cual uso emas_ok.
+        '''
+        ind: Indicadores = self.ind
+        bajista = True
+        if self.precio > ind.ema(escala,50):
+            emas_ok, diferencia_porcentual,pend_r,pend_l = ind.ema_rapida_mayor_lenta2(escala,20,50,0.5,True)
+            if emas_ok and pend_l >0: 
+                bajista = False
+        
+        return bajista
 
     def filtro_pico_minimo_ma_minimos(self,escala,cvelas_bajada=7,posicion_minimo=1,control_volumen=True):
         ind: Indicadores =self.ind
@@ -3311,7 +3334,7 @@ class Par:
         # PORNER A RECOMPRAR en caso de pérdidas
         # acá  si pasamos cierto umbral de pérdidas, ponemos a recomprar
 
-        if self.momento_de_recomprar(self.escala_de_analisis,gan):
+        if self.momento_de_recomprar(self.escala_de_analisis,gan,duracion_trade):
             #self.enviar_correo_generico(f'RECOMPRA.')
             self.tiempo_reposo = 0
             self.iniciar_estado(7)
@@ -3320,18 +3343,16 @@ class Par:
         self.log.log("FIN E3. Acciones")
 
  
-    def momento_de_recomprar(self,escala,gan):
+    def momento_de_recomprar(self,escala,gan,duracion_trade):
         #gan_atr = round ( atr/self.precio * 100 * self.g.x_neg_patr,2 ) #multiplicador de atr negativo para recomprar cuando se pasa cierta perdida
         self.log.log( f'momento_de_recomprar?  gan {gan}' )
-        recomprar =  gan < -.5
+        recomprar =  gan < -0.31 and duracion_trade > 60
         ret = False            
         if recomprar:
             self.log.log( 'Intento recomprar---> Sí')
             ret =  self.super_decision_de_compra()
         
         return ret     
-
-  
 
     def estado_3_condicones_que_inician_el_stoploss(self,ind,gan,esc_lp,zoom_esc_lp,duracion_trade):
         self.log.log(  "---> condiciones que inician el stoploss --->" )
@@ -4955,7 +4976,7 @@ class Par:
         ganusdt=self.format_valor_truncando(self.calculo_ganancias_usdt(self.precio_compra,self.precio_venta,self.cant_moneda_compra),8)
         gan_moneda_contra=self.format_valor_truncando(self.calculo_ganancias_moneda_contra(self.precio_compra,self.precio_venta,self.cant_moneda_compra),8)
 
-        titulo=self.par+' [Estado '+ str(self.estado)+'] '+sgan+ ' %'
+        titulo=self.par+' [Estado '+ str(self.estado)+'] '+sgan+ f' % {self.escala_de_analisis}'
         texto=titulo+'\n'
         texto+=" Precio Compra: " + self.format_valor_truncando( self.precio_compra,8) + '\n'
         texto+=" Precio  Venta: " + self.format_valor_truncando( self.precio_venta,8) +" "+ sgan+ ' %  '+gan_moneda_contra +' m$c ' +ganusdt +' usdt\n'
