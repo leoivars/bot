@@ -2147,9 +2147,16 @@ class Par:
             self.log.log('*** rsi escala >53 ,precio_bajista ,ind.no_sube({escala})')
             return True
 
-        if rsi_max > 45 and rsi_max <3 and precio_bajista and precio_no_sube:
-            self.log.log('*** rsi rsi_max > 45 and rsi_max <3 and precio_bajista and precio_no_sube')
+        if rsi_max > 45 and rsi_max_pos <=3 and precio_bajista and precio_no_sube:
+            self.log.log('*** rsi rsi_max > 45 and rsi_max_pos <3 and precio_bajista and precio_no_sube')
             return True    
+
+        if rsi_max > 40 and rsi_max_pos <=5 and precio_no_sube and  variacion(self.precio, ind.ema(escala,50) < 0.5    ):
+            self.log.log('*** rsi_max > 40 and rsi_max_pos <=5 and precio_no_sube and variacion(self.precio, ind.ema(escala,50) < 0.5')
+            return True    
+    
+
+
 
         esc_sup = self.g.zoom(escala,1)
         if ind.rsi(esc_sup)>90:
