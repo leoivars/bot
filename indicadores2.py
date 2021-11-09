@@ -417,7 +417,7 @@ class Indicadores:
         except Exception as e:
             self.log.log(str(e)) 
 
-        ret =  (maximo,mi*-1,rsi.iloc[-1])    
+        ret =  (round(maximo,2),mi*-1,round(rsi.iloc[-1],2))    
         self.cache_add( (escala,cvelas),ret )
 
         return    ret
