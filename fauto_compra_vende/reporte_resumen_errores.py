@@ -20,10 +20,10 @@ def reporte_resumen_errores():
 
 
 def resumir_errores(flog,errores):
-    '''lee el archivo log buscando Err,err.. y los agrega al diccionario de errores'''
+    '''lee el archivo log buscando Error,error.. y los agrega al diccionario de errores'''
     with open(flog) as archivo_log:
         for linea in archivo_log:
-            for str in ['Err','err']:
+            for str in ['Error','error']:
                 if str in linea:
                     agregar_error(linea,errores)
                     break
