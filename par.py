@@ -2128,31 +2128,34 @@ class Par:
         elif gan < gan_min and not precio_bajista:
             return False
 
+        marca_salida='S>>>'    
+
         rsi_max,rsi_max_pos,rsi = ind.rsi_maximo_y_pos(escala,4)
         self.log.log(f'rsi {rsi} rsi_max {rsi_max} rsi_max_pos {rsi_max_pos}')
 
         if rsi > 80 and gan>gan_min: ## and self.filtro_volumen_calmado(self.escala_de_analisis):
-            self.log.log('*** rsi escala >80')
+            self.log.log(f'{marca_salida} rsi escala >80 {rsi}')
             return True
 
-        if rsi > 70 and rsi_max>=rsi and rsi_max_pos <= 3: 
-            self.log.log('*** pico rsi >70')
+        if rsi > 70 and rsi_max>=rsi and rsi_max_pos <= 3 and precio_no_sube: 
+            self.log.log(f'{marca_salida} pico rsi >70 {rsi}')
             return True
         
         if rsi > 65  and self.filtro_volumen_calmado(escala,2):
-            self.log.log('*** rsi escala >65 , volumen_calmado 2')
+            self.log.log(f'{marca_salida} rsi escala >65 {rsi}, volumen_calmado 2')
             return True
 
         if rsi > 53  and precio_bajista and precio_no_sube:
-            self.log.log('*** rsi escala >53 ,precio_bajista ,ind.no_sube({escala})')
+            self.log.log(f'{marca_salida} rsi escala >53 {rsi} ,precio_bajista and precio_no_sube')
             return True
 
         if rsi_max > 45 and rsi_max_pos <=3 and precio_bajista and precio_no_sube:
-            self.log.log('*** rsi rsi_max > 45 and rsi_max_pos <3 and precio_bajista and precio_no_sube')
+            self.log.log(f'{marca_salida} rsi rsi_max > 45 {rsi_max} and rsi_max_pos <3  {rsi_max_pos} and precio_bajista and precio_no_sube')
             return True    
 
-        if rsi_max > 40 and rsi_max_pos <=5 and precio_no_sube and  variacion(self.precio, ind.ema(escala,50) < 0.5    ):
-            self.log.log('*** rsi_max > 40 and rsi_max_pos <=5 and precio_no_sube and variacion(self.precio, ind.ema(escala,50) < 0.5')
+        var = variacion_absoluta(self.precio, ind.ema(escala,50)  )
+        if rsi_max > 40 and rsi_max_pos <=5 and precio_no_sube and  -0.5 <= var <= 0:
+            self.log.log(f'{marca_salida} rsi_max= {rsi_max} > 40 and rsi_max_pos {rsi_max_pos} <=5 and precio_no_sube and var -0.5 <= {var} <= 0')
             return True    
     
 
