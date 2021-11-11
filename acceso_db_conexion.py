@@ -18,7 +18,7 @@ class Conexion_DB:
                             mincached=0,  # At the time of initialization, at least an idle link is created in the link pool. 0 means no link is created.
                             maxcached=0,
                             maxshared=0,
-                            maxconnections=50,
+                            maxconnections=0,
                             blocking=True, # 9/04/2020 para que espere cuando no hay conexiones disponibles? sino le caga la conexion al otro hilo
                             maxusage=0,
                             host= pws.db_host,

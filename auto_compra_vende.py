@@ -42,7 +42,7 @@ except:
 
 _thread.start_new_thread( habilitar_deshabilitar_pares_periodicamente, (e,conn) )       # habilitador de pares
 
-materializar_pares_desde_db(True,log,hpdb,conn,e,mercado,client)     #materializacion inicial de pares
+materializar_pares_desde_db(True,log,conn,e,mercado,client)     #materializacion inicial de pares
 
 ti_mail = Controlador_De_Tiempo(7200)           #para enviar mails periódicamente
 reporte_correo(log,hpdb,e,mercado,inicio_funcionamiento,cuenta_de_reinicios)                       #mail al inicio, situación de arranque    
@@ -55,7 +55,7 @@ while e.trabajando:                              #bucle princpipal
             reporte_correo(log,hpdb,e,mercado,inicio_funcionamiento,cuenta_de_reinicios) 
             #ti_mail.intervalo += 60 #voy subiendo para darle cada vez menos bola
 
-        materializar_pares_desde_db(False,log,hpdb,conn,e,mercado,client)
+        materializar_pares_desde_db(False,log,conn,e,mercado,client)
         controlar_estado0(e,log)
         
         log.log( reporte_de_ciclo(e,mercado,inicio_funcionamiento,cuenta_de_reinicios) )

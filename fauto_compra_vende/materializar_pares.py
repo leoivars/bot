@@ -9,21 +9,24 @@ import time
 
 import gc
 
-def materializar_pares_desde_db(inico,log:Logger,db:Acceso_DB,conn,e:VariablesEstado,mercado,client):
+def materializar_pares_desde_db(inico,log:Logger,conn,e:VariablesEstado,mercado,client):
 
+    db = Acceso_DB(log,conn.pool)
     log.log('materializar_pares_desde_db.ini',inico)
     #poner_pares_control_en_falso, luego si está query pasa a verdadero
     for k in e.pares_control.keys():
         e.pares_control[k]=False
 
+    log.log('get_cuenta_pares_activos...')
     pares_activos=db.get_cuenta_pares_activos()
     
     #if inico:
     #    dict_pares_activos=db.lista_de_pares_activos_con_trades()
     #else:    
+    log.log('lista_de_pares_activos...')
     dict_pares_activos=db.lista_de_pares_activos()
 
-    #log.log('materializando...')
+    log.log('materializando...')
     
     for r in dict_pares_activos:
         par=str(r['moneda'].upper()+r['moneda_contra'].upper())
@@ -46,9 +49,9 @@ def materializar_pares_desde_db(inico,log:Logger,db:Acceso_DB,conn,e:VariablesEs
             #e.pares[par][1].start()
             
             if inico: #realizo una pequeña demora para no meter tanta presion en el inicio
-                time.sleep(.05)
+                time.sleep(.7)
             else:
-                time.sleep(.01) 
+                time.sleep(.5) 
             #mostrar_informacion()
         
     e.cant_pares_activos = pares_activos
