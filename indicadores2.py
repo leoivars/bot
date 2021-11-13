@@ -199,6 +199,7 @@ class Indicadores:
         v0:Vela = self.mercado.vela(self.par,escala,-2)
         ret = False
         if not v0 is None and not v1 is None:
+            #self.log.log(f'v0 close {v0.close} high {v0.high} | v1 close {v1.close} high {v1.high} ')
             ret = v0.close > v1.close and v0.high > v1.high
         return ret    
 

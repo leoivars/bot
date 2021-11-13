@@ -2121,7 +2121,9 @@ class Par:
         gan_min = calc_ganancia_minima(self.g,0.5,self.escala_de_analisis,duracion_trade)
         precio_bajista = self.el_precio_es_bajista('1d')
         precio_no_sube = ind.no_sube(escala)
-        self.log.log(f'gan_min {gan_min} gan {gan} px_bajista {precio_bajista} px_no_sube {precio_no_sube}')
+        tiempo_trade_superado = self.g.tiempo_maximo_trade[escala] > duracion_trade
+        self.log.log(f'gan_min {gan_min} gan {gan} px_bajista {precio_bajista} px_no_sube {precio_no_sube}' )
+        self.log.log(f' duracion_trade {duracion_trade} t_trade_superado {tiempo_trade_superado}')
         
         if gan < 0.3:
             return False
@@ -2133,6 +2135,10 @@ class Par:
         rsi_max,rsi_max_pos,rsi = ind.rsi_maximo_y_pos(escala,4)
         self.log.log(f'rsi {rsi} rsi_max {rsi_max} rsi_max_pos {rsi_max_pos}')
 
+        if tiempo_trade_superado and precio_no_sube:
+            self.log.log(f'tiempo_trade_superado y precio_no_sube Velas={int(duracion_trade/self.g.escala_tiempo[escala])}')
+            return True
+
         if rsi > 80 and gan>gan_min: ## and self.filtro_volumen_calmado(self.escala_de_analisis):
             self.log.log(f'{marca_salida} rsi escala >80 {rsi}')
             return True
@@ -2141,8 +2147,8 @@ class Par:
             self.log.log(f'{marca_salida} pico rsi >70 {rsi}')
             return True
         
-        if rsi > 65  and self.filtro_volumen_calmado(escala,2):
-            self.log.log(f'{marca_salida} rsi escala >65 {rsi}, volumen_calmado 2')
+        if rsi > 65  and self.filtro_volumen_calmado(escala,2) and precio_no_sube:
+            self.log.log(f'{marca_salida} rsi escala >65 {rsi}, volumen_calmado 2 and precio_no_sube')
             return True
 
         if rsi > 53  and precio_bajista and precio_no_sube:
@@ -2153,9 +2159,10 @@ class Par:
             self.log.log(f'{marca_salida} rsi rsi_max > 45 {rsi_max} and rsi_max_pos <3  {rsi_max_pos} and precio_bajista and precio_no_sube')
             return True    
 
-        var = variacion_absoluta(self.precio, ind.ema(escala,50)  )
-        if rsi_max > 40 and rsi_max_pos <=5 and precio_no_sube and  -0.5 <= var <= 0:
-            self.log.log(f'{marca_salida} rsi_max= {rsi_max} > 40 and rsi_max_pos {rsi_max_pos} <=5 and precio_no_sube and var -0.5 <= {var} <= 0')
+        var = variacion_absoluta(ind.ema(escala,50) ,self.precio  )
+        inf = self.g.escala_ganancia[escala] / -10
+        if rsi_max > 40 and rsi_max_pos <=5 and precio_no_sube and inf  <= var <= 0:
+            self.log.log(f'{marca_salida} rsi_max= {rsi_max} > 40 and rsi_max_pos {rsi_max_pos} <=5 and precio_no_sube and var {inf} <= {var} <= 0')
             return True    
     
 
