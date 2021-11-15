@@ -2121,9 +2121,10 @@ class Par:
         gan_min = calc_ganancia_minima(self.g,0.5,self.escala_de_analisis,duracion_trade)
         precio_bajista = self.el_precio_es_bajista('1d')
         precio_no_sube = ind.no_sube(escala)
-        tiempo_trade_superado = self.g.tiempo_maximo_trade[escala] > duracion_trade
+        tiempo_trade_superado = duracion_trade > self.g.tiempo_maximo_trade[escala]
+        duracion_en_velas = int(duracion_trade/self.g.escala_tiempo[escala])
         self.log.log(f'gan_min {gan_min} gan {gan} px_bajista {precio_bajista} px_no_sube {precio_no_sube}' )
-        self.log.log(f' duracion_trade {duracion_trade} t_trade_superado {tiempo_trade_superado}')
+        self.log.log(f' duracion {duracion_trade} velas {duracion_en_velas} t_superado {tiempo_trade_superado}')
         
         if gan < 0.3:
             return False
@@ -2136,7 +2137,7 @@ class Par:
         self.log.log(f'rsi {rsi} rsi_max {rsi_max} rsi_max_pos {rsi_max_pos}')
 
         if tiempo_trade_superado and precio_no_sube:
-            self.log.log(f'tiempo_trade_superado y precio_no_sube Velas={int(duracion_trade/self.g.escala_tiempo[escala])}')
+            self.log.log(f'{marca_salida} tiempo_trade_superado y precio_no_sube Velas={duracion_en_velas}')
             return True
 
         if rsi > 80 and gan>gan_min: ## and self.filtro_volumen_calmado(self.escala_de_analisis):

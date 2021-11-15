@@ -89,7 +89,10 @@ class VariablesEstado:
     hay_pump = {'velas':5,'xatr':12,'xvol':12}
 
     #tiempo maximo que debe durar una entrada
-    tiempo_maximo_trade  ={'1m':60 * 14,'5m': 300 * 14 ,'15m':900 * 14,'30m':1800 * 14,'1h':3600 * 14,'2h':7200 * 14,'4h':14400 * 14,'1d':86400 * 14,'1w':604800 * 14,'1M':2419200 * 14}
+    tiempo_maximo_trade  ={ '1m':escala_tiempo['1d']    ,'5m':escala_tiempo['1d']     ,'15m':escala_tiempo['1d'],\
+                           '30m':escala_tiempo['1d']    ,'1h':escala_tiempo['1d'] * 2 , '2h':escala_tiempo['1d'] * 3,\
+                            '4h':escala_tiempo['1d'] * 5,'1d':escala_tiempo['1d'] * 15, '1w':escala_tiempo['1d'] * 90,\
+                            '1M':escala_tiempo['1M'] * 12}
     
     #ganancia_minima en la que se comienza a considerar poner stoploss
     ganancia_minima ={'1m':0.1,'5m': 0.2 ,'15m':0.3 ,'30m':0.4 ,'1h':0.5 ,'2h':0.6,'4h':1.2,'1d':3,'1w':10,'1M':20}
