@@ -4,18 +4,21 @@ from logger import Logger
 from datetime import datetime
 import time
 
-def crear_cliente(pws):
+def crear_cliente(pws,log:Logger):
     client = None
     while True:
         try:
             #client = Client(pws.api_key, pws.api_secret,{ "timeout": 15})
             client = Client(pws.api_key, pws.api_secret,{ "timeout": 30})
             break
-        except Exception as e:
-            print('no se puede crear cliente')
-            print( str(e) )
-            time.sleep(30)
-    
+        except Exception as ex:
+            strerror=str(ex)
+            if 'failure in name resolution' in strerror:
+                log.err('Error crear_cliente sin internet')
+                t=150
+            else:    
+                log.err('Error crear_cliente:' + strerror)
+                t=30
     return client
 
 def esperar_correcto_funcionamiento(client:Client,e:VariablesEstado,log:Logger):
@@ -31,9 +34,13 @@ def esperar_correcto_funcionamiento(client:Client,e:VariablesEstado,log:Logger):
                 t=300
                 e.se_puede_operar = False
         except Exception as ex:
-            log.err('no responde client.get_system_status():' + str(ex))
-            t=30
-
+            strerror=str(ex)
+            if 'failure in name resolution' in strerror:
+                log.err('Error client.get_system_status sin internet')
+                t=150
+            else:    
+                log.err('Error client.get_system_status():' + strerror)
+                t=30
         time.sleep(t)
 
     e.se_puede_operar = True  
