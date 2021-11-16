@@ -2133,12 +2133,20 @@ class Par:
 
         marca_salida='S>>>'    
 
-        rsi_max,rsi_max_pos,rsi = ind.rsi_maximo_y_pos(escala,4)
-        self.log.log(f'rsi {rsi} rsi_max {rsi_max} rsi_max_pos {rsi_max_pos}')
-
         if tiempo_trade_superado and precio_no_sube:
             self.log.log(f'{marca_salida} tiempo_trade_superado y precio_no_sube Velas={duracion_en_velas}')
             return True
+
+        #rapidamente se alcanza el objetivo de self.g.escala_ganancia[escala]
+        # solo para escalas pequeñas 
+        if self.g.escala_tiempo[escala] <=  self.g.escala_tiempo['15m'] and\
+            duracion_trade <= self.g.escala_tiempo[escala] * 2 and\
+            gan > self.g.escala_ganancia[escala]:
+            self.log.log(f'{marca_salida} ganancia flash {gan} Velas={duracion_en_velas}')
+            return True
+
+        rsi_max,rsi_max_pos,rsi = ind.rsi_maximo_y_pos(escala,4)
+        self.log.log(f'rsi {rsi} rsi_max {rsi_max} rsi_max_pos {rsi_max_pos}')
 
         if rsi > 80 and gan>gan_min: ## and self.filtro_volumen_calmado(self.escala_de_analisis):
             self.log.log(f'{marca_salida} rsi escala >80 {rsi}')
