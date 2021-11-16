@@ -3112,7 +3112,8 @@ class Par:
             self.log.log(  "Estado FILLED:" )
             self.precio_compra=precio_orden
             self.cant_moneda_compra=can_comprada
-            self.orden_llena_o_parcilamente_llena_estado_2(can_comprada,precio_orden,'FI',orden) #FI por Filled 
+            txt_filled = f'{self.precio_compra}'
+            self.orden_llena_o_parcilamente_llena_estado_2(can_comprada,precio_orden,txt_filled,orden) #FI por Filled 
             return 
 
         elif estado_orden=='PARTIALLY_FILLED': 
@@ -3125,8 +3126,8 @@ class Par:
                     can_comprada=orden['ejecutado']
                     self.precio_compra=precio_orden
                     self.cant_moneda_compra=can_comprada
-                    
-                    self.orden_llena_o_parcilamente_llena_estado_2(can_comprada,precio_orden,'PF',orden) #PF por Partial Filled
+                    txt_filled = f'PARCIALMENTE-LLENTA.{self.precio_compra}'
+                    self.orden_llena_o_parcilamente_llena_estado_2(can_comprada,precio_orden,txt_filled,orden) #PF por Partial Filled
 
                     self.sincronizar_compra_venta()
                 else:
