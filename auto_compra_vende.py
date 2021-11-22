@@ -44,7 +44,7 @@ _thread.start_new_thread( habilitar_deshabilitar_pares_periodicamente, (e,conn) 
 
 materializar_pares_desde_db(True,log,conn,e,mercado,client)     #materializacion inicial de pares
 
-ti_mail = Controlador_De_Tiempo(7200)           #para enviar mails periódicamente
+ti_mail = Controlador_De_Tiempo(e.tiempo_envio_reporte_correo)           #para enviar mails periódicamente
 reporte_correo(log,hpdb,e,mercado,inicio_funcionamiento,cuenta_de_reinicios)                       #mail al inicio, situación de arranque    
 
 while e.trabajando:                              #bucle princpipal 

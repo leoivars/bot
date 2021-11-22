@@ -39,7 +39,8 @@ class VariablesEstado:
     # usdt_operable=0
     # usdt_trandado=0
 
-    
+    #variables auto_compra_vende
+    tiempo_envio_reporte_correo=3600
     
     # variables globales de pares
     horas_deshabilitar_par = 4
@@ -93,6 +94,17 @@ class VariablesEstado:
                            '30m':escala_tiempo['1d']    ,'1h':escala_tiempo['1d'] * 2 , '2h':escala_tiempo['1d'] * 3,\
                             '4h':escala_tiempo['1d'] * 5,'1d':escala_tiempo['1d'] * 15, '1w':escala_tiempo['1d'] * 90,\
                             '1M':escala_tiempo['1M'] * 12}
+
+    lista_rsi_armonicos  = {'1m' :['5m' ,'15m'],
+                            '5m' :['1m' ,'15m'],
+                            '15m':['5m' ,'30m'],
+                            '30m':['15m','1h' ],
+                            '1h' :['30m','2h' ],
+                            '2h' :['1h' ,'4h' ],
+                            '4h' :['2h' ,'1h','15m'],
+                            '1d' :['4h' ,'2h','1h','15m' ],
+                            '1w' :['1d' ,'4h' ],
+                            '1M' :['1w' ,'1d' ]}                        
     
     #ganancia_minima en la que se comienza a considerar poner stoploss
     ganancia_minima ={'1m':0.1,'5m': 0.2 ,'15m':0.3 ,'30m':0.4 ,'1h':0.5 ,'2h':0.6,'4h':1.2,'1d':3,'1w':10,'1M':20}
@@ -146,6 +158,7 @@ class VariablesEstado:
                 VariablesEstado.x_gan_patr_ema            = parconfig[0]['x_gan_patr_ema'] 
                 VariablesEstado.x_neg_patr_comp_ant       = parconfig[0]['x_neg_patr_comp_ant'] 
                 VariablesEstado.maxima_cantidad_de_pares_con_trades = parconfig[0]['maxima_cantidad_de_pares_con_trades'] 
+                VariablesEstado.tiempo_envio_reporte_correo = parconfig[0]['tiempo_envio_reporte_correo']
             except Exception as e:
                 print ( "cargar_parametros_json_de_par:",str(e) )     
                 
@@ -241,7 +254,7 @@ class VariablesEstado:
         for _ in range(x):
             e=self.escala_siguiente[esc]
             if e == 'xx':
-                esc=escala
+                #esc=escala
                 break
             else:
                 esc=e
