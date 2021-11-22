@@ -195,12 +195,17 @@ class Indicadores:
             self.log.log(i, v.open, v.high, v.low, v.close, v.volume, v.open_time, v.close_time)
 
     def no_sube(self,escala):
+
+        if  self.emas_ordenadas(escala,10,20,50):
+            return False # está subiendo, false de una
+        
         v1:Vela = self.mercado.vela(self.par,escala,-1)
         v0:Vela = self.mercado.vela(self.par,escala,-2)
         ret = False
         if not v0 is None and not v1 is None:
             #self.log.log(f'v0 close {v0.close} high {v0.high} | v1 close {v1.close} high {v1.high} ')
-            ret = v0.close > v1.close and v0.high > v1.high
+            ret = v0.close > v1.close and v0.high > v1.high      # v0 penútima v1 ultima
+
         return ret    
 
     def rsi_contar_picos_minimos(self,escala,cvelas,menor_de):

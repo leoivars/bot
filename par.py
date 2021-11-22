@@ -1,5 +1,6 @@
 # # -*- coding: UTF-8 -*-
 #from binance.enums import * #para  create_order
+from pandas_ta import trend
 from mercado_actualizador_socket import Mercado_Actualizador_Socket
 from vela import Vela
 from binance.client import Client # Cliente python para acceso al exchangue
@@ -476,6 +477,9 @@ class Par:
 
         self.rsi_analisis_entrada    = p['rsi_analisis_entrada']
         self.escala_analisis_entrada = p['escala_analisis_entrada']
+
+        self.objetivo_compra  = p['objetivo_compra']
+        self.objetivo_venta   = p['objetivo_venta']
 
 
         if self.estado==3 or self.estado==1: 
@@ -987,7 +991,7 @@ class Par:
 
     def registrar_orden_parcialmente_jecutada(self,orden):
         if orden['side']  == 'BUY':
-            self.db.trade_persistir(self.moneda,self.moneda_contra,self.escala_de_analisis,  self.analisis_provocador_entrada+'_'+self.calculo_precio_compra,float(orden['executedQty']),float(orden['price']),2,4,-4,self.texto_analisis_par(),strtime_a_fecha(orden['time']),orden['orderId'])
+            self.db.trade_persistir(self.moneda,self.moneda_contra,self.escala_de_analisis,  self.analisis_provocador_entrada+'_'+self.calculo_precio_compra,float(orden['executedQty']),float(orden['price']),self.objetivo_venta,2,4,-4,self.texto_analisis_par(),strtime_a_fecha(orden['time']),orden['orderId'])
         else: 
             if self.idtrade>0:
                self.db.trade_sumar_ejecutado( self.idtrade, orden['ejecutado'], orden['precio'],strtime_a_fecha(orden['time']),orden['orderId'])
@@ -1924,7 +1928,10 @@ class Par:
         y que luego de ejecutan constantemente  en estado 2
         para mantener el estado de compra
         '''
-        
+
+        if self.no_se_cumple_objetivo_compra():
+            return False
+
         # ya se ha superado la cantidad máxima de  pares con trades, solo esperamos.
         if self.db.trades_cantidad_de_pares_con_trades() >= self.g.maxima_cantidad_de_pares_con_trades and\
            self.db.trades_cantidad(self.moneda,self.moneda_contra) == 0:
@@ -1938,6 +1945,7 @@ class Par:
         if entradas < cant_temporalidades:  
             if not comprar: # and self.moneda=='BTC' or self.moneda=='BTCDOWN' or self.moneda=='BTCUP': 
                 escalas_a_probar = self.entradas_a_escalas(self.temporalidades,entradas)
+                
                 self.log.log(f'escala {escalas_a_probar}')
                 
                 for esc in escalas_a_probar:
@@ -1974,7 +1982,31 @@ class Par:
         else:
             ret=[esc]    
 
-        return ret     
+        return ret   
+
+    def no_se_cumple_objetivo_compra(self):
+        '''
+        si self.objetivo_compra>0 controlo que el precio esté por debajo caso contrario no se controla
+        ''' 
+        ret = False     
+        if self.objetivo_compra>0:
+            if self.precio > self.objetivo_compra:
+                ret=True
+                self.log.log(f'precio {self.precio} > {self.objetivo_compra} objetivo_compra')
+        return ret    
+
+    def no_se_cumple_objetivo_venta(self):
+        '''
+        si self.objetivo_venta>0 controlo que el precio esté por encima caso contrario no se controla
+        si el precio < objetivo_venta no se cumple = True
+        ''' 
+        ret = False     
+        if self.objetivo_venta>0:
+            if self.precio < self.objetivo_venta:
+                ret=True
+                self.log.log(f'precio {self.precio} < {self.objetivo_venta} objetivo_venta')
+        return ret    
+    
 
     def buscar_dos_emas_rsi(self,escala):   
         ret=[False,'xx']
@@ -2004,7 +2036,8 @@ class Par:
         #if self.filtro_ema_rapida_lenta(self.g.zoom_out(escala,1), 50,200, 0.01):
         rsi_inf = self.determinar_rsi_minimo_para_comprar(escala)
         if  self.filtro_de_rsi_minimo_cercano(escala, rsi_inf  ,pos_rsi_inferior=(1,2),max_rsi=60):
-            if self.filtro_volumen_calmado(escala, 2 , 0.9):
+            if self.filtro_rsi_armonicos(escala,1,valor_maximo=rsi_inf+10):
+                #if self.filtro_volumen_calmado(escala, 2 , 0.9):
                 ret = [True,escala,'buscar_rsi_bajo']
 
         self.log.log('----------------------')    
@@ -2014,11 +2047,12 @@ class Par:
     def buscar_rebote_rsi(self,escala):
         ret=[False,'xx']
         self.log.log('---buscar_rebote_rsi',escala)
-        if  self.filtro_de_rsi_minimo_cercano(escala, 30 ,pos_rsi_inferior=(1,3),max_rsi=60):
-            if self.filtro_ultima_vela_cerrada_alcista(escala):
-                if self.filtro_volumen_encima_del_promedio(escala,3,2):
-                    ret = [True,escala,'buscar_rebote_rsi']
-        self.log.log('----------------------')            
+        if self.filtro_rsi_armonicos(escala,2,valor_maximo=30): 
+            if  self.filtro_de_rsi_minimo_cercano(escala, 30 ,pos_rsi_inferior=(1,3),max_rsi=60):
+                if self.filtro_ultima_vela_cerrada_alcista(escala):
+                    if self.filtro_volumen_encima_del_promedio(escala,3,2):
+                        ret = [True,escala,'buscar_rebote_rsi']
+            self.log.log('----------------------')            
         return ret  
 
 
@@ -2061,7 +2095,8 @@ class Par:
         rsi_sup = ind.rsi('1d')
         #ema5, difp5,pendr5,pendl5 = ind.ema_rapida_mayor_lenta2( esc_sup , 10,50,0.05) # en temporalidad superior está alcista
         #self.log.log(f'ema {esc_sup}: {ema5}, dif {difp5},pendr {pendr5},pendl {pendl5}')
-        ema, difp,pendr,pendl = ind.ema_rapida_mayor_lenta2( '1d', 10,50,0.5,pendientes_positivas=True) 
+        ema , difp,pendr,pendl = ind.ema_rapida_mayor_lenta2( '1d', 10,50,0.5,pendientes_positivas=True) 
+        ema1, _,_,_ = ind.ema_rapida_mayor_lenta2( escala, 10,50,0.5,pendientes_positivas=True) 
         self.log.log(f'ema {escala}: {ema}, dif {difp},pendr {pendr},pendl {pendl} rsi_sup {rsi_sup}')
         if 50 < rsi_sup <= 70:
             if ema and pendr > 0 and pendl > 0:
@@ -2076,8 +2111,8 @@ class Par:
         else: 
             ret = 25       
 
-        if not ema: # la cosa está bajista solo compro con caidas muy pronunciadas
-            ret -= 10
+        if not ema and not ema1: # la cosa está bajista solo compro con caidas muy pronunciadas
+            ret -= 5
 
         return ret        
 
@@ -2115,18 +2150,18 @@ class Par:
         self.log.log(f'{filtro_ok} <--- {escala} rsi {rsi} ')
         return filtro_ok
 
-    def filtro_ema_rapida_lenta_para_salir(self,escala,gan,duracion_trade):
+    def avaluar_si_hay_que_vender(self,escala,gan,duracion_trade):
         self.log.log(f'senial de entrada {self.senial_entrada}')
         ind: Indicadores =self.ind
         gan_min = calc_ganancia_minima(self.g,0.5,self.escala_de_analisis,duracion_trade)
-        precio_bajista = self.el_precio_es_bajista('1d')
+        precio_bajista = self.el_precio_es_bajista('1d') and self.el_precio_es_bajista(self.escala_de_analisis)
         precio_no_sube = ind.no_sube(escala)
         tiempo_trade_superado = duracion_trade > self.g.tiempo_maximo_trade[escala]
         duracion_en_velas = int(duracion_trade/self.g.escala_tiempo[escala])
         self.log.log(f'gan_min {gan_min} gan {gan} px_bajista {precio_bajista} px_no_sube {precio_no_sube}' )
         self.log.log(f' duracion {duracion_trade} velas {duracion_en_velas} t_superado {tiempo_trade_superado}')
-        
-        if gan < 0.3:
+                 
+        if gan < 0.3 or self.no_se_cumple_objetivo_venta():
             return False
         elif gan < gan_min and not precio_bajista:
             return False
@@ -2148,8 +2183,8 @@ class Par:
         rsi_max,rsi_max_pos,rsi = ind.rsi_maximo_y_pos(escala,4)
         self.log.log(f'rsi {rsi} rsi_max {rsi_max} rsi_max_pos {rsi_max_pos}')
 
-        if rsi > 80 and gan>gan_min: ## and self.filtro_volumen_calmado(self.escala_de_analisis):
-            self.log.log(f'{marca_salida} rsi escala >80 {rsi}')
+        if rsi > 90 and gan>gan_min: ## and self.filtro_volumen_calmado(self.escala_de_analisis):
+            self.log.log(f'{marca_salida} rsi escala >90 {rsi}')
             return True
 
         if rsi > 70 and rsi_max>=rsi and rsi_max_pos <= 3 and precio_no_sube: 
@@ -2535,11 +2570,63 @@ class Par:
 
         rsi =  ind.rsi(escala)
        
-        filtro_ok = rsi < valor_maximo or rsi > 100 # mas que 100 es un rsi indefinido
+        filtro_ok = rsi < valor_maximo 
         
         self.log.log(self.txt_resultado_filtro(filtro_ok,self.indentacion)+'rsi',escala,'max',valor_maximo,rsi)  
 
         return filtro_ok
+
+    
+    def filtro_rsi_armonicos_deprecasted(self, escala,valor_maximo=30):
+        ''' busca que todos RSI sean inferiores a 35 para retornar True, caso contrario False '''
+        ret = True
+        for esc in self.g.lista_rsi_armonicos[escala]:
+            if not self.filtro_rsi(esc,valor_maximo):
+                ret = False
+                break
+        return ret    
+
+    def filtro_rsi_armonicos(self, escala,cantidad_de_armonicos=1,valor_maximo=30):
+        c=0
+        lista_armonicos=[]
+        
+        #costruccion de lista de armónicos hacia abajo
+        z=1
+        while c < cantidad_de_armonicos:
+            esc=self.g.zoom(escala,z)
+            if esc==escala: #no ha mas chica
+                break
+            else:
+                lista_armonicos.append(esc)
+                c +=1
+                z +=1
+        
+        # no alcanzó sigo construyendo la lista hacia arriba
+        z=1
+        while c < cantidad_de_armonicos:
+            esc=self.g.zoom_out(escala,z)
+            if esc==escala: #no haya mas grande
+                break
+            else:
+                lista_armonicos.append(esc)
+                c +=1
+                z +=1
+
+        #verificacion de los rsi armonicos
+        self.log.log(f'filtro_rsi_armonicos {lista_armonicos}')
+        ret = True
+        for esc in lista_armonicos:
+            if not self.filtro_rsi(esc,valor_maximo):
+                ret = False
+                break 
+
+        return ret    
+
+
+
+
+
+    
 
     def filtro_rsi_positivo(self,escala='1h'): # 
         ind: Indicadores =self.ind
@@ -3165,7 +3252,7 @@ class Par:
 
         self.log.log('persistiendo trade...')
 
-        self.db.trade_persistir(self.moneda,self.moneda_contra,self.escala_de_analisis,self.analisis_provocador_entrada,can_comprada,precio_orden,gi,gs,tp,self.texto_analisis_par(),strtime_a_fecha(orden['time']),orden['orderId'])
+        self.db.trade_persistir(self.moneda,self.moneda_contra,self.escala_de_analisis,self.analisis_provocador_entrada,can_comprada,precio_orden,self.objetivo_venta,gi,gs,tp,self.texto_analisis_par(),strtime_a_fecha(orden['time']),orden['orderId'])
         
         #se compró, hay que pasar al estado de esperar a que suba 
         self.log.log('enviar_correo_filled_compra...')
@@ -3342,7 +3429,7 @@ class Par:
 
         ####TOMAR GANANCIAS #####
         #if self.hay_que_tratar_de_tomar_ganancias(gan,atr):
-        if self.filtro_ema_rapida_lenta_para_salir(self.escala_de_analisis,gan,duracion_trade):
+        if self.avaluar_si_hay_que_vender(self.escala_de_analisis,gan,duracion_trade):
             self.log.log(  self.par,"cerrar_trade!" )
             self.vender_solo_en_positivo = False
             self.iniciar_estado( 4 )# vendemos
@@ -4638,7 +4725,7 @@ class Par:
 
         self.texto_analisis_par()
 
-        self.db.trade_persistir(self.moneda,self.moneda_contra,escala ,senial_entrada, ejecutado ,precio ,gi,gs,tp,
+        self.db.trade_persistir(self.moneda,self.moneda_contra,escala ,senial_entrada, ejecutado ,precio,self.objetivo_venta ,gi,gs,tp,
                                 analisis, strtime_a_fecha(orden['time']) ,orden['orderId'])
 
         self.log.log('enviar_correo_filled_compra recuperada...')
@@ -4892,6 +4979,7 @@ class Par:
         self.ganancia_infima=trade['ganancia_infima']
         self.ganancia_segura=trade['ganancia_segura']
         self.tomar_perdidas=trade['tomar_perdidas']
+        self.objetivo_venta=trade['objetivo_venta']
 
         if 'cazb' in trade['senial_entrada']:
             self.metodo_compra_venta='cazabarridas'

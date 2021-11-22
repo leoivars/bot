@@ -22,7 +22,7 @@ class Acceso_DB:
     actualiza_temp__='UPDATE pares set temporalidades=%s WHERE moneda= %s AND moneda_contra= %s'
 
 
-    obt_datos_moneda='SELECT idpar,habilitado,pstoploss,metodo_compra_venta,cantidad,precio_compra,estado,funcion,ganancia_segura,ganancia_infima,escala_analisis_entrada,rsi_analisis_entrada,tendencia_minima_entrada,solo_vender,solo_seniales,veces_tendencia_minima,xvela_corpulenta,rsi15m,rsi4h,rsi1d,cantidad_de_reserva,analisis_e7,e8_precio_inferior,e8_precio_superior,e3_ganancia_recompra,incremento_volumen_bueno,xobjetivo,shitcoin,min_notional,stoploss_habilitado,stoploss_cazaliq,uso_de_reserva,temporalidades,observaciones from pares where moneda= %s and moneda_contra= %s'
+    obt_datos_moneda='SELECT idpar,habilitado,pstoploss,metodo_compra_venta,cantidad,precio_compra,estado,funcion,ganancia_segura,ganancia_infima,escala_analisis_entrada,rsi_analisis_entrada,tendencia_minima_entrada,solo_vender,solo_seniales,veces_tendencia_minima,xvela_corpulenta,rsi15m,rsi4h,rsi1d,cantidad_de_reserva,analisis_e7,e8_precio_inferior,e8_precio_superior,e3_ganancia_recompra,incremento_volumen_bueno,xobjetivo,shitcoin,min_notional,stoploss_habilitado,stoploss_cazaliq,uso_de_reserva,temporalidades,observaciones,objetivo_compra,objetivo_venta from pares where moneda= %s and moneda_contra= %s'
     mon_habilita_lin='SELECT moneda,moneda_contra from pares where habilitable=1 and habilitado=0 and no_habilitar_hasta < NOW() and coeficiente_ema_rapida_lenta  > 0 order by volumen desc'
     mon_habilita_feo='SELECT moneda,moneda_contra from pares where habilitable=1 and habilitado=0 and no_habilitar_hasta < NOW() and coeficiente_ema_rapida_lenta <= 0 order by volumen desc'
     mon_habilitables='SELECT moneda,moneda_contra from pares where habilitable=1 and habilitado=0 and no_habilitar_hasta < NOW() order by volumen desc limit 10'
@@ -34,12 +34,12 @@ class Acceso_DB:
     __deshabilitar_pares_sin_trades = ''' update pares set habilitado=0 where habilitado=1 and (moneda,moneda_contra) not in 
                                          (select moneda,moneda_contra as cantidad from trades where ejecutado=0 group by moneda,moneda_contra)
                                       '''
-    trade_persistir_='INSERT INTO trades (fecha,orderid,moneda,moneda_contra,escala,senial_entrada,cantidad,precio,ganancia_infima,ganancia_segura,tomar_perdidas,ejecutado,analisis) VALUES (%s,%s,%s, %s, %s,%s,%s,%s,%s,%s,%s,0,%s)'
+    trade_persistir_='INSERT INTO trades (fecha,orderid,moneda,moneda_contra,escala,senial_entrada,cantidad,precio,ganancia_infima,ganancia_segura,tomar_perdidas,ejecutado,analisis,objetivo_venta) VALUES (%s,%s,%s, %s, %s,%s,%s,%s,%s,%s,%s,0,%s,%s)'
     trade_borrar____='DELETE from trades where moneda=%s'
     trade_avg_______='SELECT sum( (cantidad-ejecutado)*precio )/sum(cantidad-ejecutado) as pcompra from trades where cantidad-ejecutado>0 moneda=%s and moneda_contra=%s'
     trade_total_mon_='SELECT sum(cantidad-ejecutado) as total from trades where moneda=%s'
     trade_total_moneda_contra = 'select sum(precio * cantidad) as total from trades where ejecutado = 0 and moneda_contra=%s'
-    trade_menor_prec='SELECT idtrade,cantidad,precio,fecha,ganancia_infima,ganancia_segura,tomar_perdidas,escala,senial_entrada,ejecutado from trades where moneda=%s and moneda_contra=%s and ejecutado=0 order by precio limit 1'
+    trade_menor_prec='SELECT idtrade,cantidad,precio,fecha,ganancia_infima,ganancia_segura,tomar_perdidas,escala,senial_entrada,ejecutado,objetivo_venta from trades where moneda=%s and moneda_contra=%s and ejecutado=0 order by precio limit 1'
     trade_venta_orid='SELECT idtrade,cantidad,precio,fecha,ganancia_infima,ganancia_segura,tomar_perdidas,escala,senial_entrada,ejecutado from trades where ejec_orderid=%s limit 1'
     trade_compr_orid='SELECT idtrade,cantidad,precio,fecha,ganancia_infima,ganancia_segura,tomar_perdidas,escala,senial_entrada,ejecutado from trades where orderid=%s limit 1'
     trade_ultimo____='SELECT idtrade,ejec_precio,ejec_fecha,tomar_perdidas from trades where moneda=%s and moneda_contra=%s and ejecutado>0 order by ejec_fecha desc limit 1'
@@ -172,12 +172,6 @@ class Acceso_DB:
         Acceso_DB.lock_cola.release() 
    
 
-
-
-
-
-
-
     # def __exit__(self, *err):
     #     self.fin()
 
@@ -213,12 +207,12 @@ class Acceso_DB:
     def trades_pendientes_no_habilitados(self):
         return self.ejecutar_sql_ret_dict(self.trades_pend_no_h)
 
-    def trade_persistir(self,moneda,moneda_contra,escala,senial_entrada,cantidad,precio_compra,ganancia_infima,ganancia_segura,tomar_perdidas,analisis,fecha,orderid):
+    def trade_persistir(self,moneda,moneda_contra,escala,senial_entrada,cantidad,precio_compra,objetivo_venta,ganancia_infima,ganancia_segura,tomar_perdidas,analisis,fecha,orderid):
         if fecha==None:
             now = datetime.now()
             fecha = now.strftime('%Y-%m-%d %H:%M:%S')
 
-        self.ejecutar_sql(self.trade_persistir_,(fecha,orderid,moneda,moneda_contra,escala,senial_entrada,cantidad,precio_compra,ganancia_infima,ganancia_segura,tomar_perdidas,analisis))
+        self.ejecutar_sql(self.trade_persistir_,(fecha,orderid,moneda,moneda_contra,escala,senial_entrada,cantidad,precio_compra,ganancia_infima,ganancia_segura,tomar_perdidas,analisis,objetivo_venta))
         
     def trade_sumar_ejecutado(self,idtrade,cantidad,precio,fecha,orderid):
         

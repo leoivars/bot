@@ -51,7 +51,7 @@ def cerrar_ordenes_promediadas(moneda,moneda_contra):
 
 def crear_nueva_orden_con_promedio(moneda,moneda_contra,promedio):
     #                  moneda,moneda_contra ,escala, senial_entrada       ,cantidad            ,precio_compra     ,ganancia_infima,ganancia_segura,tomar_perdidas,analisis  ,fecha,orderid):
-    db.trade_persistir(moneda,moneda_contra,'1d'   ,'promedio de compras',promedio['cantidad'],promedio['precio'],5              ,10             ,-5            ,'promedio',str_fecha_hora_mysql(),0)
+    db.trade_persistir(moneda,moneda_contra,'1d'   ,'promedio de compras',promedio['cantidad'],promedio['precio'],0,5              ,10             ,-5            ,'promedio',str_fecha_hora_mysql(),0)
     
 
 moneda        = args.moneda.upper()
