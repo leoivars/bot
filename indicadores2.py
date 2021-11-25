@@ -85,7 +85,8 @@ class Indicadores:
 
     def cache_add(self,parametros,valor):
         funcion_que_me_llamo = inspect.stack()[1][3] 
-        self.cache[(funcion_que_me_llamo,parametros)] =(time.time(),valor)
+        fxfirma = self.firma(funcion_que_me_llamo,parametros)
+        self.cache[fxfirma] =(time.time(),valor)
 
     def cache_txt(self):
         txt = ''
@@ -196,8 +197,8 @@ class Indicadores:
 
     def no_sube(self,escala):
 
-        if  self.emas_ordenadas(escala,10,20,50):
-            return False # está subiendo, false de una
+        #if  self.emas_ordenadas(escala,10,20,50):
+        #    return False # está subiendo, false de una
         
         v1:Vela = self.mercado.vela(self.par,escala,-1)
         v0:Vela = self.mercado.vela(self.par,escala,-2)
@@ -242,7 +243,7 @@ class Indicadores:
 
         df=self.mercado.get_panda_df(self.par, escala, cvelas + 25)
         
-        vol_ma =ta.ma('ma',df['Volume'],length=20)
+        vol_ma =ta.ma('ma',df['volume'],length=20)
         
         #ultimas dos velas
        
@@ -357,30 +358,78 @@ class Indicadores:
 
         return lado_uno and lado_dos    
 
+    
 
-    def rsi_minimo_y_pos(self,escala,cvelas):
+    def firma(self,funcion,parametros):
+        ret=funcion
+        for p in parametros:
+            ret+=str(p)
+        return ret    
+
+    def set_cache(self,funcion,parametros,dato):
+        fxfirma=self.firma(funcion,parametros)
+        print('set_cache',fxfirma)
+        self.cache[fxfirma]=(time.time(),dato)
+    
+    def get_cache(self,funcion,parametros):
+        fxfirma=self.firma(funcion,parametros)
+        if fxfirma in self.cache:
+            datos = self.cache[fxfirma]
+            antiguedad = time.time() - datos[0]
+            print('antiguedad',antiguedad)
+            if antiguedad > 1:
+                print('ini vieja vieja vieja cache')
+                ret = None
+                del datos
+                del self.cache[fxfirma]
+                print('fin vieja vieja vieja cache')
+            else:
+                print('okokokokoko cache')
+                ret = datos[1]
+        else:
+            print('no en cache',fxfirma)
+            #print(self.cache)
+            ret = None
+
+        return ret         
+
+    def rsi_minimo_y_pos(self,escala,cvelas,vela_ini=None):
         ''' retorna el rsi minimo de las c velas, su posición y el rsi actual
+        cvelas= cantidad de velas a controlar
+        vela_ini = vela a contar desde el final 1= la ultima 2 la penultima ...
+        retorta rsi_minimo, posición, precio en la posicion, rsi actual
         '''
-        df=self.mercado.get_panda_df(self.par, escala, cvelas + 90) #self.velas[escala].panda_df(cvelas + 60)
-        rsi = df.ta.rsi()
-      
-        minimo = 100
-        l=len(rsi)
-        mi = 0
+        velas_df =  cvelas + 150
+
+        df =self.get_cache('mercado.get_panda_df',(self.par, escala, velas_df) )
+        rsi=self.get_cache('mercado.get_panda_df.rsi',(self.par, escala, velas_df)  )
         
+        if df is None or rsi is None:
+            df=self.mercado.get_panda_df(self.par, escala, velas_df) #self.velas[escala].panda_df(cvelas + 60)
+            rsi = df.ta.rsi()
+            self.set_cache('mercado.get_panda_df'    ,(self.par, escala, velas_df), df   )
+            self.set_cache('mercado.get_panda_df.rsi',(self.par, escala, velas_df), rsi  )
+
+        l=len(rsi) 
+        
+        if vela_ini is None:
+            i = -1
+        else:    
+            i =  abs(vela_ini) * -1  
+
+        mi=0
+        minimo=101
+
         try:
             lneg = l * -1
-            i = -1
-            minimo = rsi.iloc[-1]
-            mi = 1
+            minimo = rsi.iloc[i]
+            mi = i
             cvel = 1
-            # print(f'if {rsi.iloc[-2]} < {rsi.iloc[-1]}:')
             while i > lneg:
                 i -= 1
                 cvel += 1
                 if cvel > cvelas:
                     break
-                # print(f'if {rsi.iloc[i-1]} > {rsi.iloc[i]}:')
                 if rsi.iloc[i] < minimo:
                     mi = i
                     minimo = rsi.iloc[i]
@@ -388,7 +437,12 @@ class Indicadores:
         except Exception as e:
             self.log.log(str(e)) 
 
-        ret =  (minimo,mi*-1,rsi.iloc[-1])    
+        if mi==0:
+            close = -1
+        else:
+            close = df.iloc[mi]['low']
+
+        ret =  (  round(minimo,2), mi*-1, close,  round(rsi.iloc[-1],2)    )    
         self.cache_add( (escala,cvelas),ret )
 
         return    ret
@@ -421,7 +475,7 @@ class Indicadores:
                     maximo = rsi.iloc[i]
             
         except Exception as e:
-            self.log.log(str(e)) 
+            self.log.log('Error rsi_maximo_y_pos', str(e)) 
 
         ret =  (round(maximo,2),mi*-1,round(rsi.iloc[-1],2))    
         self.cache_add( (escala,cvelas),ret )
@@ -435,14 +489,14 @@ class Indicadores:
             puedo usar a coef_volumen para disminuir aumentar el  promedio
         '''
         df=self.mercado.get_panda_df(self.par, escala, 90)     #self.velas[escala].panda_df(cvelas + 60)
-        df_ema=ta.ma('ma',df['Volume'],length=20)
+        df_ema=ta.ma('ma',df['volume'],length=20)
         
         ivela = -1    #indice para recorrer en forma negativa
         ic=0          #velas cerradas
         calmado=True
         while ic < cvelas:
             if df.iloc[ivela]["closed"]:
-                if df.iloc[ivela]["Volume"] * coef_volumen > df_ema.iloc[ivela]:
+                if df.iloc[ivela]["volume"] * coef_volumen > df_ema.iloc[ivela]:
                     calmado = False
                     break
                 ic +=1    
@@ -600,8 +654,8 @@ class Indicadores:
         y si la diferencia_porcentual es mayor diferencia_porcentual_minima, retora verdadero'''
         
         df=self.mercado.get_panda_df(self.par,escala,per_lenta+50)
-        df_emar=ta.ema(df['Close'],length=per_rapida) 
-        df_emal=ta.ema(df['Close'],length=per_lenta)  
+        df_emar=ta.ema(df['close'],length=per_rapida) 
+        df_emal=ta.ema(df['close'],length=per_lenta)  
 
         #print(df)
         #print(df_emal.to_list())
@@ -623,7 +677,7 @@ class Indicadores:
     def ema(self,escala,periodos):
         
         df=self.mercado.get_panda_df(self.par,escala,periodos+100)
-        df_ema=ta.ema(df['Close'],length=periodos) 
+        df_ema=ta.ema(df['close'],length=periodos) 
         ret = df_ema.iloc[-1]
 
         self.cache_add( (escala,periodos),ret  )
@@ -639,8 +693,8 @@ class Indicadores:
         
         df=self.mercado.get_panda_df(self.par,escala,per_lenta+50)
         try:
-            df_emar=ta.ema(df['Close'],length=per_rapida) 
-            df_emal=ta.ema(df['Close'],length=per_lenta)  
+            df_emar=ta.ema(df['close'],length=per_rapida) 
+            df_emal=ta.ema(df['close'],length=per_lenta)  
         except Exception as e:
             self.log.err('Error ema_rapida_mayor_lenta2',str(e)) 
             return (   False,0,0,0   )   
@@ -680,12 +734,12 @@ class Indicadores:
         df=self.mercado.get_panda_df(self.par,escala,per_ema3+50)
         
 
-        df_ema1=ta.ema(df['Close'],length=per_ema1) 
-        df_ema2=ta.ema(df['Close'],length=per_ema2)
+        df_ema1=ta.ema(df['close'],length=per_ema1) 
+        df_ema2=ta.ema(df['close'],length=per_ema2)
 
         ret = False  
         if df_ema1.iloc[-1] > df_ema2.iloc[-1]:
-            df_ema3=ta.ema(df['Close'],length=per_ema3)
+            df_ema3=ta.ema(df['close'],length=per_ema3)
             if  df_ema2.iloc[-1] > df_ema3.iloc[-1]:
                 ret = True
         return ret
@@ -699,8 +753,8 @@ class Indicadores:
         si pendientes_negativas=True exige que las pendientes sean negativas al mismo tiempo que se de la diferencia porcentual''' 
         
         df=self.mercado.get_panda_df(self.par,escala,per_lenta+50)
-        df_emar=ta.ema(df['Close'],length=per_rapida) 
-        df_emal=ta.ema(df['Close'],length=per_lenta)  
+        df_emar=ta.ema(df['close'],length=per_rapida) 
+        df_emal=ta.ema(df['close'],length=per_lenta)  
 
         #print(df)
         #print(df_emal.to_list())
@@ -760,7 +814,7 @@ class Indicadores:
         retorna True si la ultima dif entre la ultimaema y la anterior es positiva
         '''
         df=self.mercado.get_panda_df(self.par,escala,periodos+50)
-        df_ema=ta.ema(df['Close'],length=periodos) 
+        df_ema=ta.ema(df['close'],length=periodos) 
         
 
         pend=round( self.pendientes(escala,df_ema.to_list(),1)[0] * 100,9 )
@@ -1412,12 +1466,19 @@ class Indicadores:
 
     def precio_mas_actualizado(self):
         actualizado={}
-        for esc in self.mercado.par_escala_ws_v[self.par].keys():
-            actualizado[esc]=self.mercado.par_escala_ws_v[self.par][esc][1].actualizado
+        try:
 
-        mas_actualizado = sorted(actualizado.items(), key=lambda x: x[1] ,reverse=True   )[0]
+            for esc in self.mercado.par_escala_ws_v[self.par].keys():
+                actualizado[esc]=self.mercado.par_escala_ws_v[self.par][esc][1].actualizado
 
-        return self.precio(mas_actualizado[0]) #retorno el precio del mas actualizado
+            mas_actualizado = sorted(actualizado.items(), key=lambda x: x[1] ,reverse=True   )[0]
+
+            ret = self.precio(mas_actualizado[0]) #retorno el precio del mas actualizado
+
+        except:
+            ret = -1
+
+        return ret       
 
  
 

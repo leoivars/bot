@@ -15,11 +15,11 @@ class Vela:
             self.close_time=0
         else:
             self.open_time=open_time
-            self.open=df.get('Open')
-            self.high=df.get('High')
-            self.low=df.get('Low')
-            self.close=df.get('Close')
-            self.volume=df.get('Volume')
+            self.open=df.get('open')
+            self.high=df.get('high')
+            self.low=df.get('low')
+            self.close=df.get('close')
+            self.volume=df.get('volume')
             self.close_time=df.get('close_time')
         
         self.set_signo()

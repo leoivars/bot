@@ -1149,7 +1149,7 @@ class Par:
                 listo=True 
 
         if not listo:
-            if self.analisis_provocador_entrada in "buscar_rsi_bajo":
+            if self.analisis_provocador_entrada in "buscar_divergencia_rsi buscar_rsi_bajo":
                 metodo="mercado"
                 listo=True        
         
@@ -1949,12 +1949,13 @@ class Par:
                 self.log.log(f'escala {escalas_a_probar}')
                 
                 for esc in escalas_a_probar:
+                    
                     if not comprar: 
-                        ret = self.buscar_rsi_bajo(esc)
+                        ret = self.buscar_divergencia_rsi(esc)
                         if ret[0]:
                             self.escala_de_analisis = ret[1]
                             self.sub_escala_de_analisis = ret[1]
-                            self.analisis_provocador_entrada='buscar_rsi_bajo'
+                            self.analisis_provocador_entrada='buscar_divergencia_rsi'
                             comprar = True
                             break
                     
@@ -2001,10 +2002,10 @@ class Par:
         si el precio < objetivo_venta no se cumple = True
         ''' 
         ret = False     
-        if self.objetivo_venta>0:
-            if self.precio < self.objetivo_venta:
+        if self.objetivo_venta_trade>0:
+            if self.precio < self.objetivo_venta_trade:
                 ret=True
-                self.log.log(f'precio {self.precio} < {self.objetivo_venta} objetivo_venta')
+                self.log.log(f'precio {self.precio} < {self.objetivo_venta_trade} objetivo_venta')
         return ret    
     
 
@@ -2023,6 +2024,26 @@ class Par:
         
         return ret 
 
+    def buscar_divergencia_rsi(self,escala): 
+        ret=[False,'xx']
+        ind: Indicadores = self.ind
+        ultimo_rsi_min, pos_rsi_min, precio_ultimo_rsi_min,rsi = ind.rsi_minimo_y_pos(escala,2)
+        self.log.log('...',ultimo_rsi_min, pos_rsi_min, precio_ultimo_rsi_min,rsi)
+        if pos_rsi_min >0 and ultimo_rsi_min<40 and rsi <50:
+            self.log.log('se cumple minimo inicial')
+            vela_ini = pos_rsi_min +1
+            cvelas = 50
+            while vela_ini < cvelas:
+                rsi_min, pos_rsi_min, precio_rsi_min,rsi= ind.rsi_minimo_y_pos(escala, cvelas , vela_ini)
+                self.log.log('-->',vela_ini,rsi_min, pos_rsi_min, precio_rsi_min,rsi)
+                if pos_rsi_min >0 and rsi_min <35 and rsi_min < ultimo_rsi_min and precio_rsi_min >= precio_ultimo_rsi_min:
+                    print('!!!--> SE COMPLE devergencia')
+                    ret = [True,escala,'buscar_divergencia_rsi']
+                    break
+                vela_ini += 1 
+
+        return ret        
+
 
     def buscar_rsi_bajo(self,escala):   
         ret=[False,'xx']
@@ -2036,7 +2057,7 @@ class Par:
         #if self.filtro_ema_rapida_lenta(self.g.zoom_out(escala,1), 50,200, 0.01):
         rsi_inf = self.determinar_rsi_minimo_para_comprar(escala)
         if  self.filtro_de_rsi_minimo_cercano(escala, rsi_inf  ,pos_rsi_inferior=(1,2),max_rsi=60):
-            if self.filtro_rsi_armonicos(escala,1,valor_maximo=rsi_inf+10):
+            if self.filtro_rsi_armonicos(escala,1,valor_maximo=rsi_inf+5):
                 #if self.filtro_volumen_calmado(escala, 2 , 0.9):
                 ret = [True,escala,'buscar_rsi_bajo']
 
@@ -2092,27 +2113,27 @@ class Par:
     def determinar_rsi_minimo_para_comprar(self,escala):
         ind: Indicadores =self.ind
         #esc_sup = self.g.zoom_out(escala,1)
-        rsi_sup = ind.rsi('1d')
+        rsi_1d = ind.rsi('1d')
         #ema5, difp5,pendr5,pendl5 = ind.ema_rapida_mayor_lenta2( esc_sup , 10,50,0.05) # en temporalidad superior está alcista
         #self.log.log(f'ema {esc_sup}: {ema5}, dif {difp5},pendr {pendr5},pendl {pendl5}')
         ema , difp,pendr,pendl = ind.ema_rapida_mayor_lenta2( '1d', 10,50,0.5,pendientes_positivas=True) 
         ema1, _,_,_ = ind.ema_rapida_mayor_lenta2( escala, 10,50,0.5,pendientes_positivas=True) 
-        self.log.log(f'ema {escala}: {ema}, dif {difp},pendr {pendr},pendl {pendl} rsi_sup {rsi_sup}')
-        if 50 < rsi_sup <= 70:
+        self.log.log(f'ema {escala}: {ema}, dif {difp},pendr {pendr},pendl {pendl} rsi_sup {rsi_1d}')
+        if 50 < rsi_1d <= 70:
             if ema and pendr > 0 and pendl > 0:
-                ret = 40
+                ret = 50
             else:
                 ret = 35
-        elif 35 < rsi_sup <= 50:
+        elif 35 < rsi_1d <= 50:
             if ema:
-                ret = 30 
+                ret = 33 
             else: 
-                ret = 27
+                ret = 30
         else: 
-            ret = 25       
+            ret = 29       
 
         if not ema and not ema1: # la cosa está bajista solo compro con caidas muy pronunciadas
-            ret -= 5
+            ret -= 3
 
         return ret        
 
@@ -2150,7 +2171,7 @@ class Par:
         self.log.log(f'{filtro_ok} <--- {escala} rsi {rsi} ')
         return filtro_ok
 
-    def avaluar_si_hay_que_vender(self,escala,gan,duracion_trade):
+    def evaluar_si_hay_que_vender(self,escala,gan,duracion_trade):
         self.log.log(f'senial de entrada {self.senial_entrada}')
         ind: Indicadores =self.ind
         gan_min = calc_ganancia_minima(self.g,0.5,self.escala_de_analisis,duracion_trade)
@@ -2245,7 +2266,7 @@ class Par:
 
     def filtro_pico_minimo_ma_minimos(self,escala,cvelas_bajada=7,posicion_minimo=1,control_volumen=True):
         ind: Indicadores =self.ind
-        minimo,velas_bajada = ind.minimo_en_ma(escala,6,'Close',cvelas=posicion_minimo+1) 
+        minimo,velas_bajada = ind.minimo_en_ma(escala,6,'close',cvelas=posicion_minimo+1) 
         min_ok = minimo >= posicion_minimo and velas_bajada >=cvelas_bajada
         self.log.log(f' minimo en {minimo}, velas en bajada {velas_bajada}')
         if min_ok and control_volumen:
@@ -2259,7 +2280,7 @@ class Par:
 
     def filtro_pico_maximo_ema_maximos(self,escala,cvelas_subida=7,posicion_maximo=1):
         ind: Indicadores =self.ind
-        pmaximo, velas_subida = ind.maximo_en_ema(escala,periodos=7,datos='Close',cvelas=posicion_maximo+1) 
+        pmaximo, velas_subida = ind.maximo_en_ema(escala,periodos=7,datos='close',cvelas=posicion_maximo+1) 
         filtro_ok = pmaximo >= posicion_maximo and velas_subida >=cvelas_subida
         self.log.log(f'{filtro_ok} <--ok_filtro_pico_maximo_ema_maximos: {cvelas_subida}')
         self.log.log(f'    maximo en {pmaximo}, velas en subida {velas_subida}')
@@ -2323,7 +2344,7 @@ class Par:
 
     def filtro_de_rsi_minimo_cercano(self,escala,rsi_inferior,pos_rsi_inferior=(2,15),max_rsi=55):
         ind:Indicadores=self.ind
-        rsi_min,rsi_min_pos,rsi= ind.rsi_minimo_y_pos(escala,  pos_rsi_inferior[1]    )
+        rsi_min,rsi_min_pos,_,rsi= ind.rsi_minimo_y_pos(escala,  pos_rsi_inferior[1]    )
         resultado_filtro=  rsi_min < rsi_inferior and pos_rsi_inferior[0] <= rsi_min_pos <= pos_rsi_inferior[1]  and rsi<max_rsi
         self.log.log(f'{resultado_filtro} <-- filtro_de_rsi_minimo_cercano: ')
         self.log.log(f'    busco {rsi_inferior}, actual {rsi_min}')
@@ -3429,7 +3450,7 @@ class Par:
 
         ####TOMAR GANANCIAS #####
         #if self.hay_que_tratar_de_tomar_ganancias(gan,atr):
-        if self.avaluar_si_hay_que_vender(self.escala_de_analisis,gan,duracion_trade):
+        if self.evaluar_si_hay_que_vender(self.escala_de_analisis,gan,duracion_trade):
             self.log.log(  self.par,"cerrar_trade!" )
             self.vender_solo_en_positivo = False
             self.iniciar_estado( 4 )# vendemos
@@ -4979,7 +5000,7 @@ class Par:
         self.ganancia_infima=trade['ganancia_infima']
         self.ganancia_segura=trade['ganancia_segura']
         self.tomar_perdidas=trade['tomar_perdidas']
-        self.objetivo_venta=trade['objetivo_venta']
+        self.objetivo_venta_trade=trade['objetivo_venta']
 
         if 'cazb' in trade['senial_entrada']:
             self.metodo_compra_venta='cazabarridas'

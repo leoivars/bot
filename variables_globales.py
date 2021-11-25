@@ -243,7 +243,7 @@ class VariablesEstado:
         for i in range(x):
             e=self.escala_anterior[esc]
             if e == 'xx':
-                #esc=escala
+                esc=escala
                 break
             else:
                 esc=e
@@ -254,7 +254,7 @@ class VariablesEstado:
         for _ in range(x):
             e=self.escala_siguiente[esc]
             if e == 'xx':
-                #esc=escala
+                esc=escala
                 break
             else:
                 esc=e

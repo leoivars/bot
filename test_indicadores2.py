@@ -10,7 +10,7 @@ from variables_globales import VariablesEstado
 from  formateadores import format_valor_truncando
 from acceso_db import Acceso_DB
 from acceso_db_conexion import Conexion_DB
-from gestor_de_posicion import Gestor_de_Posicion
+#from gestor_de_posicion import Gestor_de_Posicion
 
 pws=Pws()
 
@@ -22,8 +22,8 @@ log=Logger('Test_indicadores.log')
 conn=Conexion_DB(log)
 #objeto de acceso a datos
 db=Acceso_DB(log,conn.pool)
-gestor_de_posicion = Gestor_de_Posicion(log,client,conn)
-globales = VariablesEstado(gestor_de_posicion)
+#gestor_de_posicion = Gestor_de_Posicion(log,client,conn)
+globales = VariablesEstado()
 mercado = Mercado(log,globales,client)
 
 
@@ -305,11 +305,43 @@ def probar_rsi_mfi_vector(par,escala):
     #p = ind.mfi_vector(escala)
     #print('mfi_vector',par,escala,p) 
 
+def probar_rsi_minimo_y_pos(par,escala): 
+    ind=Indicadores(par,log,globales,mercado)
+    p = ind.rsi_minimo_y_pos(escala,2)
+    print('rsi_minimo_y_pos',par,escala,p)   
+    #p = ind.mfi_vector(escala)
+    #print('mfi_vector',par,escala,p)    
+
+
+def probar_detector(par,escala): 
+    ind=Indicadores(par,log,globales,mercado)
+    ultimo_rsi_min, pos_rsi_min, precio_ultimo_rsi_min,rsi = ind.rsi_minimo_y_pos(escala,2)
+    print('...',ultimo_rsi_min, pos_rsi_min, precio_ultimo_rsi_min,rsi)
+    if pos_rsi_min > 0 and ultimo_rsi_min<50 and rsi <50:
+        print('se cumple')
+        vela_ini = pos_rsi_min +1
+        cvelas = 5
+        while vela_ini < cvelas:
+            rsi_min, pos_rsi_min, precio_rsi_min,rsi= ind.rsi_minimo_y_pos(escala, cvelas , vela_ini)
+            print('-->',rsi_min, pos_rsi_min, precio_rsi_min,rsi)
+            if pos_rsi_min > 0 and rsi_min <35 and rsi_min < ultimo_rsi_min and precio_rsi_min >= precio_ultimo_rsi_min:
+                print('!!!--> SE CUMPLE')
+                break
+            
+            vela_ini += 1    
+
+
+
+        
+    #print('rsi_minimo_y_pos',par,escala)   
+    #p = ind.mfi_vector(escala)
+    #print('mfi_vector',par,escala,p)      
+
 
 t = time.time()
 
 while time.time() -t < 600:
-    probar_rsi_mfi_vector('BTCUSDT' ,'1m')
+    probar_detector('DOTUSDT' ,'5m')
     time.sleep(5)
 
 mercado.detener_sockets()

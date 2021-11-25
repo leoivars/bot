@@ -19,7 +19,7 @@ class VelaSet:
         
         try:
             self.acceso.acquire(True)
-            self.df=pd.DataFrame(columns=['Open', 'High', 'Low', 'Close', 'Volume','close_time','closed'] )   
+            self.df=pd.DataFrame(columns=['open', 'high', 'low', 'close', 'volume','close_time','closed'] )   
             self.acceso.release()
             
             if set_velas_web:
@@ -128,7 +128,7 @@ class VelaSet:
     def valores_np_high(self,cant_valores=None):
         
         i = self.i_desde_final(cant_valores)
-        ret = self.df['High'][i:].to_numpy()
+        ret = self.df['high'][i:].to_numpy()
            
         return ret
 
@@ -136,7 +136,7 @@ class VelaSet:
     def valores_np_low(self,cant_valores=None):
         
         i = self.i_desde_final(cant_valores)
-        ret = self.df['Low'][i:].to_numpy()
+        ret = self.df['low'][i:].to_numpy()
            
         return ret
 
@@ -144,7 +144,7 @@ class VelaSet:
     def valores_np_open(self,cant_valores=None):
         
         i = self.i_desde_final(cant_valores)
-        ret = self.df['Open'][i:].to_numpy()
+        ret = self.df['open'][i:].to_numpy()
            
         return ret
 
@@ -152,14 +152,14 @@ class VelaSet:
     def valores_np_close(self,cant_valores=None):
         
         i = self.i_desde_final(cant_valores)
-        ret = self.df['Close'][i:].to_numpy()
+        ret = self.df['close'][i:].to_numpy()
            
         return ret
 
     def valores_np_volume(self,cant_valores=None):
         
         i = self.i_desde_final(cant_valores)
-        ret = self.df['Volume'][i:].to_numpy()
+        ret = self.df['volume'][i:].to_numpy()
            
         return ret
 

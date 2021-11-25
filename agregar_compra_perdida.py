@@ -155,7 +155,7 @@ if respuesta.upper()=='SI':
         orden['price'] = float(orden['cummulativeQuoteQty']) / float(orden['executedQty'])
 
 
-    db.trade_persistir(   moneda,moneda_contra,'1d','compra perdida',  float(orden['executedQty'])   ,float(orden['price']) ,5,10,-5,'', strtime_a_fecha(orden['time']), orden['orderId']  )
+    db.trade_persistir(   moneda,moneda_contra,'1d','compra perdida',  float(orden['executedQty'])   ,float(orden['price']),0 ,5,10,-5,'', strtime_a_fecha(orden['time']), orden['orderId']  )
 
     print('listo.')
 
