@@ -197,8 +197,10 @@ class Indicadores:
 
     def no_sube(self,escala):
 
-        #if  self.emas_ordenadas(escala,10,20,50):
-        #    return False # está subiendo, false de una
+        ema,px = self.ema_px(escala,10)
+
+        if px > ema:
+            return False
         
         v1:Vela = self.mercado.vela(self.par,escala,-1)
         v0:Vela = self.mercado.vela(self.par,escala,-2)
@@ -679,10 +681,19 @@ class Indicadores:
         df=self.mercado.get_panda_df(self.par,escala,periodos+100)
         df_ema=ta.ema(df['close'],length=periodos) 
         ret = df_ema.iloc[-1]
-
-        self.cache_add( (escala,periodos),ret  )
         
         return ret
+
+    def ema_px(self,escala,periodos):
+        ''' retorna la ema y el precio de cierre'''
+        
+        df=self.mercado.get_panda_df(self.par,escala,periodos+100)
+        df_ema=ta.ema(df['close'],length=periodos) 
+        
+        ret = (df_ema.iloc[-1] ,df.iloc[-1]['close']  )
+        
+        return ret
+    
 
     def ema_rapida_mayor_lenta2(self,escala,per_rapida,per_lenta,diferencia_porcentual_minima=0,pendientes_positivas=False):
         ''' calcula la ema rapia y la lenta luego saca la diferencia_porcentual
