@@ -235,6 +235,46 @@ class Indicadores:
                 print(    strtime_a_fecha(  df.iloc[i]['close_time'] )   )
                 picos +=1
         return picos        
+
+    def rsi_lista_picos_minimos(self,escala,cvelas):
+        ''' cuanta la cantidad de picos minimos desde el final por cvelas 
+        para rsi menor que el param menor_de'''    
+        df=self.mercado.get_panda_df(self.par, escala, cvelas + 60) #self.velas[escala].panda_df(cvelas + 60)
+        rsi = df.ta.rsi()
+        lista=[]
+
+        l=len(rsi)
+        lneg = l * -1
+        
+        lneg = l * -1
+        cvel = 1
+        i=-1
+        while i > lneg:
+            i -= 1
+            cvel += 1
+            if cvel > cvelas:
+                break
+            # print(f'if {rsi.iloc[i-1]} > {rsi.iloc[i]}:')
+            if self.hay_minimo_en(rsi,i):
+                #print(    strtime_a_fecha(  df.iloc[i]['close_time'] )   )
+                lista.insert(0,[i*-1,rsi.iloc[i],df.iloc[i]['low']])
+                
+        return lista 
+
+    def minimo_por_rsi(self,escala,cvelas=100,cminimos=3):    
+        lista=self.rsi_lista_picos_minimos(escala,cvelas)
+        minimos = sorted(lista, key=lambda x: x[2]  )
+        l=len(minimos)
+        suma=0
+        i=0
+        while i <3 and  i<l:
+            suma += minimos[i][2]
+            i+=1
+        if i>0:
+            ret = (suma/i)
+        else:
+            ret = -1
+        return ret                       
    
     def volumen_por_encima_media(self,escala,cvelas,xvol = 1):
         ''' suma el volumen de las ultimas cvelas multipolicado por xvol
@@ -440,11 +480,11 @@ class Indicadores:
             self.log.log(str(e)) 
 
         if mi==0:
-            close = -1
+            low = -1
         else:
-            close = df.iloc[mi]['low']
+            low = df.iloc[mi]['low']
 
-        ret =  (  round(minimo,2), mi*-1, close,  round(rsi.iloc[-1],2)    )    
+        ret =  (  round(minimo,2), mi*-1, low,  round(rsi.iloc[-1],2)    )    
         self.cache_add( (escala,cvelas),ret )
 
         return    ret

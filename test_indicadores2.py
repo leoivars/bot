@@ -315,21 +315,8 @@ def probar_rsi_minimo_y_pos(par,escala):
 
 def probar_detector(par,escala): 
     ind=Indicadores(par,log,globales,mercado)
-    ultimo_rsi_min, pos_rsi_min, precio_ultimo_rsi_min,rsi = ind.rsi_minimo_y_pos(escala,2)
-    print('...',ultimo_rsi_min, pos_rsi_min, precio_ultimo_rsi_min,rsi)
-    if pos_rsi_min > 0 and ultimo_rsi_min<50 and rsi <50:
-        print('se cumple')
-        vela_ini = pos_rsi_min +1
-        cvelas = 5
-        while vela_ini < cvelas:
-            rsi_min, pos_rsi_min, precio_rsi_min,rsi= ind.rsi_minimo_y_pos(escala, cvelas , vela_ini)
-            print('-->',rsi_min, pos_rsi_min, precio_rsi_min,rsi)
-            if pos_rsi_min > 0 and rsi_min <35 and rsi_min < ultimo_rsi_min and precio_rsi_min >= precio_ultimo_rsi_min:
-                print('!!!--> SE CUMPLE')
-                break
-            
-            vela_ini += 1    
-
+    print (ind.minimo_por_rsi(escala)  )
+   
 
 
         
@@ -341,7 +328,7 @@ def probar_detector(par,escala):
 t = time.time()
 
 while time.time() -t < 600:
-    probar_detector('DOTUSDT' ,'5m')
+    probar_detector('XMRUSDT' ,'5m')
     time.sleep(5)
 
 mercado.detener_sockets()

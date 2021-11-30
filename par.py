@@ -1149,7 +1149,7 @@ class Par:
                 listo=True 
 
         if not listo:
-            if self.analisis_provocador_entrada in "buscar_divergencia_rsi buscar_rsi_bajo":
+            if self.analisis_provocador_entrada in "buscar_rsi_minimo_subiendo buscar_rsi_bajo":
                 metodo="mercado"
                 listo=True        
         
@@ -1932,6 +1932,8 @@ class Par:
         if self.no_se_cumple_objetivo_compra():
             return False
 
+           
+
         # ya se ha superado la cantidad máxima de  pares con trades, solo esperamos.
         if self.db.trades_cantidad_de_pares_con_trades() >= self.g.maxima_cantidad_de_pares_con_trades and\
            self.db.trades_cantidad(self.moneda,self.moneda_contra) == 0:
@@ -1951,11 +1953,11 @@ class Par:
                 for esc in escalas_a_probar:
                     
                     if not comprar: 
-                        ret = self.buscar_divergencia_rsi(esc)
+                        ret = self.buscar_rsi_minimo_subiendo(esc)
                         if ret[0]:
                             self.escala_de_analisis = ret[1]
                             self.sub_escala_de_analisis = ret[1]
-                            self.analisis_provocador_entrada='buscar_divergencia_rsi'
+                            self.analisis_provocador_entrada='buscar_rsi_minimo_subiendo'
                             comprar = True
                             break
                     
@@ -1985,7 +1987,21 @@ class Par:
 
         return ret   
 
+    def no_se_cumple_minimo_local(self,escala):
+        '''
+          retorna True si el precio está por encima del minimo local 
+        '''
+        ret = False
+        ind: Indicadores =self.ind
+        px_minimo_local=ind.minimo_por_rsi(escala)
+        if self.precio>px_minimo_local:
+            ret = True
+            self.log.log(f'Precio > que minimo local={px_minimo_local}')
+        return ret    
+    
+    
     def no_se_cumple_objetivo_compra(self):
+
         '''
         si self.objetivo_compra>0 controlo que el precio esté por debajo caso contrario no se controla
         ''' 
@@ -1995,6 +2011,10 @@ class Par:
                 ret=True
                 self.log.log(f'precio {self.precio} > {self.objetivo_compra} objetivo_compra')
         return ret    
+
+
+
+
 
     def no_se_cumple_objetivo_venta(self):
         '''
@@ -2024,25 +2044,30 @@ class Par:
         
         return ret 
 
-    def buscar_divergencia_rsi(self,escala): 
+    def buscar_rsi_minimo_subiendo(self,escala): 
         ret=[False,'xx']
         ind: Indicadores = self.ind
-        ultimo_rsi_min, pos_rsi_min, precio_ultimo_rsi_min,rsi = ind.rsi_minimo_y_pos(escala,2)
-        self.log.log('...',ultimo_rsi_min, pos_rsi_min, precio_ultimo_rsi_min,rsi)
-        if pos_rsi_min >0 and ultimo_rsi_min<40 and rsi <50:
+        px_minimo_local=ind.minimo_por_rsi(escala)
+        self.log.log(f'minimo_por_rsi {px_minimo_local}')
+        
+        ultimo_rsi_min, pos_ultimo_rsi_min, precio_ultimo_rsi_min,ultimo_rsi = ind.rsi_minimo_y_pos(escala,2)
+        self.log.log('...',ultimo_rsi_min, pos_ultimo_rsi_min, precio_ultimo_rsi_min,ultimo_rsi)
+        if pos_ultimo_rsi_min >0 and 32<ultimo_rsi_min<50 and ultimo_rsi_min < ultimo_rsi and ultimo_rsi < 50:
             self.log.log('se cumple minimo inicial')
-            vela_ini = pos_rsi_min +1
+            vela_ini = pos_ultimo_rsi_min + 1
             cvelas = 50
             while vela_ini < cvelas:
                 rsi_min, pos_rsi_min, precio_rsi_min,rsi= ind.rsi_minimo_y_pos(escala, cvelas , vela_ini)
-                self.log.log('-->',vela_ini,rsi_min, pos_rsi_min, precio_rsi_min,rsi)
-                if pos_rsi_min >0 and rsi_min <35 and rsi_min < ultimo_rsi_min and precio_rsi_min >= precio_ultimo_rsi_min:
-                    print('!!!--> SE COMPLE devergencia')
-                    ret = [True,escala,'buscar_divergencia_rsi']
+                #self.log.log('-->',vela_ini,rsi_min, pos_rsi_min, precio_rsi_min,rsi)
+                if  0 < pos_rsi_min < cvelas  and rsi_min < 31 and rsi_min < ultimo_rsi_min and precio_rsi_min <= px_minimo_local:
+                    self.log.log('-->',vela_ini,rsi_min, pos_rsi_min, precio_rsi_min,rsi)
+                    print('!!!--> SE CUMPLE subiendo')
+                    ret = [True,escala,'buscar_rsi_minimo_subiendo']
                     break
                 vela_ini += 1 
-
-        return ret        
+        self.log.log('---fin---buscar_rsi_minimo_subiendo-----')        
+        return ret  
+          
 
 
     def buscar_rsi_bajo(self,escala):   
@@ -2067,6 +2092,9 @@ class Par:
 
     def buscar_rebote_rsi(self,escala):
         ret=[False,'xx']
+        if self.no_se_cumple_minimo_local(escala):
+            return ret
+        
         self.log.log('---buscar_rebote_rsi',escala)
         if self.filtro_rsi_armonicos(escala,2,valor_maximo=30): 
             if  self.filtro_de_rsi_minimo_cercano(escala, 30 ,pos_rsi_inferior=(1,3),max_rsi=60):
