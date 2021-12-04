@@ -237,7 +237,7 @@ class Indicadores:
         return picos        
 
     def rsi_lista_picos_minimos(self,escala,cvelas):
-        ''' cuanta la cantidad de picos minimos desde el final por cvelas 
+        ''' entrega lista de picos minimos desde el final por cvelas 
         para rsi menor que el param menor_de'''    
         df=self.mercado.get_panda_df(self.par, escala, cvelas + 60) #self.velas[escala].panda_df(cvelas + 60)
         rsi = df.ta.rsi()
@@ -257,7 +257,7 @@ class Indicadores:
             # print(f'if {rsi.iloc[i-1]} > {rsi.iloc[i]}:')
             if self.hay_minimo_en(rsi,i):
                 #print(    strtime_a_fecha(  df.iloc[i]['close_time'] )   )
-                lista.insert(0,[i*-1,rsi.iloc[i],df.iloc[i]['low']])
+                lista.insert(0,[l-i,rsi.iloc[i],df.iloc[i]['low']])
                 
         return lista 
 
@@ -266,12 +266,14 @@ class Indicadores:
         minimos = sorted(lista, key=lambda x: x[2]  )
         l=len(minimos)
         suma=0
+        cant=0
         i=0
         while i <3 and  i<l:
-            suma += minimos[i][2]
+            suma += minimos[i][2] * minimos[i][0] 
+            cant += minimos[i][0] 
             i+=1
         if i>0:
-            ret = (suma/i)
+            ret = (suma/cant)
         else:
             ret = -1
         return ret                       
@@ -712,7 +714,7 @@ class Indicadores:
             diferencia_porcentual= -100
 
         #if diferencia_porcentual_minima >0:
-        self.log.log(f'l {l},r {r},dif%  {diferencia_porcentual}, dif%min{diferencia_porcentual_minima}') 
+        #self.log.log(f'l {l},r {r},dif%  {diferencia_porcentual}, dif%min{diferencia_porcentual_minima}') 
 
         return diferencia_porcentual > diferencia_porcentual_minima
 

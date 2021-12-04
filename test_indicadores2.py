@@ -313,9 +313,12 @@ def probar_rsi_minimo_y_pos(par,escala):
     #print('mfi_vector',par,escala,p)    
 
 
-def probar_detector(par,escala): 
+def probar_detector(par): 
     ind=Indicadores(par,log,globales,mercado)
-    print (ind.minimo_por_rsi(escala)  )
+    
+    escs=['5m','15m','1d']
+    for e in escs:
+        print (par,e,ind.minimo_por_rsi(e)  )
    
 
 
@@ -328,7 +331,8 @@ def probar_detector(par,escala):
 t = time.time()
 
 while time.time() -t < 600:
-    probar_detector('XMRUSDT' ,'5m')
+    probar_detector('BTCUSDT')
+    
     time.sleep(5)
 
 mercado.detener_sockets()

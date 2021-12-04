@@ -2047,28 +2047,26 @@ class Par:
     def buscar_rsi_minimo_subiendo(self,escala): 
         ret=[False,'xx']
         ind: Indicadores = self.ind
-        px_minimo_local=ind.minimo_por_rsi(escala)
-        self.log.log(f'minimo_por_rsi {px_minimo_local}')
         
+        if ind.ema_rapida_mayor_lenta(escala,9,20,0.1):
+            cvelas= 75
+            rsi_para_comprar=45
+        else:
+            cvelas= 150
+            rsi_para_comprar=28    
+        
+        px_minimo_local=ind.minimo_por_rsi(escala,cvelas)
+
+        self.log.log(f'---minimo_por_rsi {px_minimo_local} cvelas={cvelas}')
         ultimo_rsi_min, pos_ultimo_rsi_min, precio_ultimo_rsi_min,ultimo_rsi = ind.rsi_minimo_y_pos(escala,2)
         self.log.log('...',ultimo_rsi_min, pos_ultimo_rsi_min, precio_ultimo_rsi_min,ultimo_rsi)
-        if pos_ultimo_rsi_min >0 and 32<ultimo_rsi_min<50 and ultimo_rsi_min < ultimo_rsi and ultimo_rsi < 50:
-            self.log.log('se cumple minimo inicial')
-            vela_ini = pos_ultimo_rsi_min + 1
-            cvelas = 50
-            while vela_ini < cvelas:
-                rsi_min, pos_rsi_min, precio_rsi_min,rsi= ind.rsi_minimo_y_pos(escala, cvelas , vela_ini)
-                #self.log.log('-->',vela_ini,rsi_min, pos_rsi_min, precio_rsi_min,rsi)
-                if  0 < pos_rsi_min < cvelas  and rsi_min < 31 and rsi_min < ultimo_rsi_min and precio_rsi_min <= px_minimo_local:
-                    self.log.log('-->',vela_ini,rsi_min, pos_rsi_min, precio_rsi_min,rsi)
-                    print('!!!--> SE CUMPLE subiendo')
-                    ret = [True,escala,'buscar_rsi_minimo_subiendo']
-                    break
-                vela_ini += 1 
+        if precio_ultimo_rsi_min <= px_minimo_local and\
+            pos_ultimo_rsi_min >0 and ultimo_rsi_min < rsi_para_comprar and\
+            ultimo_rsi_min < ultimo_rsi and\
+            ultimo_rsi < 50 :
+            ret = [True,escala,'buscar_rsi_minimo_subiendo']
         self.log.log('---fin---buscar_rsi_minimo_subiendo-----')        
         return ret  
-          
-
 
     def buscar_rsi_bajo(self,escala):   
         ret=[False,'xx']
