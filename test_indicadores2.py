@@ -316,9 +316,9 @@ def probar_rsi_minimo_y_pos(par,escala):
 def probar_detector(par): 
     ind=Indicadores(par,log,globales,mercado)
     
-    escs=['5m','15m','1d']
+    escs=['1m']
     for e in escs:
-        print (par,e,ind.minimo_por_rsi(e)  )
+        print (par,e,ind.rsi_minimo_y_pos(e,20) )
    
 
 

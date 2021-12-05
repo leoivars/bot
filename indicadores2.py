@@ -437,6 +437,11 @@ class Indicadores:
 
         return ret         
 
+    def quitar_ultima_vela_abierta(self,df):
+        if df.iloc[-1]['closed']==0:
+            df.drop(df.index[-1], inplace=True)
+
+
     def rsi_minimo_y_pos(self,escala,cvelas,vela_ini=None):
         ''' retorna el rsi minimo de las c velas, su posición y el rsi actual
         cvelas= cantidad de velas a controlar
@@ -450,6 +455,7 @@ class Indicadores:
         
         if df is None or rsi is None:
             df=self.mercado.get_panda_df(self.par, escala, velas_df) #self.velas[escala].panda_df(cvelas + 60)
+            self.quitar_ultima_vela_abierta(df)
             rsi = df.ta.rsi()
             self.set_cache('mercado.get_panda_df'    ,(self.par, escala, velas_df), df   )
             self.set_cache('mercado.get_panda_df.rsi',(self.par, escala, velas_df), rsi  )

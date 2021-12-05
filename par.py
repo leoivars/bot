@@ -2058,13 +2058,16 @@ class Par:
         px_minimo_local=ind.minimo_por_rsi(escala,cvelas)
 
         self.log.log(f'---minimo_por_rsi {px_minimo_local} cvelas={cvelas}')
-        ultimo_rsi_min, pos_ultimo_rsi_min, precio_ultimo_rsi_min,ultimo_rsi = ind.rsi_minimo_y_pos(escala,2)
-        self.log.log('...',ultimo_rsi_min, pos_ultimo_rsi_min, precio_ultimo_rsi_min,ultimo_rsi)
-        if precio_ultimo_rsi_min <= px_minimo_local and\
-            pos_ultimo_rsi_min >0 and ultimo_rsi_min < rsi_para_comprar and\
-            ultimo_rsi_min < ultimo_rsi and\
-            ultimo_rsi < 50 :
+        
+        rsi_min, pos_rsi_min, precio_rsi_min,rsi = ind.rsi_minimo_y_pos(escala,2)
+        self.log.log('...',rsi_min, pos_rsi_min, precio_rsi_min,rsi)
+        if precio_rsi_min <= px_minimo_local and\
+            pos_rsi_min >0 and rsi_min < rsi_para_comprar and\
+            rsi_min < rsi and\
+            rsi < 50 :
+
             ret = [True,escala,'buscar_rsi_minimo_subiendo']
+        
         self.log.log('---fin---buscar_rsi_minimo_subiendo-----')        
         return ret  
 
