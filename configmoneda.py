@@ -1,8 +1,7 @@
 # # -*- coding: UTF-8 -*-
 from logger import * #clase para loggear
-from correo import * #clase para mandar correos
-from acceso_db import * #acceso a la base de datos 
-from acceso_db_conexion import *
+from acceso_db import Acceso_DB
+from acceso_db_conexion import Conexion_DB
 from indicadores2 import *
 from funciones_utiles import *
 from par_propiedades import Par_Propiedades
@@ -70,7 +69,7 @@ if __name__== "__main__":
     #apertura del pull de conexiones
     conn=Conexion_DB(log)
     #objeto de acceso a datos
-    db=Acceso_DB(log,conn.pool)
+    db=Acceso_DB(log,conn.pool) 
     
     
     

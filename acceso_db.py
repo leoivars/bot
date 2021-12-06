@@ -121,7 +121,7 @@ class Acceso_DB:
 
     def __init__(self,log,pool):
 
-        self.pool: PooledDB =pool
+        self.pool:PooledDB =pool
         self.log=log
         self.conexion=None
         self.cursor=None
