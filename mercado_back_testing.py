@@ -39,7 +39,6 @@ class Mercado_Back_Testing:
     '''
     Contenedor de los datos del mercado extraídos de la base de datos
     '''
-    #usar_sokcet={'1m':False,'5m':True,'15m':True,'30m':True,'1h':True,'2h':False,'4h':True,'1d':True,'1w':True,'1M':False}
         
     def __init__(self,log,estado_general,acceso_db):
 

@@ -35,10 +35,10 @@ import inspect
 class Indicadores:
     
     operando = False
-    escala_siguiente   ={'1m':'5m','5m':'15m','15m':'30m','30m':'1h','1h':'2h','2h':'4h','4h':'1d','1d':'1w','1w':'1M'}
-    tiempo_actualizar  ={'1m':30,  '5m':90,   '15m':100,  '30m':110, '1h':120, '2h':150, '4h':120, '1d':600, '1w':600,'1M':600}
-    var_velas          ={'1m':5,   '5m':7,    '15m':9,    '30m':11,  '1h':13,  '2h':15,  '4h':17,  '1d':19,  '1w':30,' 1M':50}
-    var_velas_seguidas ={'1m':9,   '5m':11,   '15m':13,   '30m':15  ,'1h':17,  '2h':19,  '4h':21,  '1d':27,  '1w':30, '1M':70}
+    escala_siguiente   ={'1m':'3m','3m':'5m','5m':'15m','15m':'30m','30m':'1h','1h':'2h','2h':'4h','4h':'1d','1d':'1w','1w':'1M'}
+    tiempo_actualizar  ={'1m':30,  '3m':45,  '5m':90,   '15m':100,  '30m':110, '1h':120, '2h':150, '4h':120, '1d':600, '1w':600,'1M':600}
+    var_velas          ={'1m':5,   '3m':6,   '5m':7,    '15m':9,    '30m':11,  '1h':13,  '2h':15,  '4h':17,  '1d':19,  '1w':30,' 1M':50}
+    var_velas_seguidas ={'1m':9,   '3m':10,  '5m':11,   '15m':13,   '30m':15  ,'1h':17,  '2h':19,  '4h':21,  '1d':27,  '1w':30, '1M':70}
     #var_velas_seguidas ={'1m':1,   '5m':2,    '15m':3,    '30m':7  , '1h':8,   '2h':9,   '4h':12,  '1d':20, '1w':30,'1M':60}
 
 
@@ -60,7 +60,7 @@ class Indicadores:
     def __init__(self,par,log,estado_general, mercado):
         pd.set_option('mode.chained_assignment', None)
 
-        self.actualizado={'1m':0,'5m':0,'15m':0,'30m':0,'1h':0,'2h':0,'4h':0,'1d':0,'1w':0,'1M':0}
+        self.actualizado={'1m':0,'3m':0,'5m':0,'15m':0,'30m':0,'1h':0,'2h':0,'4h':0,'1d':0,'1w':0,'1M':0}
         self.g:VariablesEstado = estado_general
         self.velas={}
         for k in self.actualizado:

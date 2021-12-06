@@ -25,7 +25,7 @@ class Controlador_De_Tiempo:
         
 
 class Crontraldor_Calculo_Px_Compra(Controlador_De_Tiempo):
-    intervalo_escala  ={'1m':30 ,'5m': 60 ,'15m':90,'30m':100,'1h':150,'2h':180,'4h':240,'1d':300,'1w':600,'1M':1200}
+    intervalo_escala  ={'1m':30,'3m':45,'5m': 60 ,'15m':90,'30m':100,'1h':150,'2h':180,'4h':240,'1d':300,'1w':600,'1M':1200}
     def __init__(self,escala):
         intervalo=self.intervalo_escala[escala]
         super().__init__(intervalo)        

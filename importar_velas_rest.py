@@ -19,7 +19,7 @@ class Actualizador_Rest:
     def __init__(self,client,db,log):
         self.db: Acceso_DB  = db
         self.log = log
-        self.actualizado={'1m':0,'5m':0,'15m':0,'30m':0,'1h':0,'2h':0,'4h':0,'1d':0,'1w':0,'1M':0}
+        self.actualizado={'1m':0,'3m':0,'5m':0,'15m':0,'30m':0,'1h':0,'2h':0,'4h':0,'1d':0,'1w':0,'1M':0}
         self.client: Client = client
 
      

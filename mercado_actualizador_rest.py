@@ -64,6 +64,11 @@ class Actualizador_rest:
             ch=int(cvel/60)+1 #60 velas por hora
             rango_pedido = str(ch)+" hour ago UTC"
             intervalo = Client.KLINE_INTERVAL_1MINUTE
+        elif escala=='3m':
+            cvel=300
+            ch=int(cvel/20)+1 #20 velas por hora
+            rango_pedido = str(ch)+" hour ago UTC"
+            intervalo = Client.KLINE_INTERVAL_3MINUTE
         elif escala=='5m':
             cvel=300
             ch=int(cvel/12)+1 #12 velas por hora
@@ -252,6 +257,8 @@ class Actualizador_rest:
 
                 if escala=='1m':
                     klines =self.client.get_historical_klines(par, Client.KLINE_INTERVAL_1MINUTE, rango_ini,rango_fin) 
+                elif escala=='3m':
+                    klines =self.client.get_historical_klines(par, Client.KLINE_INTERVAL_3MINUTE, rango_ini,rango_fin) 
                 elif escala=='5m':
                     klines =self.client.get_historical_klines(par, Client.KLINE_INTERVAL_5MINUTE, rango_ini,rango_fin) 
                 elif escala=='15m':
