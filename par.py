@@ -1897,10 +1897,9 @@ class Par:
         #ahora esta bueno= la variacion entre el precio y precio_salir_derecho_compra_anterior es menor al 40% de la ganancia de recompra configurada
         #                  o simplemene el precio ha superado al precio_salir_derecho_compra_anterior
         ret = False
-        self.log.log(  "precio_salir_derecho_compra_anterior",self.precio_salir_derecho_compra_anterior)
         if self.precio_salir_derecho_compra_anterior>0:
             variacion_pxant_px= self.var_compra_venta(self.precio_salir_derecho_compra_anterior,self.precio)
-            self.log.log(  "precio_salir_derecho_compra_anterior",variacion_pxant_px)
+            self.log.log(  "precio_salir_derecho_compra_anterior",self.precio_salir_derecho_compra_anterior,variacion_pxant_px)
             #si estamos en positivo en el trade anterior, vendemos o si estamos relativamente cerca (pero en negativo) y la funcion no es comprar+precio
             if variacion_pxant_px > 0:
                 ret = True
@@ -1927,49 +1926,45 @@ class Par:
         agrupo acá todos los grandes filtros que toman la dicisión nucleo
         y que luego de ejecutan constantemente  en estado 2
         para mantener el estado de compra
+        
         '''
+        entradas = self.db.trades_cantidad(self.moneda,self.moneda_contra)
+        cant_temporalidades = len(self.temporalidades)
+        if entradas >= cant_temporalidades:  
+            self.log.log(f'entradas {entradas}, cant.temporalidades {cant_temporalidades}')
+            return False
+        
+        if entradas==0 and self.db.trades_cantidad_de_pares_con_trades() >= self.g.maxima_cantidad_de_pares_con_trades:
+            self.log.log(f'maxima_cantidad_de_pares_con_trades superada')  
+            return False 
 
         if self.no_se_cumple_objetivo_compra():
             return False
 
-           
-
-        # ya se ha superado la cantidad máxima de  pares con trades, solo esperamos.
-        if self.db.trades_cantidad_de_pares_con_trades() >= self.g.maxima_cantidad_de_pares_con_trades and\
-           self.db.trades_cantidad(self.moneda,self.moneda_contra) == 0:
-            self.log.log(f'maxima_cantidad_de_pares_con_trades superada')   
-            return False 
-
         comprar= False
-        entradas = self.db.trades_cantidad(self.moneda,self.moneda_contra)
-        cant_temporalidades = len(self.temporalidades)
-        self.log.log(f'entradas {entradas}, cant.temporalidades {cant_temporalidades}')
-        if entradas < cant_temporalidades:  
-            if not comprar: # and self.moneda=='BTC' or self.moneda=='BTCDOWN' or self.moneda=='BTCUP': 
-                escalas_a_probar = self.entradas_a_escalas(self.temporalidades,entradas)
-                
-                self.log.log(f'escala {escalas_a_probar}')
-                
-                for esc in escalas_a_probar:
-                    
-                    if not comprar: 
-                        ret = self.buscar_rsi_minimo_subiendo(esc)
-                        if ret[0]:
-                            self.escala_de_analisis = ret[1]
-                            self.sub_escala_de_analisis = ret[1]
-                            self.analisis_provocador_entrada='buscar_rsi_minimo_subiendo'
-                            comprar = True
-                            break
-                    
-                    if not comprar:        
-                        ret = self.buscar_rebote_rsi(esc)
-                        if ret[0]:
-                            self.escala_de_analisis = ret[1]
-                            self.sub_escala_de_analisis = ret[1]
-                            self.analisis_provocador_entrada='buscar_rebote_rsi'
-                            comprar = True
-                            break 
+        escalas_a_probar = self.entradas_a_escalas(self.temporalidades,entradas)
+        self.log.log(f'escala {escalas_a_probar}')
+        
+        for esc in escalas_a_probar:
             
+            if not comprar: 
+                ret = self.buscar_rsi_minimo_subiendo(esc)
+                if ret[0]:
+                    self.escala_de_analisis = ret[1]
+                    self.sub_escala_de_analisis = ret[1]
+                    self.analisis_provocador_entrada='buscar_rsi_minimo_subiendo'
+                    comprar = True
+                    break
+            
+            if not comprar:        
+                ret = self.buscar_rebote_rsi(esc)
+                if ret[0]:
+                    self.escala_de_analisis = ret[1]
+                    self.sub_escala_de_analisis = ret[1]
+                    self.analisis_provocador_entrada='buscar_rebote_rsi'
+                    comprar = True
+                    break 
+    
         return comprar        
         
     def entradas_a_escalas(self,escalas,entradas):
@@ -2053,13 +2048,17 @@ class Par:
             rsi_para_comprar=45
         else:
             cvelas= 150
-            rsi_para_comprar=28    
-        
-        px_minimo_local=ind.minimo_por_rsi(escala,cvelas)
+            rsi_para_comprar=40 
 
-        self.log.log(f'---minimo_por_rsi {px_minimo_local} cvelas={cvelas}')
+        if self.no_hay_precios_minimos(cvelas):
+            return ret       
         
-        rsi_min, pos_rsi_min, precio_rsi_min,rsi = ind.rsi_minimo_y_pos(escala,2)
+        #px_minimo_local=ind.minimo_por_rsi(escala,cvelas)
+        px_minimo_local=ind.minimo_x_vol('1m',cvelas,5) 
+
+        self.log.log(f'------> minimo_x_vol {px_minimo_local} cvelas={cvelas}')
+        
+        rsi_min, pos_rsi_min, precio_rsi_min,rsi = ind.rsi_minimo_y_pos('1m',2)
         self.log.log('...',rsi_min, pos_rsi_min, precio_rsi_min,rsi)
         if precio_rsi_min <= px_minimo_local and\
             pos_rsi_min >0 and rsi_min < rsi_para_comprar and\
@@ -2089,7 +2088,24 @@ class Par:
 
         self.log.log('----------------------')    
 
-        return ret 
+        return ret
+
+
+    def no_hay_precios_minimos(self,cvelas):
+        ind: Indicadores = self.ind
+        ret = False
+        escalas=['1d','4h','15m','5m']
+        for e in escalas:
+            min = ind.minimo_x_vol(e,cvelas,5) 
+            if min < self.precio:
+                ret =True
+                self.log.log(f'no se cumple px min {e} {min} < {self.precio}')
+                break
+
+        return ret    
+
+
+             
 
     def buscar_rebote_rsi(self,escala):
         ret=[False,'xx']
@@ -5071,7 +5087,6 @@ class Par:
         trade=self.db.get_trade_menor_precio(self.moneda,self.moneda_contra)
         self.precio_salir_derecho_compra_anterior=self.precio_de_venta_minimo(0,trade['precio'])
         self.cantidad_compra_anterior =trade['cantidad']
-        self.log.log('set--->precio_salir_derecho_compra_anterior',self.precio_salir_derecho_compra_anterior,type(self.precio_salir_derecho_compra_anterior))
    
     def ganancias_compra_anterior(self):
         trade=self.db.get_trade_menor_precio(self.moneda,self.moneda_contra)

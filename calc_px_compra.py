@@ -165,27 +165,11 @@ class Calculador_Precio_Compra:
         
 
         #px= self.restar_cuando_son_malas_condiciones(self.escala_de_analisis,px)
-        
 
-        if px > self.precio:
-            px= ind.precio_de_rsi('15m',35)
-            self.log.log('calc.cazaliq 15m 35',px) 
-            self.calculo_precio_compra='calc.cazaliq 15m 35' 
-
-        if px > self.precio:
-            px= ind.precio_de_rsi('15m',29)
-            self.log.log('calc.cazaliq 15m 29',px) 
-            self.calculo_precio_compra='calc.cazaliq 15m 29'
-
-        if px > self.precio:
-            px= ind.precio_de_rsi('15m',19)
-            self.log.log('calc.cazaliq 15m 19',px) 
-            self.calculo_precio_compra='calc.cazaliq 15m 19'    
-        
         if px > self.precio:
             self.log.log('ERRORCALCULO, ind.promedio_de_bajos',px,self.precio)
             px = self.precio / 1.01
-            self.calculo_precio_compra='self.precio - self.tickSize'
+            self.calculo_precio_compra='self.precio / 1.01'
 
         if px <=0:
             px=self.precio / 1.25 

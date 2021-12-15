@@ -236,6 +236,100 @@ class Indicadores:
                 picos +=1
         return picos        
 
+    def lista_picos_minimos_x_vol(self,escala,cvelas):
+        ''' entrega lista de picos minimos desde el final por cvelas
+            y una ponderación  de volumen( i-1 + i +i+1) * minimo * posicion 
+        '''    
+        df=self.mercado.get_panda_df(self.par, escala, cvelas + 60) #self.velas[escala].panda_df(cvelas + 60)
+        low = low  = df['low']
+        lista=[]
+
+        l=len(low)
+        lneg = l * -1
+        
+        lneg = l * -1
+        cvel = 1
+        i=-1
+        while i > lneg:
+            i -= 1
+            cvel += 1
+            if cvel > cvelas:
+                break
+            # print(f'if {rsi.iloc[i-1]} > {rsi.iloc[i]}:')
+            if self.hay_minimo_en(low,i):
+                #print(    strtime_a_fecha(  df.iloc[i]['close_time'] )   )
+                pos=l-i
+                vol = df.iloc[i-1]['volume'] + df.iloc[i]['volume'] + df.iloc[i+1]['volume'] # volumen de al vela + volumen de la izquierda y derecha
+                lista.insert(0,[ pos , df.iloc[i]['low'],  vol * pos * df.iloc[i]['low']  ])
+                
+        return lista 
+
+    def lista_picos_minimos_y_maximos_x_vol(self,escala,cvelas):
+        ''' entrega lista de picos minimos maximo desde el final por cvelas
+            y una ponderación  de volumen( i-1 + i +i+1) * minimo * posicion 
+        '''    
+        df=self.mercado.get_panda_df(self.par, escala, cvelas + 60) #self.velas[escala].panda_df(cvelas + 60)
+        low  = df['low']
+        high = df['high']
+
+        lista_min=[]
+        lista_max=[]
+
+        l=len(low)
+        lneg = l * -1
+        
+        lneg = l * -1
+        cvel = 1
+        i=-1
+        while i > lneg:
+            i -= 1
+            cvel += 1
+            if cvel > cvelas:
+                break
+            # print(f'if {rsi.iloc[i-1]} > {rsi.iloc[i]}:')
+            if self.hay_minimo_en(low,i):
+                #print(    strtime_a_fecha(  df.iloc[i]['close_time'] )   )
+                pos=l-i
+                vol = df.iloc[i-1]['volume'] + df.iloc[i]['volume'] + df.iloc[i+1]['volume']
+                lista_min.insert(0,[ pos , df.iloc[i]['low'],  vol * pos * df.iloc[i]['low']  ])
+            elif self.hay_maximo_en(high,i):
+                #print(    strtime_a_fecha(  df.iloc[i]['close_time'] )   )
+                pos=l-i
+                vol = df.iloc[i-1]['volume'] + df.iloc[i]['volume'] + df.iloc[i+1]['volume']
+                lista_max.insert(0,[ pos , df.iloc[i]['high'],  vol * pos * df.iloc[i]['high']  ])
+                
+        return lista_min,lista_max
+
+
+    def minimo_x_vol(self,escala,cvelas=100,cminimos=3):    
+        lista=self.lista_picos_minimos_x_vol(escala,cvelas)
+        minimos = sorted(lista, key=lambda x: x[2]  ) # ordno por la ponderacion
+        return self.calc_top(minimos,cminimos)
+
+    def rango_x_vol(self,escala,cvelas=100,top=3):    
+        lista_min,lista_max = self.lista_picos_minimos_y_maximos_x_vol(escala,cvelas)
+        minimos = sorted(lista_min, key=lambda x: x[2]  ) # ordno por la ponderacion
+        maximos = sorted(lista_max, key=lambda x: x[2] ,reverse=True )
+        return self.calc_top(minimos,top)  , self.calc_top(maximos,top)    
+
+    def calc_top(self,lista,top):
+        l=len(lista)
+        suma=0
+        cant=0
+        i=0
+        while i < top and  i<l:
+            suma += lista[i][1] 
+            cant += 1 
+            i+=1
+        if i>0:
+            ret = suma/cant
+        else:
+            ret = -1
+        return ret    
+
+
+
+
     def rsi_lista_picos_minimos(self,escala,cvelas):
         ''' entrega lista de picos minimos desde el final por cvelas 
         para rsi menor que el param menor_de'''    
@@ -268,7 +362,7 @@ class Indicadores:
         suma=0
         cant=0
         i=0
-        while i <3 and  i<l:
+        while i < cminimos and  i<l:
             suma += minimos[i][2] * minimos[i][0] 
             cant += minimos[i][0] 
             i+=1
@@ -496,7 +590,7 @@ class Indicadores:
         self.cache_add( (escala,cvelas),ret )
 
         return    ret
-
+    
     def rsi_maximo_y_pos(self,escala,cvelas):
         ''' retorna el rsi maximo de las c velas, su posición y el rsi actual
         '''
@@ -531,7 +625,8 @@ class Indicadores:
         self.cache_add( (escala,cvelas),ret )
 
         return    ret
-        
+
+
     
     def volumen_calmado(self,escala,cvelas=1,coef_volumen=1):
         ''' considera calmado al volumen  de las ultimas cvela cerradas
