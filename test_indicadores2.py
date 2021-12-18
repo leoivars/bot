@@ -319,7 +319,8 @@ def probar_detector(par):
     escs=['1d','4h','15m','1m']
     for e in escs:
         #print (par,e,'min_rsi       ',ind.minimo_por_rsi(e) )
-        print (par,e,'min_xvxp_100_5',ind.minimo_x_vol(e,150) )
+        #print (par,e,'minimo_x_vol',ind.minimo_x_vol(e,150) )
+        print (par,e,'maximo_x_vol',ind.maximo_x_vol(e,150) )
         #print (par,e,'min_xvxp_100_1',ind.minimo_x_vol(e,100,1) )
         
     #print('rsi_minimo_y_pos',par,escala)   

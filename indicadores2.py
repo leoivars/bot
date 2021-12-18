@@ -197,7 +197,7 @@ class Indicadores:
 
     def no_sube(self,escala):
 
-        ema,px = self.ema_px(escala,10)
+        ema,px = self.ema_px(escala,7)
 
         if px > ema:
             return False
@@ -264,20 +264,15 @@ class Indicadores:
                 
         return lista 
 
-    def lista_picos_minimos_y_maximos_x_vol(self,escala,cvelas):
-        ''' entrega lista de picos minimos maximo desde el final por cvelas
+    def lista_picos_maximos_x_vol(self,escala,cvelas):
+        ''' entrega lista de picos minimos desde el final por cvelas
             y una ponderación  de volumen( i-1 + i +i+1) * minimo * posicion 
         '''    
         df=self.mercado.get_panda_df(self.par, escala, cvelas + 60) #self.velas[escala].panda_df(cvelas + 60)
-        low  = df['low']
         high = df['high']
 
-        lista_min=[]
         lista_max=[]
-
-        l=len(low)
-        lneg = l * -1
-        
+        l=len(high)
         lneg = l * -1
         cvel = 1
         i=-1
@@ -287,30 +282,22 @@ class Indicadores:
             if cvel > cvelas:
                 break
             # print(f'if {rsi.iloc[i-1]} > {rsi.iloc[i]}:')
-            if self.hay_minimo_en(low,i):
+            if self.hay_maximo_en(high,i):
                 #print(    strtime_a_fecha(  df.iloc[i]['close_time'] )   )
                 pos=l-i
                 vol = df.iloc[i-1]['volume'] + df.iloc[i]['volume'] + df.iloc[i+1]['volume']
-                lista_min.insert(0,[ pos , df.iloc[i]['low'],  vol * pos * df.iloc[i]['low']  ])
-            elif self.hay_maximo_en(high,i):
-                #print(    strtime_a_fecha(  df.iloc[i]['close_time'] )   )
-                pos=l-i
-                vol = df.iloc[i-1]['volume'] + df.iloc[i]['volume'] + df.iloc[i+1]['volume']
-                lista_max.insert(0,[ pos , df.iloc[i]['high'],  vol * pos * df.iloc[i]['high']  ])
-                
-        return lista_min,lista_max
-
+                lista_max.insert(0,[ pos , df.iloc[i]['high'],  vol * pos * df.iloc[i]['high']  ])        
+        return lista_max
 
     def minimo_x_vol(self,escala,cvelas=100,cminimos=3):    
         lista=self.lista_picos_minimos_x_vol(escala,cvelas)
         minimos = sorted(lista, key=lambda x: x[2]  ) # ordno por la ponderacion
         return self.calc_top(minimos,cminimos)
 
-    def rango_x_vol(self,escala,cvelas=100,top=3):    
-        lista_min,lista_max = self.lista_picos_minimos_y_maximos_x_vol(escala,cvelas)
-        minimos = sorted(lista_min, key=lambda x: x[2]  ) # ordno por la ponderacion
-        maximos = sorted(lista_max, key=lambda x: x[2] ,reverse=True )
-        return self.calc_top(minimos,top)  , self.calc_top(maximos,top)    
+    def maximo_x_vol(self,escala,cvelas=100,cant_maximos=3):    
+        lista=self.lista_picos_maximos_x_vol(escala,cvelas)
+        maximos = sorted(lista, key=lambda x: x[2] ,reverse=True )
+        return self.calc_top(maximos,cant_maximos)
 
     def calc_top(self,lista,top):
         l=len(lista)

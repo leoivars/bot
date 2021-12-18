@@ -1831,7 +1831,7 @@ class Par:
             self.iniciar_estado( self.estado_siguiente() )
             #self.enviar_correo_gogogo()
         else:
-            self.log.log(self.par,self.escala_de_analisis,self.analisis_provocador_entrada,"|||||XXXXXX|||||> Todo es Positivo, pero no hay fondos")
+            self.log.log(self.par,self.escala_de_analisis,self.analisis_provocador_entrada,f"px {self.precio} |||||XXXXXX|||||> Todo es Positivo, pero no hay fondos")
             self.estado_7_no_comprar()
                 
     
@@ -2047,28 +2047,40 @@ class Par:
             cvelas= 75
             rsi_para_comprar=45
         else:
-            cvelas= 150
+            cvelas= 190
             rsi_para_comprar=40 
 
-        if self.no_hay_precios_minimos(cvelas):
+        if self.no_hay_precios_minimos(cvelas,escala):
             return ret       
         
         #px_minimo_local=ind.minimo_por_rsi(escala,cvelas)
-        px_minimo_local=ind.minimo_x_vol('1m',cvelas,5) 
-
-        self.log.log(f'------> minimo_x_vol {px_minimo_local} cvelas={cvelas}')
-        
-        rsi_min, pos_rsi_min, precio_rsi_min,rsi = ind.rsi_minimo_y_pos('1m',2)
-        self.log.log('...',rsi_min, pos_rsi_min, precio_rsi_min,rsi)
-        if precio_rsi_min <= px_minimo_local and\
-            pos_rsi_min >0 and rsi_min < rsi_para_comprar and\
-            rsi_min < rsi and\
-            rsi < 50 :
-
-            ret = [True,escala,'buscar_rsi_minimo_subiendo']
-        
+        if self.entrada_por_regreso_rsi(escala,cvelas,rsi_para_comprar):
+            if self.entrada_por_regreso_rsi('1m',cvelas,rsi_para_comprar):
+                ret = [True,escala,'buscar_rsi_minimo_subiendo']
+    
         self.log.log('---fin---buscar_rsi_minimo_subiendo-----')        
         return ret  
+
+    def entrada_por_regreso_rsi(self,escala,cvelas,rsi_para_comprar):
+        ind: Indicadores = self.ind
+        px_minimo_local=ind.minimo_x_vol(escala,cvelas,5) 
+
+        self.log.log(f'------> minimo_x_vol {escala} {px_minimo_local} cvelas={cvelas}')
+        
+        rsi_min, pos_rsi_min, precio_rsi_min,rsi = ind.rsi_minimo_y_pos(escala,2)
+        self.log.log('...',rsi_min, pos_rsi_min, precio_rsi_min,rsi)
+        ret =  precio_rsi_min <= px_minimo_local and\
+               pos_rsi_min >0 and rsi_min < rsi_para_comprar and\
+               rsi_min < rsi and\
+               rsi < 50 
+            
+        return ret    
+
+
+
+
+
+
 
     def buscar_rsi_bajo(self,escala):   
         ret=[False,'xx']
@@ -2091,10 +2103,12 @@ class Par:
         return ret
 
 
-    def no_hay_precios_minimos(self,cvelas):
+    def no_hay_precios_minimos(self,cvelas,escala):
         ind: Indicadores = self.ind
         ret = False
         escalas=['1d','4h','15m','5m']
+        if escala not in escalas:
+            escalas.append(escala)
         for e in escalas:
             min = ind.minimo_x_vol(e,cvelas,5) 
             if min < self.precio:
@@ -2257,8 +2271,8 @@ class Par:
             self.log.log(f'{marca_salida} rsi_max > 70 {rsi_max}')
             return True
         
-        if rsi > 65  and self.filtro_volumen_calmado(escala,2) and precio_no_sube:
-            self.log.log(f'{marca_salida} rsi escala >65 {rsi}, volumen_calmado 2 and precio_no_sube')
+        if rsi > 65  and self.filtro_volumen_calmado(escala,1):
+            self.log.log(f'{marca_salida} rsi escala >65 {rsi}, volumen_calmado 1')
             return True
 
         if rsi_max > 53 and rsi_max > rsi and 1<= rsi_max_pos <= 3 and precio_bajista and precio_no_sube:
@@ -3317,8 +3331,9 @@ class Par:
             self.escala_de_analisis='1d' 
 
         self.log.log('persistiendo trade...')
-
-        self.db.trade_persistir(self.moneda,self.moneda_contra,self.escala_de_analisis,self.analisis_provocador_entrada,can_comprada,precio_orden,self.objetivo_venta,gi,gs,tp,self.texto_analisis_par(),strtime_a_fecha(orden['time']),orden['orderId'])
+        objetivo_venta = self.calc_objetivo_venta(self.escala_de_analisis)
+        
+        self.db.trade_persistir(self.moneda,self.moneda_contra,self.escala_de_analisis,self.analisis_provocador_entrada,can_comprada,precio_orden,objetivo_venta,gi,gs,tp,self.texto_analisis_par(),strtime_a_fecha(orden['time']),orden['orderId'])
         
         #se compró, hay que pasar al estado de esperar a que suba 
         self.log.log('enviar_correo_filled_compra...')
@@ -3328,6 +3343,12 @@ class Par:
         else:    
             self.iniciar_estado( self.estado_siguiente() )
 
+    def calc_objetivo_venta(self,escala):
+        if self.objetivo_venta >0: 
+            ret = self.objetivo_venta                       #objetivo venta parametrizado
+        else:    
+            ret = self.ind.maximo_x_vol(escala,100,3)       #objetivo venta calculado
+        return ret
 
     def es_momento_de_salir_estado_2(self):
         ''' hace control sobre si se dan las condiciones para seguir comprando
@@ -3526,7 +3547,7 @@ class Par:
     def momento_de_recomprar(self,escala,gan,duracion_trade):
         #gan_atr = round ( atr/self.precio * 100 * self.g.x_neg_patr,2 ) #multiplicador de atr negativo para recomprar cuando se pasa cierta perdida
         self.log.log( f'momento_de_recomprar?  gan {gan}' )
-        recomprar =  gan < -0.31 and duracion_trade > 60
+        recomprar =  gan < self.g.escala_ganancia[escala] * -2 and duracion_trade > 60
         ret = False            
         if recomprar:
             self.log.log( 'Intento recomprar---> Sí')
@@ -4790,8 +4811,9 @@ class Par:
         
 
         self.texto_analisis_par()
+        objetivo_venta = self.calc_objetivo_venta(self.escala_de_analisis)
 
-        self.db.trade_persistir(self.moneda,self.moneda_contra,escala ,senial_entrada, ejecutado ,precio,self.objetivo_venta ,gi,gs,tp,
+        self.db.trade_persistir(self.moneda,self.moneda_contra,escala ,senial_entrada, ejecutado ,precio,objetivo_venta ,gi,gs,tp,
                                 analisis, strtime_a_fecha(orden['time']) ,orden['orderId'])
 
         self.log.log('enviar_correo_filled_compra recuperada...')
