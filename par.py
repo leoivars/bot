@@ -1956,14 +1956,14 @@ class Par:
                     comprar = True
                     break
             
-            if not comprar:        
-                ret = self.buscar_rebote_rsi(esc)
-                if ret[0]:
-                    self.escala_de_analisis = ret[1]
-                    self.sub_escala_de_analisis = ret[1]
-                    self.analisis_provocador_entrada='buscar_rebote_rsi'
-                    comprar = True
-                    break 
+            # if not comprar:        
+            #     ret = self.buscar_rebote_rsi(esc)
+            #     if ret[0]:
+            #         self.escala_de_analisis = ret[1]
+            #         self.sub_escala_de_analisis = ret[1]
+            #         self.analisis_provocador_entrada='buscar_rebote_rsi'
+            #         comprar = True
+            #         break 
     
         return comprar        
         
