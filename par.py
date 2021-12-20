@@ -2230,6 +2230,29 @@ class Par:
         self.log.log(f'{filtro_ok} <--- {escala} rsi {rsi} ')
         return filtro_ok
 
+    
+    
+    def precio_cerca(self,px,porcentaje=0.30):
+        ret = abs(self.precio - px) / self.precio *100 < porcentaje
+
+    def precio_sobre_objetivo(self,escala):
+        ind = self.ind
+        objetivo_venta = ind.maximo_x_vol(escala,100,3)
+        ret=self.precio_cerca(objetivo_venta,0.3)
+        if ret:
+            self.log.log(f'precio cerca objetivo= {objetivo_venta}')
+        return ret    
+
+    def precio_sobre_ema_importante(self):
+        ind = self.ind
+        ret = False
+        emas_importantes=[('1d',20),('1d',50),('4h',20),('4h',50)]    
+        for em in emas_importantes:
+            if self.precio_cerca(ind.ema(em[0],em[1])):
+                self.log.log(f'precio cerca de ema{em}')
+                ret = True
+        return ret        
+
     def evaluar_si_hay_que_vender(self,escala,gan,duracion_trade):
         self.log.log(f'senial de entrada {self.senial_entrada}')
         ind: Indicadores =self.ind
@@ -2278,6 +2301,14 @@ class Par:
         if rsi_max > 53 and rsi_max > rsi and 1<= rsi_max_pos <= 3 and precio_bajista and precio_no_sube:
             self.log.log(f'{marca_salida} rsi_max > 53 {rsi_max} ,precio_bajista and precio_no_sube')
             return True
+
+        if rsi_max > 50 and rsi_max > rsi and 1<= rsi_max_pos <= 3 and self.precio_sobre_objetivo(self.escala_de_analisis):
+            return True
+
+        if rsi_max > 50 and rsi_max > rsi and 1<= rsi_max_pos <= 3 and self.precio_sobre_ema_importante():
+            return True
+        
+    
 
         #if rsi_max > 45 and rsi_max_pos <=3 and precio_bajista and precio_no_sube:
         #    self.log.log(f'{marca_salida} rsi rsi_max > 45 {rsi_max} and rsi_max_pos <3  {rsi_max_pos} and precio_bajista and precio_no_sube')
@@ -3347,8 +3378,9 @@ class Par:
         if self.objetivo_venta >0: 
             ret = self.objetivo_venta                       #objetivo venta parametrizado
         else:    
-            ret = self.ind.maximo_x_vol(escala,100,3)       #objetivo venta calculado
+            ret = 0    #self.ind.maximo_x_vol(escala,100,3)       #objetivo venta calculado
         return ret
+
 
     def es_momento_de_salir_estado_2(self):
         ''' hace control sobre si se dan las condiciones para seguir comprando
