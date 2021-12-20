@@ -327,14 +327,24 @@ def probar_detector(par):
     #p = ind.mfi_vector(escala)
     #print('mfi_vector',par,escala,p)      
 
+def probar_ema(par):
+    
+    escs=['1d','4h','15m','1m']
+    for e in escs:
+        #print (par,e,'min_rsi       ',ind.minimo_por_rsi(e) )
+        #print (par,e,'minimo_x_vol',ind.minimo_x_vol(e,150) )
+        print (par,e,'ema',ind.ema(e,50) )
+
 
 t = time.time()
 
+
+ind=Indicadores('BTCUSDT',log,globales,mercado)
 while time.time() -t < 600:
-    probar_detector('BTCUSDT')
+    probar_ema('BTCUSDT')
     
     
-    time.sleep(30)
+    time.sleep(2)
 
 mercado.detener_sockets()
 

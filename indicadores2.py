@@ -493,26 +493,28 @@ class Indicadores:
 
     def set_cache(self,funcion,parametros,dato):
         fxfirma=self.firma(funcion,parametros)
-        print('set_cache',fxfirma)
+        #print('set_cache',fxfirma)
         self.cache[fxfirma]=(time.time(),dato)
+        
     
     def get_cache(self,funcion,parametros):
         fxfirma=self.firma(funcion,parametros)
+        #print(self.cache,fxfirma)
         if fxfirma in self.cache:
             datos = self.cache[fxfirma]
             antiguedad = time.time() - datos[0]
-            print('antiguedad',antiguedad)
-            if antiguedad > 1:
-                print('ini vieja vieja vieja cache')
+            #print('antiguedad',antiguedad)
+            if antiguedad > 5:
+                #print('ini vieja vieja vieja cache')
                 ret = None
                 del datos
                 del self.cache[fxfirma]
-                print('fin vieja vieja vieja cache')
+                #print('fin vieja vieja vieja cache')
             else:
-                print('okokokokoko cache')
+                #print('okokokokoko cache')
                 ret = datos[1]
         else:
-            print('no en cache',fxfirma)
+            #print('no en cache',fxfirma)
             #print(self.cache)
             ret = None
 
@@ -808,12 +810,20 @@ class Indicadores:
 
     def ema(self,escala,periodos):
         
-        df=self.mercado.get_panda_df(self.par,escala,periodos+100)
-        df_ema=ta.ema(df['close'],length=periodos) 
-        ret = df_ema.iloc[-1]
+        ret = self.get_cache('ema',(escala,periodos))
+        if ret is None:
+            df = self.get_cache('get_panda_df',(self.par,escala))
+            if df is None:
+                df=self.mercado.get_panda_df(self.par,escala)
+                self.set_cache( 'get_panda_df',(self.par,escala), df )
+
+            df_ema=ta.ema(df['close'],length=periodos) 
+            ret = df_ema.iloc[-1]
+            self.set_cache( 'ema',(escala,periodos),ret )
         
         return ret
 
+    
     def ema_px(self,escala,periodos):
         ''' retorna la ema y el precio de cierre'''
         
