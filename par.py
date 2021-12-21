@@ -2045,10 +2045,10 @@ class Par:
         
         if ind.ema_rapida_mayor_lenta(escala,9,20,0.1):
             cvelas= 75
-            rsi_para_comprar=45
+            rsi_para_comprar=40
         else:
             cvelas= 190
-            rsi_para_comprar=40 
+            rsi_para_comprar=35 
 
         if self.no_hay_precios_minimos(cvelas,escala):
             return ret       
@@ -2075,11 +2075,6 @@ class Par:
                rsi < 50 
             
         return ret    
-
-
-
-
-
 
 
     def buscar_rsi_bajo(self,escala):   
@@ -2110,15 +2105,13 @@ class Par:
         if escala not in escalas:
             escalas.append(escala)
         for e in escalas:
-            min = ind.minimo_x_vol(e,cvelas,5) 
+            min = ind.minimo_x_vol(e,cvelas,3) 
             if min < self.precio:
                 ret =True
                 self.log.log(f'no se cumple px min {e} {min} < {self.precio}')
                 break
 
         return ret    
-
-
              
 
     def buscar_rebote_rsi(self,escala):
@@ -2337,9 +2330,6 @@ class Par:
         #    salir = self.filtro_pico_maximo_ema_maximos(self.escala_de_analisis,4,1) 
         
         return False 
-
-
-
 
     def el_precio_es_bajista(self,escala):
         ''' trato de definir si el precio es bajista cuando el precio es mayor que la ema de 50. 
