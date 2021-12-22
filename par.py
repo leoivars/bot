@@ -2043,12 +2043,12 @@ class Par:
         ret=[False,'xx']
         ind: Indicadores = self.ind
         
-        if ind.ema_rapida_mayor_lenta(escala,9,20,0.1):
+        if ind.ema_rapida_mayor_lenta('4h',9,20,0.1):
             cvelas= 75
-            rsi_para_comprar=40
+            rsi_para_comprar=37
         else:
             cvelas= 190
-            rsi_para_comprar=35 
+            rsi_para_comprar=33 
 
         if self.no_hay_precios_minimos(cvelas,escala):
             return ret       
@@ -2056,7 +2056,8 @@ class Par:
         #px_minimo_local=ind.minimo_por_rsi(escala,cvelas)
         if self.entrada_por_regreso_rsi(escala,cvelas,rsi_para_comprar):
             if self.entrada_por_regreso_rsi('1m',cvelas,rsi_para_comprar):
-                ret = [True,escala,'buscar_rsi_minimo_subiendo']
+                if self.filtro_pico_minimo_ema_low():
+                    ret = [True,escala,'buscar_rsi_minimo_subiendo']
     
         self.log.log('---fin---buscar_rsi_minimo_subiendo-----')        
         return ret  
@@ -2064,17 +2065,25 @@ class Par:
     def entrada_por_regreso_rsi(self,escala,cvelas,rsi_para_comprar):
         ind: Indicadores = self.ind
         px_minimo_local=ind.minimo_x_vol(escala,cvelas,5) 
-
         self.log.log(f'------> minimo_x_vol {escala} {px_minimo_local} cvelas={cvelas}')
-        
         rsi_min, pos_rsi_min, precio_rsi_min,rsi = ind.rsi_minimo_y_pos(escala,2)
         self.log.log('...',rsi_min, pos_rsi_min, precio_rsi_min,rsi)
         ret =  precio_rsi_min <= px_minimo_local and\
                pos_rsi_min >0 and rsi_min < rsi_para_comprar and\
                rsi_min < rsi and\
-               rsi < 50 
-            
+               rsi < 50
         return ret    
+
+    def filtro_pico_minimo_ema_low(self):
+        ret = False
+        picos_low=self.ind.lista_picos_minimos_ema_low('1m',3,100)
+        if len(picos_low) >0:
+            pico = picos_low[0] 
+            if pico[0] < 3:
+                ret =True
+            else:
+                self.log.log(f'no se cumpe pico low {pico}')    
+        return ret        
 
 
     def buscar_rsi_bajo(self,escala):   
@@ -2101,16 +2110,17 @@ class Par:
     def no_hay_precios_minimos(self,cvelas,escala):
         ind: Indicadores = self.ind
         ret = False
-        escalas=['1d','4h','15m','5m']
+        escalas=['1d','4h','15m','5m'] 
+        
         if escala not in escalas:
             escalas.append(escala)
         for e in escalas:
-            min = ind.minimo_x_vol(e,cvelas,3) 
-            if min < self.precio:
+            pxmin = ind.minimo_x_vol(e,cvelas,3) 
+            if self.precio_cerca(pxmin,self.g.escala_entorno[e]):
                 ret =True
-                self.log.log(f'no se cumple px min {e} {min} < {self.precio}')
+                self.log.log(f'no se cumple pxmin cerca {e} {pxmin} < {self.precio}')
                 break
-
+        
         return ret    
              
 
@@ -2287,8 +2297,8 @@ class Par:
             self.log.log(f'{marca_salida} rsi_max > 70 {rsi_max}')
             return True
         
-        if rsi > 65  and self.filtro_volumen_calmado(escala,1):
-            self.log.log(f'{marca_salida} rsi escala >65 {rsi}, volumen_calmado 1')
+        if rsi > 65  and self.filtro_volumen_calmado(escala,2):
+            self.log.log(f'{marca_salida} rsi escala >65 {rsi}, volumen_calmado 2')
             return True
 
         if rsi_max > 53 and rsi_max > rsi and 1<= rsi_max_pos <= 3 and precio_bajista and precio_no_sube:

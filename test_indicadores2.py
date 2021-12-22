@@ -329,11 +329,7 @@ def probar_detector(par):
 
 def probar_ema(par):
     
-    escs=['1d','4h','15m','1m']
-    for e in escs:
-        #print (par,e,'min_rsi       ',ind.minimo_por_rsi(e) )
-        #print (par,e,'minimo_x_vol',ind.minimo_x_vol(e,150) )
-        print (par,e,'ema',ind.ema(e,50) )
+    print(  ind.lista_picos_minimos_ema_low('15m',3,100))
 
 
 t = time.time()

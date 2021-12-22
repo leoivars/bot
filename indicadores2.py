@@ -241,7 +241,7 @@ class Indicadores:
             y una ponderación  de volumen( i-1 + i +i+1) * minimo * posicion 
         '''    
         df=self.mercado.get_panda_df(self.par, escala, cvelas + 60) #self.velas[escala].panda_df(cvelas + 60)
-        low = low  = df['low']
+        low = df['low']
         lista=[]
 
         l=len(low)
@@ -315,7 +315,32 @@ class Indicadores:
         return ret    
 
 
+    def lista_picos_minimos_ema_low(self,escala,periodos,cvelas):
+        ''' entrega lista de picos minimos desde el final por cvelas
+            para la ema low 
+        '''    
+        df=self.get_df(self.par,escala)
+        low = ta.ema(df['low'],length=periodos) 
+        
+        lista=[]
 
+        l=len(low)
+        lneg = l * -1
+        
+        lneg = l * -1
+        cvel = 1
+        i=-1
+        while i > lneg:
+            i -= 1
+            cvel += 1
+            if cvel > cvelas:
+                break
+            # print(f'if {rsi.iloc[i-1]} > {rsi.iloc[i]}:')
+            if self.hay_minimo_en(low,i,5,2):
+                #print(    strtime_a_fecha(  df.iloc[i]['close_time'] )   )
+                lista.append([ i*-1 , low.iloc[i]  ])
+                
+        return lista 
 
     def rsi_lista_picos_minimos(self,escala,cvelas):
         ''' entrega lista de picos minimos desde el final por cvelas 
@@ -395,32 +420,28 @@ class Indicadores:
             v = Vela(df.iloc[-2])
         return v    
 
-    def hay_minimo_en(self,df,p,entorno=5):
-        lado_uno=False
+    def hay_minimo_en(self,df,p,entorno_izq=5,entorno_der=5):
+        lado_uno=True
         fin = -1
         i=p+1
         c_entorno=0
-        while i <= fin and c_entorno < entorno:
-            if df.iloc[p] < df.iloc[i]:
-                lado_uno=True
-                break
-            elif df.iloc[p] > df.iloc[i]:
+        while i <= fin and c_entorno < entorno_der :
+            if df.iloc[p] > df.iloc[i]:
+                lado_uno=False
                 break
             i +=1
-            entorno +=1
+            c_entorno +=1
 
-        lado_dos=False
+        lado_dos=True
         ini = len(df) * -1
         i=p-1
         c_entorno=0
-        while ini <= i and c_entorno < entorno:
-            if df.iloc[p] < df.iloc[i]:
-                lado_dos=True
-                break
-            elif df.iloc[p] > df.iloc[i]:
+        while ini <= i and c_entorno < entorno_izq:
+            if df.iloc[p] > df.iloc[i]:
+                lado_dos=False
                 break
             i -=1
-            entorno +=1
+            c_entorno +=1
 
         return lado_uno and lado_dos    
 
@@ -467,7 +488,7 @@ class Indicadores:
             elif df.iloc[p] < df.iloc[i]:
                 break
             i +=1
-            entorno +=1
+            c_entorno +=1
 
         lado_dos=False
         i=p-1
@@ -479,7 +500,7 @@ class Indicadores:
             elif df.iloc[p] < df.iloc[i]:
                 break
             i -=1
-            entorno +=1
+            c_entorno +=1
 
         return lado_uno and lado_dos    
 
@@ -812,16 +833,20 @@ class Indicadores:
         
         ret = self.get_cache('ema',(escala,periodos))
         if ret is None:
-            df = self.get_cache('get_panda_df',(self.par,escala))
-            if df is None:
-                df=self.mercado.get_panda_df(self.par,escala)
-                self.set_cache( 'get_panda_df',(self.par,escala), df )
-
+            df = self.get_df(self.par,escala)
             df_ema=ta.ema(df['close'],length=periodos) 
             ret = df_ema.iloc[-1]
             self.set_cache( 'ema',(escala,periodos),ret )
-        
+
         return ret
+    
+
+    def get_df(self,par,escala):
+        df =self.get_cache('get_panda_df',(par,escala))
+        if df is None:
+            df=self.mercado.get_panda_df(par,escala)
+            self.set_cache( 'get_panda_df',(par,escala), df )
+        return df    
 
     
     def ema_px(self,escala,periodos):
