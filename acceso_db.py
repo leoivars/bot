@@ -21,12 +21,14 @@ class Acceso_DB:
     actualiza_tem_1d="UPDATE pares set temporalidades='1d' WHERE habilitable=1 AND moneda_contra= %s"
     actualiza_temp__='UPDATE pares set temporalidades=%s WHERE moneda= %s AND moneda_contra= %s'
 
+    actualiza_volpx_='UPDATE pares set volumen= %s, precio=%s,  fecha_estadisticas = NOW() WHERE moneda= %s AND moneda_contra= %s'
 
     obt_datos_moneda='SELECT idpar,habilitado,pstoploss,metodo_compra_venta,cantidad,precio_compra,estado,funcion,ganancia_segura,ganancia_infima,escala_analisis_entrada,rsi_analisis_entrada,tendencia_minima_entrada,solo_vender,solo_seniales,veces_tendencia_minima,xvela_corpulenta,rsi15m,rsi4h,rsi1d,cantidad_de_reserva,analisis_e7,e8_precio_inferior,e8_precio_superior,e3_ganancia_recompra,incremento_volumen_bueno,xobjetivo,shitcoin,min_notional,stoploss_habilitado,stoploss_cazaliq,uso_de_reserva,temporalidades,observaciones,objetivo_compra,objetivo_venta from pares where moneda= %s and moneda_contra= %s'
     mon_habilita_lin='SELECT moneda,moneda_contra from pares where habilitable=1 and habilitado=0 and no_habilitar_hasta < NOW() and coeficiente_ema_rapida_lenta  > 0 order by volumen desc'
     mon_habilita_feo='SELECT moneda,moneda_contra from pares where habilitable=1 and habilitado=0 and no_habilitar_hasta < NOW() and coeficiente_ema_rapida_lenta <= 0 order by volumen desc'
     mon_habilitables='SELECT moneda,moneda_contra from pares where habilitable=1 and habilitado=0 and no_habilitar_hasta < NOW() order by volumen desc limit 10'
     mon_habilitables_todos='SELECT moneda,moneda_contra from pares where habilitable=1 and habilitado=0'
+    mon_count_habilitados='SELECT count(1) as cant from pares where habilitado=1'
     mon_pares_top___='select moneda,moneda_contra,volumen  from pares  where habilitable=1  and moneda_contra=%s order by volumen desc limit %s'
     par_puede_habili='SELECT moneda,moneda_contra from pares where habilitable=1 and habilitado=0 and no_habilitar_hasta < NOW() and concat(moneda,moneda_contra)=%s'
     habilitar_______='UPDATE pares set habilitado= %s WHERE habilitable=1 AND moneda= %s AND moneda_contra= %s'
@@ -338,6 +340,9 @@ class Acceso_DB:
     def par_persistir_datos_estadisticos(self,moneda,moneda_contra,balance,volumen,precio,coef_emar_emal):
         self.ejecutar_sql(self.actualiza_bavopr, (float(balance),float(volumen),float(precio),float(coef_emar_emal),moneda,moneda_contra) ) 
 
+    def par_persistir_volumen_precio(self,moneda,moneda_contra,volumen,precio):
+        self.ejecutar_sql(self.actualiza_volpx_, (float(volumen),float(precio),moneda,moneda_contra) )     
+
     def persistir_estado(self,moneda,moneda_contra,precio_compra,estado,funcion):
         self.ejecutar_sql(self.actualiza_estado,(precio_compra,estado,funcion,moneda,moneda_contra))
         
@@ -469,6 +474,12 @@ class Acceso_DB:
         r=self.ejecutar_sql_ret_dict(self.mon_habilita_lin)
         
         return r
+
+    def get_count_habilitados(self):
+        total = self.ejecutar_sql_ret_1_valor(self.mon_count_habilitados)
+        if total==None:
+            total=0
+        return total       
 
     def get_pares_top(self,top,moneda_contra):
         r=self.ejecutar_sql_ret_dict(self.mon_pares_top___,(moneda_contra,top))

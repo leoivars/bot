@@ -320,16 +320,17 @@ def probar_detector(par):
     for e in escs:
         #print (par,e,'min_rsi       ',ind.minimo_por_rsi(e) )
         #print (par,e,'minimo_x_vol',ind.minimo_x_vol(e,150) )
-        print (par,e,'maximo_x_vol',ind.maximo_x_vol(e,150) )
+        print (par,e,'maximo_x_vol 150',ind.maximo_x_vol(e,150) )
+        print (par,e,'maximo_x_vol 50 ',ind.maximo_x_vol(e,50) )
         #print (par,e,'min_xvxp_100_1',ind.minimo_x_vol(e,100,1) )
         
     #print('rsi_minimo_y_pos',par,escala)   
     #p = ind.mfi_vector(escala)
     #print('mfi_vector',par,escala,p)      
 
-def probar_ema(par):
+def probar_sum(par):
     
-    print(  ind.lista_picos_minimos_ema_low('15m',3,100))
+    print(  ind.volumen_suma('1d',15))
 
 
 t = time.time()
@@ -337,10 +338,10 @@ t = time.time()
 
 ind=Indicadores('BTCUSDT',log,globales,mercado)
 while time.time() -t < 600:
-    probar_ema('BTCUSDT')
+    probar_detector('ADAUSDT')
     
     
-    time.sleep(2)
+    time.sleep(30)
 
 mercado.detener_sockets()
 

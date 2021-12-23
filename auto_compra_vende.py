@@ -40,7 +40,7 @@ except:
     cuenta_de_reinicios=0
     inicio_funcionamiento = datetime.now()   
 
-_thread.start_new_thread( habilitar_deshabilitar_pares_periodicamente, (e,conn) )       # habilitador de pares
+_thread.start_new_thread( habilitar_deshabilitar_pares_periodicamente, (e,conn,mercado) )       # habilitador de pares
 
 materializar_pares_desde_db(True,log,conn,e,mercado,client)     #materializacion inicial de pares
 

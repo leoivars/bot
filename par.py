@@ -1149,7 +1149,7 @@ class Par:
                 listo=True 
 
         if not listo:
-            if self.analisis_provocador_entrada in "buscar_rsi_minimo_subiendo buscar_rsi_bajo":
+            if self.analisis_provocador_entrada in "buscar_rsi_minimo_subiendo buscar_rsi_minimo_subiendo_alcista buscar_rsi_bajo":
                 metodo="mercado"
                 listo=True        
         
@@ -1726,7 +1726,7 @@ class Par:
         #self.retardo_dinamico(20)
 
         self.log.log(  "E.7 " ,self.par )
-
+        self.tiempo_inicio_estado =  time.time()
         self.persistir_estado_en_base_datos(self.moneda,self.moneda_contra,0,self.estado)
         self.analisis_provocador_entrada='0'
         self.tiempo_reposo=0
@@ -1956,15 +1956,22 @@ class Par:
                     comprar = True
                     break
             
-            # if not comprar:        
-            #     ret = self.buscar_rebote_rsi(esc)
-            #     if ret[0]:
-            #         self.escala_de_analisis = ret[1]
-            #         self.sub_escala_de_analisis = ret[1]
-            #         self.analisis_provocador_entrada='buscar_rebote_rsi'
-            #         comprar = True
-            #         break 
-    
+            if not comprar and entradas >0:
+                ret = self.buscar_rsi_minimo_subiendo_alcista('3m')
+                if ret[0]:
+                    self.escala_de_analisis = ret[1]
+                    self.sub_escala_de_analisis = ret[1]
+                    self.analisis_provocador_entrada='buscar_rsi_minimo_subiendo_alcista'
+                    comprar = True
+                    break
+
+   
+        if not comprar and entradas==0 and time.time() - self.tiempo_inicio_estado > 7200: # no está comprando, detengo el para para probar otro
+            self.db.set_no_habilitar_hasta(self.calcular_fecha_futura(1440),self.moneda,self.moneda_contra)
+            self.detener()
+            
+
+        
         return comprar        
         
     def entradas_a_escalas(self,escalas,entradas):
@@ -2045,21 +2052,23 @@ class Par:
         
         if ind.ema_rapida_mayor_lenta('4h',9,20,0.1):
             cvelas= 75
-            rsi_para_comprar=37
+            rsi_para_comprar=50 
         else:
             cvelas= 190
             rsi_para_comprar=33 
 
-        if self.no_hay_precios_minimos(cvelas,escala):
+        if not self.hay_precios_minimos(cvelas,escala):
             return ret       
         
         #px_minimo_local=ind.minimo_por_rsi(escala,cvelas)
         if self.entrada_por_regreso_rsi(escala,cvelas,rsi_para_comprar):
             if self.entrada_por_regreso_rsi('1m',cvelas,rsi_para_comprar):
-                if self.filtro_pico_minimo_ema_low():
+                if self.filtro_pico_minimo_ema_low('1m'):
                     ret = [True,escala,'buscar_rsi_minimo_subiendo']
     
-        self.log.log('---fin---buscar_rsi_minimo_subiendo-----')        
+        self.log.log('---fin---buscar_rsi_minimo_subiendo-----')    
+
+
         return ret  
 
     def entrada_por_regreso_rsi(self,escala,cvelas,rsi_para_comprar):
@@ -2074,12 +2083,32 @@ class Par:
                rsi < 50
         return ret    
 
-    def filtro_pico_minimo_ema_low(self):
+    def buscar_rsi_minimo_subiendo_alcista(self,escala): 
+        ret=[False,'xx']
+        ind: Indicadores = self.ind
+        
+        if ind.rsi('4h') > 65:
+            return ret
+        if not ind.ema_rapida_mayor_lenta('4h',9,20,0.1):
+            return ret
+        #if self.precio_sobre_ema_importante():
+        #        return ret
+
+        if self.entrada_por_regreso_rsi(escala,40,50):
+                if self.filtro_pico_minimo_ema_low(escala):
+                    ret = [True,escala,'buscar_rsi_minimo_subiendo_alcista']
+    
+        self.log.log('---fin---buscar_rsi_minimo_subiendo_alcista-----')    
+        return ret      
+
+     
+
+    def filtro_pico_minimo_ema_low(self,escala):
         ret = False
-        picos_low=self.ind.lista_picos_minimos_ema_low('1m',3,100)
+        picos_low=self.ind.lista_picos_minimos_ema_low(escala,3,100)
         if len(picos_low) >0:
             pico = picos_low[0] 
-            if pico[0] < 3:
+            if pico[0] <= 3:
                 ret =True
             else:
                 self.log.log(f'no se cumpe pico low {pico}')    
@@ -2107,22 +2136,23 @@ class Par:
         return ret
 
 
-    def no_hay_precios_minimos(self,cvelas,escala):
+    def hay_precios_minimos(self,cvelas,escala):
         ind: Indicadores = self.ind
-        ret = False
+        ret = True
         escalas=['1d','4h','15m','5m'] 
         
         if escala not in escalas:
             escalas.append(escala)
         for e in escalas:
             pxmin = ind.minimo_x_vol(e,cvelas,3) 
-            if self.precio_cerca(pxmin,self.g.escala_entorno[e]):
-                ret =True
+            if not self.precio_cerca(pxmin,self.g.escala_entorno[e]):
+                ret =False
                 self.log.log(f'no se cumple pxmin cerca {e} {pxmin} < {self.precio}')
                 break
         
         return ret    
-             
+
+   
 
     def buscar_rebote_rsi(self,escala):
         ret=[False,'xx']
@@ -2172,33 +2202,6 @@ class Par:
     
       
 
-    def determinar_rsi_minimo_para_comprar(self,escala):
-        ind: Indicadores =self.ind
-        #esc_sup = self.g.zoom_out(escala,1)
-        rsi_1d = ind.rsi('1d')
-        #ema5, difp5,pendr5,pendl5 = ind.ema_rapida_mayor_lenta2( esc_sup , 10,50,0.05) # en temporalidad superior está alcista
-        #self.log.log(f'ema {esc_sup}: {ema5}, dif {difp5},pendr {pendr5},pendl {pendl5}')
-        ema , difp,pendr,pendl = ind.ema_rapida_mayor_lenta2( '1d', 10,50,0.5,pendientes_positivas=True) 
-        ema1, _,_,_ = ind.ema_rapida_mayor_lenta2( escala, 10,50,0.5,pendientes_positivas=True) 
-        self.log.log(f'ema {escala}: {ema}, dif {difp},pendr {pendr},pendl {pendl} rsi_sup {rsi_1d}')
-        if 50 < rsi_1d <= 70:
-            if ema and pendr > 0 and pendl > 0:
-                ret = 50
-            else:
-                ret = 35
-        elif 35 < rsi_1d <= 50:
-            if ema:
-                ret = 33 
-            else: 
-                ret = 30
-        else: 
-            ret = 29       
-
-        if not ema and not ema1: # la cosa está bajista solo compro con caidas muy pronunciadas
-            ret -= 3
-
-        return ret        
-
     def calc_rsi_inferior(self,escala,emas_ok):
         ind: Indicadores =self.ind
         
@@ -2218,7 +2221,6 @@ class Par:
 
         return ret        
 
-
     def filtro_ema_rapida_lenta_para_entrar(self,escala):
         ind: Indicadores =self.ind
         filtro_ok,dif,pl,pr = ind.ema_rapida_mayor_lenta2( escala, 10,50, 0.04, pendientes_positivas=True ) 
@@ -2232,11 +2234,9 @@ class Par:
         filtro_ok = rsi>rsi_max or rsi <rsi_min
         self.log.log(f'{filtro_ok} <--- {escala} rsi {rsi} ')
         return filtro_ok
-
-    
     
     def precio_cerca(self,px,porcentaje=0.30):
-        ret = abs(self.precio - px) / self.precio *100 < porcentaje
+        return self.precio < px or (self.precio - px) / self.precio *100 < porcentaje 
 
     def precio_sobre_objetivo(self,escala):
         ind = self.ind

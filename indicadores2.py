@@ -409,6 +409,11 @@ class Indicadores:
 
         return vo_velas/cvelas * xvol > vo_ma / cvelas    
 
+    def volumen_suma(self,escala,cvelas):
+        ''' entrega la suma del volumen de las ultimas cvelas'''    
+        df=self.mercado.get_panda_df(self.par, escala, cvelas) #self.velas[escala].panda_df(cvelas + 60)
+        return df['volume'].sum()
+
     def ultima_vela_cerrada(self,escala):
         df=self.mercado.get_panda_df(self.par, escala, 3)
         #print(df['closed'])
