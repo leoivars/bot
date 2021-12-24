@@ -14,7 +14,7 @@ from comandos_interprete import ComandosPar
 
 from ordenes_binance import OrdenesExchange
 from actualizador_info_par import ActualizadorInfoPar
-from funciones_utiles import memoria_consumida,cpu_utilizada,calc_tiempo_segundos,strtime_a_fecha,strtime_a_time,variacion,variacion_absoluta
+from funciones_utiles import cpu_utilizada,calc_tiempo_segundos,strtime_a_fecha,strtime_a_time,variacion,variacion_absoluta
 from controlador_de_tiempo import *
 from variables_globales import  VariablesEstado
 from pool_indicadores import Pool_Indicadores
@@ -22,7 +22,7 @@ from calc_px_compra import Calculador_Precio_Compra
 from intentar_recuperar_venta_perdida import intentar_recuperar_venta_perdida
 from fpar.ganancias import calc_ganancia_minima
 from mercado import Mercado
-
+import fauto_compra_vende.habilitar_pares
 
 from numpy import isnan
 import random
@@ -1839,28 +1839,18 @@ class Par:
         # si no compramos, controlamos si en necesario un cambio de estado.
         self.log.log(self.par,"----NO compramos----")
         self.trade_anterior_cerca_entonces_vender()  
-        ganterior = self.ganancias_compra_anterior()
         
-        
-        # si no pasa el filtro filtro_ema_de_tendencia y no se ha cambiado el estado a 3 en la línea anterior, se pone a dormir
-        # dormir=False
-        # if self.estado!=3:
-        #     #si el par está por debajo de la cantidad máxima de pares activos, se duerme
-        # #  comentado por ahora # dormir = self.dormir_por_ranking_y_necesidad()
-        #     # if not dormir: 
-        #     #     #si está muy activo,no lo duermo
-        #     #     valor = Par.mo_pre.comparar_actualizaciones(self.par,'BTCUSDT') 
-        #     #     if valor < 0.75: #no está muy activo, controlo si hay que dormirlo
-        #     #         if not self.filtro_decidir_seguir_comprando_e7():
-        #     #             dormir=True
-        #     #     else:
-        #     #         self.log.log("Activo, mantenemos vivo",valor)         
+        dormir=False
+        if self.estado!=3:
+            entradas = self.db.trades_cantidad(self.moneda,self.moneda_contra)
+            if entradas==0 and self.db.trades_cantidad_de_pares_con_trades() >= self.g.maxima_cantidad_de_pares_con_trades:
+                self.log.log(f'maxima_cantidad_de_pares_con_trades superada: A dormir')  
+                dormir = True 
 
-        #     if dormir:
-        #         minutos = self.g.horas_deshabilitar_par * 60 + random.randint(0, 45)
-        #         self.db.set_no_habilitar_hasta(self.calcular_fecha_futura( minutos ),self.moneda,self.moneda_contra)            
-        #         self.detener()
-        #         #self.tiempo_reposo = 900 # en vez de dormirlo, pongo un tiempo de reposo importante
+            if dormir:
+                minutos = self.g.horas_deshabilitar_par * 60 + random.randint(0, 45)
+                self.db.set_no_habilitar_hasta(self.calcular_fecha_futura( minutos ),self.moneda,self.moneda_contra)            
+                self.detener()
 
                 
     def dormir_por_ranking_y_necesidad(self):
@@ -1956,7 +1946,7 @@ class Par:
                     comprar = True
                     break
             
-            if not comprar and entradas >0:
+            if not comprar:
                 ret = self.buscar_rsi_minimo_subiendo_alcista('3m')
                 if ret[0]:
                     self.escala_de_analisis = ret[1]
@@ -1967,7 +1957,7 @@ class Par:
 
    
         if not comprar and entradas==0 and time.time() - self.tiempo_inicio_estado > 7200: # no está comprando, detengo el para para probar otro
-            self.db.set_no_habilitar_hasta(self.calcular_fecha_futura(1440),self.moneda,self.moneda_contra)
+            self.db.set_no_habilitar_hasta(self.calcular_fecha_futura(7200),self.moneda,self.moneda_contra)
             self.detener()
             
 
@@ -2087,13 +2077,12 @@ class Par:
         ret=[False,'xx']
         ind: Indicadores = self.ind
         
-        if ind.rsi('4h') > 65:
-            return ret
         if not ind.ema_rapida_mayor_lenta('4h',9,20,0.1):
             return ret
-        #if self.precio_sobre_ema_importante():
-        #        return ret
-
+                
+        if self.hay_rsis_sobrevendidos():
+            return ret
+        
         if self.entrada_por_regreso_rsi(escala,40,50):
                 if self.filtro_pico_minimo_ema_low(escala):
                     ret = [True,escala,'buscar_rsi_minimo_subiendo_alcista']
@@ -2152,6 +2141,16 @@ class Par:
         
         return ret    
 
+    def hay_rsis_sobrevendidos(self): 
+        ind: Indicadores = self.ind
+        ret = False
+        escalas=['1d','4h','15m','5m'] 
+        for e in escalas:
+            rsi = ind.rsi(e)
+            if rsi > 69.5:
+                ret = True
+                self.log.log(f'rsi {e} {rsi} sobrevendido')
+        return ret        
    
 
     def buscar_rebote_rsi(self,escala):
@@ -2240,10 +2239,11 @@ class Par:
 
     def precio_sobre_objetivo(self,escala):
         ind = self.ind
-        objetivo_venta = ind.maximo_x_vol(escala,100,3)
-        ret=self.precio_cerca(objetivo_venta,0.3)
+        objetivo_venta = ind.maximo_x_vol(escala,150,1)
+        
+        ret = self.precio > self.objetivo_venta
         if ret:
-            self.log.log(f'precio cerca objetivo= {objetivo_venta}')
+            self.log.log(f'precio sobre objetivo= {objetivo_venta}')
         return ret    
 
     def precio_sobre_ema_importante(self):
@@ -2305,14 +2305,14 @@ class Par:
             self.log.log(f'{marca_salida} rsi_max > 53 {rsi_max} ,precio_bajista and precio_no_sube')
             return True
 
-        if rsi_max > 50 and rsi_max > rsi and 1<= rsi_max_pos <= 3 and self.precio_sobre_objetivo(self.escala_de_analisis):
+        #if rsi_max > 50 and rsi_max > rsi and 1<= rsi_max_pos <= 3 and self.precio_sobre_objetivo(self.escala_de_analisis):
+        #    return True
+        if precio_no_sube and self.precio_sobre_objetivo(self.escala_de_analisis):
             return True
-
+    
         if rsi_max > 50 and rsi_max > rsi and 1<= rsi_max_pos <= 3 and self.precio_sobre_ema_importante():
             return True
-        
     
-
         #if rsi_max > 45 and rsi_max_pos <=3 and precio_bajista and precio_no_sube:
         #    self.log.log(f'{marca_salida} rsi rsi_max > 45 {rsi_max} and rsi_max_pos <3  {rsi_max_pos} and precio_bajista and precio_no_sube')
         #    return True    
@@ -4154,40 +4154,16 @@ class Par:
         self.detener()
 
     def dormir_un_tiempo_prudencial(self):
-        gan=self.ganancias()
-        if 0 < gan <= 1:
-            ad1 = 300
-            ad2 = 600
-        elif 1 < gan <= 3:    
-            ad1 = 900
-            ad2 = 1800
-        elif 3 < gan <= 10:        
-            ad1 = 1800
-            ad2 = 3600
-        else:
-            ad1 = 3600
-            ad2 = 7200
-
-        tiempo = self.g.escala_tiempo[self.escala_de_analisis] + random.randint(ad1, ad2)
-        
-        if tiempo  > self.g.escala_tiempo["1d"]:
-            tiempo  = self.g.escala_tiempo["1d"] + random.randint(100, 600)
-        
+        tiempo  = self.g.escala_tiempo["1d"] + random.randint(3600, 7200)
         minutos = int(tiempo /60)
-
         self.db.set_no_habilitar_hasta( self.calcular_fecha_futura(  minutos  )  ,self.moneda,self.moneda_contra)
         self.detener()    
-
 
     def dormir_30_dias(self):
         self.iniciar_estado( 0 )
         minutos = 60 * 24 * 30
         self.db.set_no_habilitar_hasta( self.calcular_fecha_futura(  minutos  )  ,self.moneda,self.moneda_contra)
         self.detener()
-
-
-   
-   
                                                                                                                                         
                                                                                                                                         
 #                           tttt                                               lllllll                                                    
@@ -4623,8 +4599,10 @@ class Par:
             if self.hay_algo_para_vender_en_positivo():
                 self.iniciar_estado( 3 ) #mismo estado
             else:    
-                #self.dormir_un_tiempo_prudencial()
-                self.iniciar_estado( self.estado_siguiente() )
+                if self.todo_bonito_para_seguir_comprado():
+                    self.iniciar_estado( self.estado_siguiente() )
+                else:
+                    self.dormir_un_tiempo_prudencial()    
             
             return
 
@@ -4692,9 +4670,12 @@ class Par:
             self.bucles_partial_filled+=1    
 
         self.set_tiempo_reposo()
-            
-
     
+    def todo_bonito_para_seguir_comprado(self):
+        return fauto_compra_vende.habilitar_pares.hay_precios_minimos_como_para_habilitar(self.ind,self.g,self.log)  or\
+            (fauto_compra_vende.habilitar_pares.el_precio_no_esta_cerca_del_maximo(self.ind,self.log) and\
+             fauto_compra_vende.habilitar_pares.para_alcista_como_para_habilitar(self.ind,self.g,self.log) )
+ 
     def deshabilitacion_de_emergencia(self,horas = 24):
         self.enviar_correo_error('deshabilitacion por '+str(horas)+ ' hrs') 
         self.db.set_no_habilitar_hasta( self.calcular_fecha_futura( 60 * horas )  ,self.moneda,self.moneda_contra)
@@ -5486,9 +5467,6 @@ class Par:
 
         return txt
 
-
-
-
     def txt_precio_y_stoploss(self):
         try:
             if self.stoploss_habilitado==1:
@@ -5502,19 +5480,19 @@ class Par:
 
             st+=' ' + tiempo_trade # + ' ' + str(round(self.pstoploss,2))
 
-            return self.linea( f"Px: {self.format_valor_truncando( self.precio,8)}  {self.ganancias()} {st} {self.escala_de_analisis} " )    
+            return self.linea( f"Px: {self.format_valor_truncando( self.precio,8)}  {self.ganancias()} {st} [{self.escala_de_analisis}] " )    
         except Exception as e:
             return str(e)   
     
     def calc_tiempo_trade(self):   
         try:
-            tiempo_trade=datetime.now().replace(microsecond=0) - self.fecha_trade
-            tiempo_trade=str(tiempo_trade.days)+'d '+str(divmod(tiempo_trade.seconds,3600)[0])+'h '+str(divmod(tiempo_trade.seconds,60)[0])+'m'
+            tiempo_trade=datetime.now().replace(microsecond=0) - self.fecha_trade   #esto es un timedelta
+            h, resto = divmod(tiempo_trade.seconds, 3600)
+            m, _ = divmod(resto, 60)
+            tiempo_trade=f'{tiempo_trade.days}d {h}h {m}m'
         except:
             tiempo_trade='tt' 
         return  tiempo_trade   
-
-        
 
     def mostrar_microestado(self):
         try:

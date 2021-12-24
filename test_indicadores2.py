@@ -333,12 +333,18 @@ def probar_sum(par):
     print(  ind.volumen_suma('1d',15))
 
 
+def probar_max_vol(escala):
+    maxv=ind.maximo_x_vol(escala,300,5) 
+    px = ind.precio_mas_actualizado() 
+    print (maxv,px)
+    print(  px/maxv  )
+
 t = time.time()
 
 
 ind=Indicadores('BTCUSDT',log,globales,mercado)
 while time.time() -t < 600:
-    probar_detector('ADAUSDT')
+    probar_max_vol('1d')
     
     
     time.sleep(30)
