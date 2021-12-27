@@ -384,10 +384,13 @@ class Indicadores:
             ret = -1
         return ret                       
    
-    def volumen_por_encima_media(self,escala,cvelas,xvol = 1):
+    def volumen_por_encima_media(self,escala,cvelas,xvol = 1,vela_ini=0):
         ''' suma el volumen de las ultimas cvelas multipolicado por xvol
          y lo compara con el volumen promedio si es mayor
-         retorna verdadero '''  
+         retorna verdadero 
+         xvol > 1 aumenta el volumen medio para detectar volumenes mayores
+         xvol < 1 disminuye el volumen y la detección es mas sensible
+         '''  
         if cvelas == 0:
             return False
 
@@ -395,19 +398,23 @@ class Indicadores:
         
         vol_ma =ta.ma('ma',df['volume'],length=20)
         
-        #ultimas dos velas
-       
-        #cvelas_encima_de_la_media 
-        vo_ma=0
-        vo_velas = 0
+        suma_vol_medio = 0
+        suma_vol_velas = 0
 
-        for i in range(-cvelas,0):
-            vo_velas += Vela(df.iloc[i]).volume
-            vo_ma    += vol_ma.iloc[i]
+        fin = (cvelas+vela_ini) * -1
+        ini = vela_ini * -1
 
-        self.log.log(f'{vo_velas/cvelas * xvol} > {vo_ma / cvelas}')
+        for i in range(fin,ini):
+            suma_vol_medio += vol_ma.iloc[i]
+            suma_vol_velas += df.iloc[i]['volume']
 
-        return vo_velas/cvelas * xvol > vo_ma / cvelas    
+        vol_mediox = suma_vol_medio / cvelas * xvol            #xvol sirve para aumentar el volumen medio y así poder detectar subas mayores 
+        vol_velas  = suma_vol_velas / cvelas
+
+        ret =  vol_velas > vol_mediox
+        self.log.log(f'vol_velas {vol_velas} > {vol_mediox} vol_mediox {ret}')
+
+        return ret  
 
     def volumen_suma(self,escala,cvelas):
         ''' entrega la suma del volumen de las ultimas cvelas'''    
@@ -640,11 +647,9 @@ class Indicadores:
         self.cache_add( (escala,cvelas),ret )
 
         return    ret
-
-
     
     def volumen_calmado(self,escala,cvelas=1,coef_volumen=1):
-        ''' considera calmado al volumen  de las ultimas cvela cerradas
+        ''' considera calmado al volumen  de las ultimas cvelas cerradas
             si se encuentran por debajo del (promedio * coef_volumen)
             puedo usar a coef_volumen para disminuir aumentar el  promedio
         '''

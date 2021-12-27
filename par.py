@@ -826,7 +826,7 @@ class Par:
         comision = pxcompra * cantidad * self._fee
         comision += pxventa * cantidad * self._fee
         cant_final = cantidad * (pxventa - pxcompra) - comision 
-        return Par.lector_precios.valor_usdt(cant_final,self.moneda_contra+'USDT')
+        return Par.lector_precios.valor_usdt(cant_final,self.par)
 
     def calculo_ganancias_moneda_contra(self,pxcompra,pxventa,cantidad):
         comision=pxcompra*cantidad*self._fee
@@ -1947,7 +1947,7 @@ class Par:
                     break
             
             if not comprar:
-                ret = self.buscar_rsi_minimo_subiendo_alcista('3m')
+                ret = self.buscar_rsi_minimo_subiendo_alcista('1m')
                 if ret[0]:
                     self.escala_de_analisis = ret[1]
                     self.sub_escala_de_analisis = ret[1]
@@ -2063,29 +2063,37 @@ class Par:
 
     def entrada_por_regreso_rsi(self,escala,cvelas,rsi_para_comprar):
         ind: Indicadores = self.ind
+        ret = False
+        
         px_minimo_local=ind.minimo_x_vol(escala,cvelas,5) 
-        self.log.log(f'------> minimo_x_vol {escala} {px_minimo_local} cvelas={cvelas}')
+        self.log.log(f'--> minimo_x_vol {escala} {px_minimo_local} cvelas={cvelas}')
+        
         rsi_min, pos_rsi_min, precio_rsi_min,rsi = ind.rsi_minimo_y_pos(escala,2)
-        self.log.log('...',rsi_min, pos_rsi_min, precio_rsi_min,rsi)
-        ret =  precio_rsi_min <= px_minimo_local and\
+        self.log.log('---> rsi_minimo_y_pos',rsi_min, pos_rsi_min, precio_rsi_min,rsi)
+    
+        if precio_rsi_min <= px_minimo_local and\
                pos_rsi_min >0 and rsi_min < rsi_para_comprar and\
                rsi_min < rsi and\
-               rsi < 50
+               rsi < 50:
+        
+            if self.filtro_volumen_encima_del_promedio(escala,4,1.3,pos_rsi_min):
+                ret = True   
+
         return ret    
 
     def buscar_rsi_minimo_subiendo_alcista(self,escala): 
         ret=[False,'xx']
         ind: Indicadores = self.ind
         
-        if not ind.ema_rapida_mayor_lenta('4h',9,20,0.1):
+        if not ind.ema_rapida_mayor_lenta('4h',9,50,0.1):
             return ret
                 
         if self.hay_rsis_sobrevendidos():
             return ret
         
         if self.entrada_por_regreso_rsi(escala,40,50):
-                if self.filtro_pico_minimo_ema_low(escala):
-                    ret = [True,escala,'buscar_rsi_minimo_subiendo_alcista']
+            if self.filtro_pico_minimo_ema_low(escala):
+                ret = [True,escala,'buscar_rsi_minimo_subiendo_alcista']
     
         self.log.log('---fin---buscar_rsi_minimo_subiendo_alcista-----')    
         return ret      
@@ -2193,10 +2201,10 @@ class Par:
         self.log.log( f'{ret}<---UltimaVelaCerrada, open {v.open}, close {v.close}')
         return ret
 
-    def filtro_volumen_encima_del_promedio(self,escala,cvelas,xvol):
+    def filtro_volumen_encima_del_promedio(self,escala,cvelas,xvol,vela_ini):
         ind: Indicadores = self.ind
-        ret = ind.volumen_por_encima_media(escala,cvelas,xvol)    
-        self.log.log( f'{ret}<---volumen_encima_del_promedio {escala} {cvelas} {xvol}   ')
+        ret = ind.volumen_por_encima_media(escala,cvelas,xvol,vela_ini)    
+        self.log.log( f'{ret}<---volumen_encima_del_promedio {escala} {cvelas} {xvol} {vela_ini}  ')
         return ret
     
       
@@ -2237,6 +2245,9 @@ class Par:
     def precio_cerca(self,px,porcentaje=0.30):
         return self.precio < px or (self.precio - px) / self.precio *100 < porcentaje 
 
+    def precio_cerca_por_debajo(self,px,porcentaje=0.30):
+        return self.precio < px and (px - self.precio) / self.precio *100 < porcentaje 
+
     def precio_sobre_objetivo(self,escala):
         ind = self.ind
         objetivo_venta = ind.maximo_x_vol(escala,150,1)
@@ -2254,13 +2265,27 @@ class Par:
             if self.precio_cerca(ind.ema(em[0],em[1])):
                 self.log.log(f'precio cerca de ema{em}')
                 ret = True
-        return ret        
+        return ret 
+
+    def precio_bajo_ema_importante(self):
+        ind = self.ind
+        ret = False
+        emas_importantes=[('1d',20),('1d',50),('4h',20),('4h',50)]    
+        for em in emas_importantes:
+            escala=em[0]
+            periodos=em[1]
+            if self.precio_cerca_por_debajo(ind.ema(escala,periodos)):
+                self.log.log(f'precio bajo de ema{em}')
+                ret = True
+        return ret  
+
+
 
     def evaluar_si_hay_que_vender(self,escala,gan,duracion_trade):
         self.log.log(f'senial de entrada {self.senial_entrada}')
         ind: Indicadores =self.ind
         gan_min = calc_ganancia_minima(self.g,0.5,self.escala_de_analisis,duracion_trade)
-        precio_bajista = self.el_precio_es_bajista('1d') and self.el_precio_es_bajista(self.escala_de_analisis)
+        precio_bajista = self.el_precio_es_bajista('4h') and self.el_precio_es_bajista(self.escala_de_analisis)
         precio_no_sube = ind.no_sube(escala)
         tiempo_trade_superado = duracion_trade > self.g.tiempo_maximo_trade[escala]
         duracion_en_velas = int(duracion_trade/self.g.escala_tiempo[escala])
@@ -2297,8 +2322,8 @@ class Par:
             self.log.log(f'{marca_salida} rsi_max > 70 {rsi_max}')
             return True
         
-        if rsi > 65  and self.filtro_volumen_calmado(escala,2):
-            self.log.log(f'{marca_salida} rsi escala >65 {rsi}, volumen_calmado 2')
+        if rsi > 65  and self.filtro_volumen_calmado(escala,3,0.7):                        #0.8 baja la barrera que tiene que superar el volumen para considirarse importante
+            self.log.log(f'{marca_salida} rsi escala >65 {rsi}, volumen_calmado 3 0.7')
             return True
 
         if rsi_max > 53 and rsi_max > rsi and 1<= rsi_max_pos <= 3 and precio_bajista and precio_no_sube:
@@ -2310,7 +2335,7 @@ class Par:
         if precio_no_sube and self.precio_sobre_objetivo(self.escala_de_analisis):
             return True
     
-        if rsi_max > 50 and rsi_max > rsi and 1<= rsi_max_pos <= 3 and self.precio_sobre_ema_importante():
+        if rsi_max > 50 and rsi_max > rsi and 1<= rsi_max_pos <= 3 and self.precio_bajo_ema_importante():
             return True
     
         #if rsi_max > 45 and rsi_max_pos <=3 and precio_bajista and precio_no_sube:
@@ -3579,7 +3604,10 @@ class Par:
     def momento_de_recomprar(self,escala,gan,duracion_trade):
         #gan_atr = round ( atr/self.precio * 100 * self.g.x_neg_patr,2 ) #multiplicador de atr negativo para recomprar cuando se pasa cierta perdida
         self.log.log( f'momento_de_recomprar?  gan {gan}' )
-        recomprar =  gan < self.g.escala_ganancia[escala] * -2 and duracion_trade > 60
+        if self.moneda=='BTC' and duracion_trade > 60:    #experimental, esto podría comprar demasiado
+            recomprar = True
+        else:    
+            recomprar =  gan < self.g.escala_ganancia[escala] * -2 and duracion_trade > 60
         ret = False            
         if recomprar:
             self.log.log( 'Intento recomprar---> Sí')
@@ -4599,11 +4627,11 @@ class Par:
             if self.hay_algo_para_vender_en_positivo():
                 self.iniciar_estado( 3 ) #mismo estado
             else:    
-                if self.todo_bonito_para_seguir_comprado():
+                if self.db.trades_cantidad(self.moneda,self.moneda_contra) > 0  or\
+                    self.todo_bonito_para_seguir_comprado():
                     self.iniciar_estado( self.estado_siguiente() )
                 else:
                     self.dormir_un_tiempo_prudencial()    
-            
             return
 
         elif orden['estado']=='CANCELED': #Se dio un caso que apareció una orden cancelada... en este caso tratamos de vender nuevamente.
@@ -5530,47 +5558,23 @@ class Par:
     def _deprecated_encolar_mensaje(self,*args):
         linea = ' '.join([str(a) for a in args])
         self.cola_mensajes.append(linea)
-
     
     def imprimir(self):
         self.log.log(self.txt_llamada_de_accion+'imprimir')
-
-        #print ("~~~~~~~~",self.bucle,datetime.now(),"~~~~~~~~")
-        #for m in (self.cola_mensajes):
-        #    self.log.log(m)
-        
-        #self.log.log("imprimir()... inicio")
-
         if self.estado==3:
             #ind=self.ind
             texto = self.texto_analisis_moneda_e3()
             self.log.log( texto )
         
-        #self.indicandor_en_estudio('1m')
-        #self.indicandor_en_estudio('5m')
-        #self.indicandor_en_estudio('15m')
-        
-
-        self.log.log("imprimir()... fi")    
-
-        
-        #self.cola_mensajes=[]  
-
     def indicandor_en_estudio(self,escala):
         ind=self.ind
         atr1=ind.atr(escala,1)
         atr0=ind.atr(escala,0)
         self.log.log( 'ind_estudio_atr'+escala+' 1 0 ',round(atr1/atr0,2),atr1,atr0)
 
-
-
-
-
     def imprimir_estado_par_en_compra(self):
         ind=self.ind
         texto="\n"
-        
-         
         #self.log.log( "Libro compran venden:", self.libro.tot_compran_venden(),self.libro.relacion_compra_venta()  )
         #self.log.log( "L g1  compran venden:", self.libro.g1_compran_venden()  )
         #texto+=self.linea( "atr 5m  (10 velas)  :", ind.vatr('5m',10) )

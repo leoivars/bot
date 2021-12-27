@@ -320,8 +320,7 @@ def probar_detector(par):
     for e in escs:
         #print (par,e,'min_rsi       ',ind.minimo_por_rsi(e) )
         #print (par,e,'minimo_x_vol',ind.minimo_x_vol(e,150) )
-        print (par,e,'maximo_x_vol 150',ind.maximo_x_vol(e,150) )
-        print (par,e,'maximo_x_vol 50 ',ind.maximo_x_vol(e,50) )
+        print (par,e,'volumen_por_encima_media 150',ind.volumen_por_encima_media('1m',3,1,0) )
         #print (par,e,'min_xvxp_100_1',ind.minimo_x_vol(e,100,1) )
         
     #print('rsi_minimo_y_pos',par,escala)   
@@ -344,10 +343,8 @@ t = time.time()
 
 ind=Indicadores('BTCUSDT',log,globales,mercado)
 while time.time() -t < 600:
-    probar_max_vol('1d')
-    
-    
-    time.sleep(30)
+    probar_detector('BTCUSDT')
+    time.sleep(15)
 
 mercado.detener_sockets()
 
