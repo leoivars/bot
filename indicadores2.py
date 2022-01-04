@@ -1,6 +1,6 @@
 # # -*- coding: UTF-8 -*-
 # pragma pylint: disable=no-member
-
+#import talib as ta
 from math import atan, degrees, fabs
 from pymysql.constants.ER import NO
 #from pandas.core.missing import pad_2d
@@ -236,11 +236,11 @@ class Indicadores:
                 picos +=1
         return picos        
 
-    def lista_picos_minimos_x_vol(self,escala,cvelas):
+    def lista_picos_minimos_x_vol(self,escala,cvelas,vela_ini=1):
         ''' entrega lista de picos minimos desde el final por cvelas
-            y una ponderación  de volumen( i-1 + i +i+1) * minimo * posicion 
+            y una ponderación  de volumen( i-2 ,i-1 + i ) * minimo * posicion 
         '''    
-        df=self.mercado.get_panda_df(self.par, escala, cvelas + 60) #self.velas[escala].panda_df(cvelas + 60)
+        df=self.mercado.get_panda_df(self.par, escala,cvelas+vela_ini+2 ) #self.velas[escala].panda_df(cvelas + 60)
         low = df['low']
         lista=[]
 
@@ -249,7 +249,7 @@ class Indicadores:
         
         lneg = l * -1
         cvel = 1
-        i=-1
+        i=-1 * vela_ini
         while i > lneg:
             i -= 1
             cvel += 1
@@ -259,8 +259,8 @@ class Indicadores:
             if self.hay_minimo_en(low,i):
                 #print(    strtime_a_fecha(  df.iloc[i]['close_time'] )   )
                 pos=l-i
-                vol = df.iloc[i-1]['volume'] + df.iloc[i]['volume'] + df.iloc[i+1]['volume'] # volumen de al vela + volumen de la izquierda y derecha
-                lista.insert(0,[ pos , df.iloc[i]['low'],  vol * pos * df.iloc[i]['low']  ])
+                vol = df.iloc[i-2]['volume'] + df.iloc[i-1]['volume'] + df.iloc[i]['volume']  # volumen de al vela + volumen de las dos anteriores
+                lista.insert(0,[ pos , df.iloc[i]['low'],  df.iloc[i]['low'] /(vol*pos)  ])
                 
         return lista 
 
@@ -289,8 +289,8 @@ class Indicadores:
                 lista_max.insert(0,[ pos , df.iloc[i]['high'],  vol * pos * df.iloc[i]['high']  ])        
         return lista_max
 
-    def minimo_x_vol(self,escala,cvelas=100,cminimos=3):    
-        lista=self.lista_picos_minimos_x_vol(escala,cvelas)
+    def minimo_x_vol(self,escala,cvelas=100,cminimos=3,vela_ini=1):    
+        lista=self.lista_picos_minimos_x_vol(escala,cvelas,vela_ini)
         minimos = sorted(lista, key=lambda x: x[2]  ) # ordno por la ponderacion
         return self.calc_top(minimos,cminimos)
 
@@ -311,7 +311,7 @@ class Indicadores:
         if i>0:
             ret = suma/cant
         else:
-            ret = -1
+            ret = None
         return ret    
 
 
@@ -408,11 +408,10 @@ class Indicadores:
             suma_vol_medio += vol_ma.iloc[i]
             suma_vol_velas += df.iloc[i]['volume']
 
-        vol_mediox = suma_vol_medio / cvelas * xvol            #xvol sirve para aumentar el volumen medio y así poder detectar subas mayores 
-        vol_velas  = suma_vol_velas / cvelas
+        coef = round(suma_vol_velas / suma_vol_medio,2)
+        ret =  coef > xvol
 
-        ret =  vol_velas > vol_mediox
-        self.log.log(f'vol_velas {vol_velas} > {vol_mediox} vol_mediox {ret}')
+        self.log.log(f'volumen_por_encima_media {ret} coef {coef}')
 
         return ret  
 
@@ -1665,6 +1664,34 @@ class Indicadores:
             ret = -1
 
         return ret       
+    
+    # def detectar_patrones(self,escala,cvelas):
+        
+    #     o = self.mercado.get_vector_np_open(self.par,escala,cvelas)
+    #     h = self.mercado.get_vector_np_high(self.par,escala,cvelas)
+    #     l = self.mercado.get_vector_np_low(self.par,escala,cvelas)
+    #     c = self.mercado.get_vector_np_close(self.par,escala,cvelas)
+    #     # recolecto todos los patrones que encuentro
+         
+    #     valor_patron={} # 1 sube, -1 baja
+    #     valor_patron['CDLMATCHINGLOW']=1
+        
+    #     r_pos=0
+    #     r_neg=0
+    #     patrones=[]
+    #     for f in talib.get_functions():
+    #         if f.startswith('CDL'):
+    #             func = getattr(talib, f)
+    #             ret = func(o,h,l,c)
+    #             #print(f,ret)
+    #             if ret[-1]!=0:
+    #                 patrones.append(f)
+    #                 if ret[-1]>0:
+    #                     r_pos += ret[-1]
+    #                 else:
+    #                     r_neg += ret[-1]    
+
+    #     return {'alcista':r_pos,'bajista':r_neg,'patrones':patrones}         
 
  
 

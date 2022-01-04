@@ -1,6 +1,7 @@
 # # -*- coding: UTF-8 -*-
 #from binance.enums import * #para  create_order
-from pandas_ta import trend
+
+from pandas_ta import momentum, trend
 from mercado_actualizador_socket import Mercado_Actualizador_Socket
 from vela import Vela
 from binance.client import Client # Cliente python para acceso al exchangue
@@ -174,9 +175,7 @@ class Par:
         self.tendencias=[]
         self.veces_tendencia_minima=3
         self.xvela_corpulenta=10  # si ha velas corpulentas de mayor a x (xvela_corpulenta) veces, no se ingresa por pump 
-        self.rsi15m_maximo_para_entrar=65
-        self.rsi4h_maximo_para_entrar =65
-        self.rsi1d_maximo_para_entrar =65
+        
         
         self.vender_solo_en_positivo=True
 
@@ -256,6 +255,8 @@ class Par:
         #para en qué temporalidad somos mas efectivos
         #tambien estoy pensando en poner mas lejanos en escalas grandes y mas ajustadon en escalas chicas
         self.escala_de_analisis='15m' 
+
+        self.escala_de_salida='1m'
 
         self.oe = OrdenesExchange(self.client,self.par,self.log,obj_global)
         
@@ -348,9 +349,7 @@ class Par:
         self.cantidad_de_reserva=p['cantidad_de_reserva'] #cantidad expresada en moneda del par. 
         self.veces_tendencia_minima=p['veces_tendencia_minima']
         self.xvela_corpulenta=p['xvela_corpulenta']
-        self.rsi15m_maximo_para_entrar=p['rsi15m']
-        self.rsi4h_maximo_para_entrar =p['rsi4h']
-        self.rsi1d_maximo_para_entrar =p['rsi1d']
+        
         self.analisis_e7=p['analisis_e7']
         self.xobjetivo=p['xobjetivo']
         self.shitcoin=p['shitcoin']
@@ -359,6 +358,7 @@ class Par:
         
         self.uso_de_reserva=p['uso_de_reserva']
         self.temporalidades=p['temporalidades'].split()
+        self.max_entradas = p['max_entradas']
         
         cant=float(p['cantidad'])
         
@@ -456,9 +456,7 @@ class Par:
         self.solo_seniales= p['solo_seniales']
         self.veces_tendencia_minima=p['veces_tendencia_minima']
         self.xvela_corpulenta=p['xvela_corpulenta']
-        self.rsi15m_maximo_para_entrar=p['rsi15m']
-        self.rsi4h_maximo_para_entrar =p['rsi4h']
-        self.rsi1d_maximo_para_entrar =p['rsi1d']
+        
         #self.ind.incremento_volumen_bueno=p['incremento_volumen_bueno']
         self.incremento_volumen_bueno=p['incremento_volumen_bueno']
         if self.moneda_contra!='BTC': #para btc este dato se autoactualiza 
@@ -473,6 +471,7 @@ class Par:
         self.e3_ganancia_recompra=p['e3_ganancia_recompra']  
         
         self.temporalidades=p['temporalidades'].split()
+        self.max_entradas = p['max_entradas']
         self.uso_de_reserva=p['uso_de_reserva']
 
         self.rsi_analisis_entrada    = p['rsi_analisis_entrada']
@@ -1142,6 +1141,9 @@ class Par:
         metodo='menor_de_emas_y_cazaliq' # metodo por defecto
         listo=False   #self.filtro_BTC_pendiente_negativa('1h',20) # si btc comienza a bajar en una hora, nos quedamos con mp_slice_cazaliq
         
+        if self.moneda=='BTC':
+            metodo="market"
+            listo=True 
 
         if not listo:
             if self.analisis_provocador_entrada in "buscar_ema_positiva buscar_rebote_rsi":
@@ -1149,7 +1151,7 @@ class Par:
                 listo=True 
 
         if not listo:
-            if self.analisis_provocador_entrada in "buscar_rsi_minimo_subiendo buscar_rsi_minimo_subiendo_alcista buscar_rsi_bajo":
+            if self.analisis_provocador_entrada in "buscar_rsi_minimo_subiendo buscar_rsi_minimo_subiendo_alcista buscar_rsi_minimo_super_volumen buscar_rsi_bajo":
                 metodo="mercado"
                 listo=True        
         
@@ -1919,9 +1921,9 @@ class Par:
         
         '''
         entradas = self.db.trades_cantidad(self.moneda,self.moneda_contra)
-        cant_temporalidades = len(self.temporalidades)
-        if entradas >= cant_temporalidades:  
-            self.log.log(f'entradas {entradas}, cant.temporalidades {cant_temporalidades}')
+        
+        if entradas > self.max_entradas:  
+            self.log.log(f'entradas {entradas}, max_entradas {self.max_entradas}')
             return False
         
         if entradas==0 and self.db.trades_cantidad_de_pares_con_trades() >= self.g.maxima_cantidad_de_pares_con_trades:
@@ -1937,21 +1939,33 @@ class Par:
         
         for esc in escalas_a_probar:
             
-            if not comprar: 
-                ret = self.buscar_rsi_minimo_subiendo(esc)
+            if not comprar:
+                ret = self.buscar_rsi_minimo_super_volumen('1m')
+                self.log.log('---fin---super_volumen-----')    
                 if ret[0]:
                     self.escala_de_analisis = ret[1]
                     self.sub_escala_de_analisis = ret[1]
-                    self.analisis_provocador_entrada='buscar_rsi_minimo_subiendo'
+                    self.analisis_provocador_entrada='buscar_rsi_minimo_super_volumen'
                     comprar = True
                     break
-            
+
             if not comprar:
                 ret = self.buscar_rsi_minimo_subiendo_alcista('1m')
+                self.log.log('---fin---minimo_subiendo_alcista-----')    
                 if ret[0]:
                     self.escala_de_analisis = ret[1]
                     self.sub_escala_de_analisis = ret[1]
                     self.analisis_provocador_entrada='buscar_rsi_minimo_subiendo_alcista'
+                    comprar = True
+                    break    
+
+            if not comprar: 
+                ret = self.buscar_rsi_minimo_subiendo(esc)
+                self.log.log('---fin---minimo_subiendo-----')    
+                if ret[0]:
+                    self.escala_de_analisis = ret[1]
+                    self.sub_escala_de_analisis = ret[1]
+                    self.analisis_provocador_entrada='buscar_rsi_minimo_subiendo'
                     comprar = True
                     break
 
@@ -2061,13 +2075,15 @@ class Par:
 
         return ret  
 
-    def entrada_por_regreso_rsi(self,escala,cvelas,rsi_para_comprar):
+    def entrada_por_regreso_rsi(self,escala,cvelas,rsi_para_comprar,volumen_de_entrada=2):
         ind: Indicadores = self.ind
         ret = False
         
         px_minimo_local=ind.minimo_x_vol(escala,cvelas,5) 
         self.log.log(f'--> minimo_x_vol {escala} {px_minimo_local} cvelas={cvelas}')
-        
+        if px_minimo_local is None:
+            return False
+
         rsi_min, pos_rsi_min, precio_rsi_min,rsi = ind.rsi_minimo_y_pos(escala,2)
         self.log.log('---> rsi_minimo_y_pos',rsi_min, pos_rsi_min, precio_rsi_min,rsi)
     
@@ -2076,7 +2092,7 @@ class Par:
                rsi_min < rsi and\
                rsi < 50:
         
-            if self.filtro_volumen_encima_del_promedio(escala,4,1.3,pos_rsi_min):
+            if self.filtro_volumen_encima_del_promedio(escala,4,volumen_de_entrada,pos_rsi_min):
                 ret = True   
 
         return ret    
@@ -2084,21 +2100,60 @@ class Par:
     def buscar_rsi_minimo_subiendo_alcista(self,escala): 
         ret=[False,'xx']
         ind: Indicadores = self.ind
-        
-        if not ind.ema_rapida_mayor_lenta('4h',9,50,0.1):
+
+        if ind.ema_rapida_mayor_lenta('1h',9,20,0.3):
+            # autoconfig alcista
+            velas_filtro_minimo=60        # el minimo será un minimo cercano. De esta manera se evita tener un mínimo viejo  y muy bajo 
+            velas_del_final= 20           # para poder dejar de comprar rápidamente en una bajada
+            rsi_max = 70                  
+            volumen_de_entrada=1.8
+        else:
+            # autoconfig bajista
+            velas_filtro_minimo=100
+            velas_del_final= 50
+            rsi_max = 60
+            volumen_de_entrada=2.1
+
+        if self.filtro_minimo_superado(velas_filtro_minimo,velas_del_final):    #el minimo reciente es menor que el minimo amplio, está cayendo. no compramos
             return ret
                 
-        if self.hay_rsis_sobrevendidos():
+        if self.hay_rsis_sobrevendidos(rsi_max):
             return ret
         
-        if self.entrada_por_regreso_rsi(escala,40,50):
+        if self.entrada_por_regreso_rsi(escala,40,50,volumen_de_entrada):
             if self.filtro_pico_minimo_ema_low(escala):
                 ret = [True,escala,'buscar_rsi_minimo_subiendo_alcista']
     
-        self.log.log('---fin---buscar_rsi_minimo_subiendo_alcista-----')    
         return ret      
 
-     
+    def buscar_rsi_minimo_super_volumen(self,escala): 
+        ret=[False,'xx']
+        ind: Indicadores = self.ind
+
+        rsi_min, pos_rsi_min, precio_rsi_min,rsi = ind.rsi_minimo_y_pos(escala,2)
+        self.log.log('---> rsi_minimo_y_pos',rsi_min, pos_rsi_min, precio_rsi_min,rsi)
+
+        if pos_rsi_min >0 and rsi_min < 30 and\
+               rsi_min < rsi and\
+               rsi < 33:
+            if self.filtro_volumen_encima_del_promedio(escala,cvelas=15,xvol=2.5,vela_ini=pos_rsi_min):
+                if self.filtro_pico_minimo_ema_low(escala):
+                    ret = [True,escala,'buscar_rsi_minimo_super_volumen']
+        return ret        
+
+
+    def filtro_minimo_superado(self,cvelas=240,velas_del_final=30):
+        ind: Indicadores = self.ind
+        #m_horas =   ind.minimo_x_vol('1m',choras  ,1)
+        minimo = ind.minimo_x_vol('1m',cvelas ,1,velas_del_final)   #no tengo en cuenta los  ultimos 50 minutos
+        if minimo:
+            ret = self.precio < minimo
+            
+        else:
+            ret = True # no tengo todos los datos, considero superado
+            
+        self.log.log(f'min velas({cvelas} menos {velas_del_final}) {minimo} {ret}')    
+        return ret
 
     def filtro_pico_minimo_ema_low(self,escala):
         ret = False
@@ -2149,13 +2204,13 @@ class Par:
         
         return ret    
 
-    def hay_rsis_sobrevendidos(self): 
+    def hay_rsis_sobrevendidos(self,max_rsi=69.5): 
         ind: Indicadores = self.ind
         ret = False
         escalas=['1d','4h','15m','5m'] 
         for e in escalas:
             rsi = ind.rsi(e)
-            if rsi > 69.5:
+            if rsi > max_rsi:
                 ret = True
                 self.log.log(f'rsi {e} {rsi} sobrevendido')
         return ret        
@@ -2248,13 +2303,13 @@ class Par:
     def precio_cerca_por_debajo(self,px,porcentaje=0.30):
         return self.precio < px and (px - self.precio) / self.precio *100 < porcentaje 
 
-    def precio_sobre_objetivo(self,escala):
+    def precio_objetivo_superado(self,escala):
         ind = self.ind
         objetivo_venta = ind.maximo_x_vol(escala,150,1)
         
-        ret = self.precio > self.objetivo_venta
+        ret =  self.objetivo_venta > self.precio
         if ret:
-            self.log.log(f'precio sobre objetivo= {objetivo_venta}')
+            self.log.log(f'objetivo superado= {objetivo_venta}')
         return ret    
 
     def precio_sobre_ema_importante(self):
@@ -2267,7 +2322,7 @@ class Par:
                 ret = True
         return ret 
 
-    def precio_bajo_ema_importante(self):
+    def precio_bajo_ema_importante(self,escala):
         ind = self.ind
         ret = False
         emas_importantes=[('1d',20),('1d',50),('4h',20),('4h',50)]    
@@ -2284,11 +2339,19 @@ class Par:
     def evaluar_si_hay_que_vender(self,escala,gan,duracion_trade):
         self.log.log(f'senial de entrada {self.senial_entrada}')
         ind: Indicadores =self.ind
-        gan_min = calc_ganancia_minima(self.g,0.5,self.escala_de_analisis,duracion_trade)
-        precio_bajista = self.el_precio_es_bajista('4h') and self.el_precio_es_bajista(self.escala_de_analisis)
-        precio_no_sube = ind.no_sube(escala)
-        tiempo_trade_superado = duracion_trade > self.g.tiempo_maximo_trade[escala]
-        duracion_en_velas = int(duracion_trade/self.g.escala_tiempo[escala])
+
+        if ind.ema_rapida_mayor_lenta('1h',9,20,0.3):
+           self.escala_de_salida ='3m'
+        else:        
+           self.escala_de_salida ='1m' 
+
+        self.log.log(f'escala_de_salida {self.escala_de_salida}' )   
+
+        gan_min = calc_ganancia_minima(self.g,0.5,self.escala_de_salida,duracion_trade)
+        precio_bajista = self.el_precio_es_bajista('4h') and self.el_precio_es_bajista(self.escala_de_salida)
+        precio_no_sube = ind.no_sube(self.escala_de_salida)
+        tiempo_trade_superado = duracion_trade > self.g.tiempo_maximo_trade[self.escala_de_salida]
+        duracion_en_velas = int(duracion_trade/self.g.escala_tiempo[self.escala_de_salida])
         self.log.log(f'gan_min {gan_min} gan {gan} px_bajista {precio_bajista} px_no_sube {precio_no_sube}' )
         self.log.log(f' duracion {duracion_trade} velas {duracion_en_velas} t_superado {tiempo_trade_superado}')
                  
@@ -2311,7 +2374,7 @@ class Par:
             self.log.log(f'{marca_salida} ganancia flash {gan} Velas={duracion_en_velas}')
             return True
 
-        rsi_max,rsi_max_pos,rsi = ind.rsi_maximo_y_pos(escala,5)
+        rsi_max,rsi_max_pos,rsi = ind.rsi_maximo_y_pos(self.escala_de_salida,5)
         self.log.log(f'rsi {rsi} rsi_max {rsi_max} rsi_max_pos {rsi_max_pos}')
 
         if rsi_max > 90 and rsi_max > rsi and  1<= rsi_max_pos <= 3 and gan>gan_min: ## and self.filtro_volumen_calmado(self.escala_de_analisis):
@@ -2322,7 +2385,7 @@ class Par:
             self.log.log(f'{marca_salida} rsi_max > 70 {rsi_max}')
             return True
         
-        if rsi > 65  and self.filtro_volumen_calmado(escala,3,0.7):                        #0.8 baja la barrera que tiene que superar el volumen para considirarse importante
+        if rsi > 65  and self.filtro_volumen_calmado(self.escala_de_salida,3,0.7):                        #0.8 baja la barrera que tiene que superar el volumen para considirarse importante
             self.log.log(f'{marca_salida} rsi escala >65 {rsi}, volumen_calmado 3 0.7')
             return True
 
@@ -2330,39 +2393,17 @@ class Par:
             self.log.log(f'{marca_salida} rsi_max > 53 {rsi_max} ,precio_bajista and precio_no_sube')
             return True
 
-        #if rsi_max > 50 and rsi_max > rsi and 1<= rsi_max_pos <= 3 and self.precio_sobre_objetivo(self.escala_de_analisis):
-        #    return True
-        if precio_no_sube and self.precio_sobre_objetivo(self.escala_de_analisis):
+        if precio_no_sube and self.precio_objetivo_superado(self.escala_de_salida):
             return True
     
-        if rsi_max > 50 and rsi_max > rsi and 1<= rsi_max_pos <= 3 and self.precio_bajo_ema_importante():
+        if rsi_max > 50 and rsi_max > rsi and 1<= rsi_max_pos <= 3 and self.precio_bajo_ema_importante(self.escala_de_salida):
             return True
-    
-        #if rsi_max > 45 and rsi_max_pos <=3 and precio_bajista and precio_no_sube:
-        #    self.log.log(f'{marca_salida} rsi rsi_max > 45 {rsi_max} and rsi_max_pos <3  {rsi_max_pos} and precio_bajista and precio_no_sube')
-        #    return True    
 
-        var = variacion_absoluta(ind.ema(escala,50) ,self.precio  )
-        inf = self.g.escala_ganancia[escala] / -10
+        var = variacion_absoluta(ind.ema(self.escala_de_salida,50) ,self.precio  )
+        inf = self.g.escala_ganancia[self.escala_de_salida] / -10
         if rsi_max > 40 and 1<= rsi_max_pos <=5 and precio_no_sube and inf  <= var <= 0:
             self.log.log(f'{marca_salida} rsi_max= {rsi_max} > 40 and rsi_max_pos {rsi_max_pos} <=5 and precio_no_sube and var {inf} <= {var} <= 0')
             return True    
-    
-
-
-
-        esc_sup = self.g.zoom(escala,1)
-        if ind.rsi(esc_sup)>90:
-            self.log.log(f'*** rsi escala inf({esc_sup}) >90')
-            return True
-
-        if 'buscar_ema_positiva' in self.senial_entrada:            
-            salir,dif,pl,pr = ind.ema_rapida_menor_lenta2(escala, 10,50, 0, pendientes_negativas=True ) 
-            self.log.log(f'    {escala} 10,50  diferencia% {dif}, pend rapida {pr} pend lenta {pl}')
-            return True
-
-        #else:
-        #    salir = self.filtro_pico_maximo_ema_maximos(self.escala_de_analisis,4,1) 
         
         return False 
 
@@ -3604,10 +3645,10 @@ class Par:
     def momento_de_recomprar(self,escala,gan,duracion_trade):
         #gan_atr = round ( atr/self.precio * 100 * self.g.x_neg_patr,2 ) #multiplicador de atr negativo para recomprar cuando se pasa cierta perdida
         self.log.log( f'momento_de_recomprar?  gan {gan}' )
-        if self.moneda=='BTC' and duracion_trade > 60:    #experimental, esto podría comprar demasiado
-            recomprar = True
-        else:    
-            recomprar =  gan < self.g.escala_ganancia[escala] * -2 and duracion_trade > 60
+        #if self.moneda=='BTC' < 0.5 and duracion_trade > 60:    #experimental, esto podría comprar demasiado
+        #    recomprar = True
+        #else:    
+        recomprar =  gan < self.g.escala_ganancia[escala] * -2 and duracion_trade > 60
         ret = False            
         if recomprar:
             self.log.log( 'Intento recomprar---> Sí')
@@ -5219,7 +5260,7 @@ class Par:
         ganusdt=self.format_valor_truncando(self.calculo_ganancias_usdt(self.precio_compra,self.precio_venta,self.cant_moneda_compra),8)
         gan_moneda_contra=self.format_valor_truncando(self.calculo_ganancias_moneda_contra(self.precio_compra,self.precio_venta,self.cant_moneda_compra),8)
 
-        titulo=self.par+' [Estado '+ str(self.estado)+'] '+sgan+ f' % {self.escala_de_analisis}'
+        titulo=self.par+' [Estado '+ str(self.estado)+'] '+sgan+ f' % {self.escala_de_salida}'
         texto=titulo+'\n'
         texto+=" Precio Compra: " + self.format_valor_truncando( self.precio_compra,8) + '\n'
         texto+=" Precio  Venta: " + self.format_valor_truncando( self.precio_venta,8) +" "+ sgan+ ' %  '+gan_moneda_contra +' m$c ' +ganusdt +' usdt\n'
@@ -5501,14 +5542,12 @@ class Par:
                 st='sl'
             else:
                 st='--'    
-                
             #stop_loss_calculado=self.calcular_stoploss()
-            
             tiempo_trade=self.calc_tiempo_trade()
 
             st+=' ' + tiempo_trade # + ' ' + str(round(self.pstoploss,2))
 
-            return self.linea( f"Px: {self.format_valor_truncando( self.precio,8)}  {self.ganancias()} {st} [{self.escala_de_analisis}] " )    
+            return self.linea( f"Px: {self.format_valor_truncando( self.precio,8)}  {self.ganancias()} {st} [{self.escala_de_salida}] " )    
         except Exception as e:
             return str(e)   
     

@@ -23,17 +23,27 @@ class Calculador_Precio_Compra:
         self.metodo_compra_venta=metodo
         self.log.log('metodo_compra--->',metodo)
 
-        if metodo=="parte_baja_rango_macd":
+        if metodo=="mercado":
+            px= ind.precio_mas_actualizado()
+            self.calculo_precio_compra='mercado'
+            self.log.log('calc. mercado',px) 
+
+        if metodo=="market":
+            px= ind.precio_mas_actualizado()
+            self.calculo_precio_compra='market'
+            self.log.log('calc.market',px) 
+     
+        elif metodo=="parte_baja_rango_macd":
             px = self.calc_parte_baja_rango_macd()
             self.calculo_precio_compra = 'parte_baja_rango_macd'
 
-        if metodo=="ret_fibo":
+        elif metodo=="ret_fibo":
             px,self.calculo_precio_compra = self.calc_retro_fibo()
             if px == 0:
                 self.log.log('no puedo calcular por ret_fibo')
                 metodo='menor_de_emas_y_cazaliq'
 
-        if metodo=="pefil_volumen":
+        elif metodo=="pefil_volumen":
             px= self.calc_pefil_volumen()
             if px == 0:
                 self.log.log('no puedo calcular por pefil_volumen')
@@ -41,26 +51,10 @@ class Calculador_Precio_Compra:
             else:
                 self.calculo_precio_compra = 'pefil_volumen'          
 
-        # if metodo=="mp_slice_bajo":
-        #     px = self.rango[0] #el inferior del rango
-        #     if px == 0:
-        #         self.log.log('no puedo calcular por mp_slice_scalp')
-        #         metodo='cazaliq'
-        #     else:
-        #         self.calculo_precio_compra=metodo
-        #         self.log.log('calc.'+metodo,px)
-
-        # if metodo=="mp_slice_cazaliq":
-        #     px, calc = self.calc_mp_slice_cazaliq()
-        #     if px <=0:
-        #         metodo=="caza_rsi_bajo"
-        #     else:
-        #         self.calculo_precio_compra=calc    
-        
-        if metodo=="ema_9":
+        elif metodo=="ema_9":
             px, self.calculo_precio_compra = self.calc_ema(9)
         
-        if metodo=="ema_20":
+        elif metodo=="ema_20":
             px, self.calculo_precio_compra = self.calc_ema(20)
 
         elif metodo=="ema_55":
@@ -84,11 +78,7 @@ class Calculador_Precio_Compra:
 
             px, self.calculo_precio_compra = self.calc_mayor_de_emas_y_cazaliq()
         
-        elif metodo=="mercado":
-            px= ind.precio_mas_actualizado()
-            self.calculo_precio_compra='mercado'
-            self.log.log('calc.scalping mercado',px) 
-     
+        
 
         elif metodo=="scalping":
             '''

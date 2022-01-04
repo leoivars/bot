@@ -32,7 +32,7 @@ class Actualizador_rest:
     max_retardo=15
     max_actualizacion=65
 
-    def __init__(self,log,estado_general,cliente):
+    def __init__(self,log,estado_general,cliente:Client):
         
         self.g:VariablesEstado = estado_general
         
@@ -142,16 +142,10 @@ class Actualizador_rest:
                 self.log.log('klines',klines,par,rango_pedido)
                 err=True
                 tiempo_espara=self.tiempo_espera_error(txt_error)
-               
-           
-
-
                 self.inc_retardo()
                 #self.crear_cliente() #boora y crea un nuevo cliente
-                
                 self.log.err( "....Error en cargainicial(",escala,"), rango (",rango_pedido,") , reintento en" ,self.retardo, txt_error)
-                    
-
+           
             self.operacion_terminar() #libero el semáforo     
             
             if err:#=True 
@@ -161,6 +155,7 @@ class Actualizador_rest:
                 time.sleep(tiempo_espara) # espero en caso de errors
                 
             else:
+                self.log.log('Carga inicial:', par,escala, ret.df.count() )
                 
                 break    
          

@@ -313,24 +313,8 @@ def probar_rsi_minimo_y_pos(par,escala):
     #print('mfi_vector',par,escala,p)    
 
 
-def probar_detector(par): 
-    ind=Indicadores(par,log,globales,mercado)
-    
-    escs=['1d','4h','15m','1m']
-    for e in escs:
-        #print (par,e,'min_rsi       ',ind.minimo_por_rsi(e) )
-        #print (par,e,'minimo_x_vol',ind.minimo_x_vol(e,150) )
-        print (par,e,'volumen_por_encima_media 150',ind.volumen_por_encima_media('1m',3,1,0) )
-        #print (par,e,'min_xvxp_100_1',ind.minimo_x_vol(e,100,1) )
-        
-    #print('rsi_minimo_y_pos',par,escala)   
-    #p = ind.mfi_vector(escala)
-    #print('mfi_vector',par,escala,p)      
-
 def probar_sum(par):
-    
     print(  ind.volumen_suma('1d',15))
-
 
 def probar_max_vol(escala):
     maxv=ind.maximo_x_vol(escala,300,5) 
@@ -338,12 +322,25 @@ def probar_max_vol(escala):
     print (maxv,px)
     print(  px/maxv  )
 
+
+def probar_detector(par): 
+    ind=Indicadores(par,log,globales,mercado)
+    
+    print (par,'1h','min',ind.minimo_x_vol('15m',16,1) )
+    print (par,'1m','min',ind.minimo_x_vol('1m',120,1) )
+
+
+
+
+
 t = time.time()
 
+moneda='ADA'
+par = moneda+'USDT'
 
-ind=Indicadores('BTCUSDT',log,globales,mercado)
+ind=Indicadores(par,log,globales,mercado)
 while time.time() -t < 600:
-    probar_detector('BTCUSDT')
+    probar_detector(par)
     time.sleep(15)
 
 mercado.detener_sockets()
