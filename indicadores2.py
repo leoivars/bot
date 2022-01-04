@@ -342,6 +342,34 @@ class Indicadores:
                 
         return lista 
 
+    def lista_picos_maximos_ema(self,escala,periodos,valor='close',cvelas=10):
+        ''' entrega lista de picos maximo desde el final por cvelas
+            para la ema valor('close' u otras) 
+        '''    
+        df=self.get_df(self.par,escala)
+        ema = ta.ema(df[valor],length=periodos) 
+        
+        lista=[]
+
+        l=len(ema)
+        lneg = l * -1
+        
+        lneg = l * -1
+        cvel = 1
+        i=-1
+        while i > lneg:
+            i -= 1
+            cvel += 1
+            if cvel > cvelas:
+                break
+            # print(f'if {rsi.iloc[i-1]} > {rsi.iloc[i]}:')
+            if self.hay_maximo_en(ema,i,5,2):
+                #print(    strtime_a_fecha(  df.iloc[i]['close_time'] )   )
+                lista.append([ i*-1 , ema.iloc[i]  ])
+                
+        return lista
+
+
     def rsi_lista_picos_minimos(self,escala,cvelas):
         ''' entrega lista de picos minimos desde el final por cvelas 
         para rsi menor que el param menor_de'''    
@@ -431,31 +459,7 @@ class Indicadores:
             v = Vela(df.iloc[-2])
         return v    
 
-    def hay_minimo_en(self,df,p,entorno_izq=5,entorno_der=5):
-        lado_uno=True
-        fin = -1
-        i=p+1
-        c_entorno=0
-        while i <= fin and c_entorno < entorno_der :
-            if df.iloc[p] > df.iloc[i]:
-                lado_uno=False
-                break
-            i +=1
-            c_entorno +=1
-
-        lado_dos=True
-        ini = len(df) * -1
-        i=p-1
-        c_entorno=0
-        while ini <= i and c_entorno < entorno_izq:
-            if df.iloc[p] > df.iloc[i]:
-                lado_dos=False
-                break
-            i -=1
-            c_entorno +=1
-
-        return lado_uno and lado_dos    
-
+    
     def rsi_contar_picos_maximos(self,escala,cvelas,mayor_de):
         ''' cuanta la cantidad de picos maximo desde el final por cvelas 
         para rsi mayor que el param mayor_de'''    
@@ -482,40 +486,56 @@ class Indicadores:
                 picos +=1
         return picos        
 
-    def hay_maximo_en(self,df,p,entorno=5):
-        lado_uno=False
-        if p > -1: #posicion de p en forma positiva
-            ini = 0
-            fin = len(df)-1
-        else:
-            ini = (len(df)-1) * -1
-            fin = -1
+    def hay_maximo_en(self,df,p,entorno_izq=5,entorno_der=5):
+        lado_uno=True
+        fin = -1
         i=p+1
         c_entorno=0
-        while i <= fin and c_entorno < entorno:
-            if df.iloc[p] > df.iloc[i]:
-                lado_uno=True
-                break
-            elif df.iloc[p] < df.iloc[i]:
+        while i <= fin and c_entorno < entorno_der :
+            if df.iloc[p] < df.iloc[i]:
+                lado_uno=False
                 break
             i +=1
             c_entorno +=1
 
-        lado_dos=False
+        lado_dos=True
+        ini = len(df) * -1
         i=p-1
         c_entorno=0
-        while ini <= i and c_entorno < entorno:
-            if df.iloc[p] > df.iloc[i]:
-                lado_dos=True
+        while ini <= i and c_entorno < entorno_izq:
+            if df.iloc[p] < df.iloc[i]:
+                lado_dos=False
                 break
-            elif df.iloc[p] < df.iloc[i]:
+            i -=1
+            c_entorno +=1
+
+        return lado_uno and lado_dos     
+
+    def hay_minimo_en(self,df,p,entorno_izq=5,entorno_der=5):
+        lado_uno=True
+        fin = -1
+        i=p+1
+        c_entorno=0
+        while i <= fin and c_entorno < entorno_der :
+            if df.iloc[p] > df.iloc[i]:
+                lado_uno=False
+                break
+            i +=1
+            c_entorno +=1
+
+        lado_dos=True
+        ini = len(df) * -1
+        i=p-1
+        c_entorno=0
+        while ini <= i and c_entorno < entorno_izq:
+            if df.iloc[p] > df.iloc[i]:
+                lado_dos=False
                 break
             i -=1
             c_entorno +=1
 
         return lado_uno and lado_dos    
 
-    
 
     def firma(self,funcion,parametros):
         ret=funcion

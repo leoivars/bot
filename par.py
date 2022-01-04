@@ -2103,16 +2103,16 @@ class Par:
 
         if ind.ema_rapida_mayor_lenta('1h',9,20,0.3):
             # autoconfig alcista
-            velas_filtro_minimo=60        # el minimo será un minimo cercano. De esta manera se evita tener un mínimo viejo  y muy bajo 
-            velas_del_final= 20           # para poder dejar de comprar rápidamente en una bajada
+            velas_filtro_minimo =60        # el minimo será un minimo cercano. De esta manera se evita tener un mínimo viejo  y muy bajo 
+            velas_del_final = 20           # para poder dejar de comprar rápidamente en una bajada
             rsi_max = 70                  
-            volumen_de_entrada=1.8
+            volumen_de_entrada = 1.7
         else:
             # autoconfig bajista
-            velas_filtro_minimo=100
-            velas_del_final= 50
+            velas_filtro_minimo =100
+            velas_del_final = 50
             rsi_max = 60
-            volumen_de_entrada=2.1
+            volumen_de_entrada = 2
 
         if self.filtro_minimo_superado(velas_filtro_minimo,velas_del_final):    #el minimo reciente es menor que el minimo amplio, está cayendo. no compramos
             return ret
@@ -2136,7 +2136,7 @@ class Par:
         if pos_rsi_min >0 and rsi_min < 30 and\
                rsi_min < rsi and\
                rsi < 33:
-            if self.filtro_volumen_encima_del_promedio(escala,cvelas=15,xvol=2.5,vela_ini=pos_rsi_min):
+            if self.filtro_volumen_encima_del_promedio(escala,cvelas=15,xvol=2.3,vela_ini=pos_rsi_min):
                 if self.filtro_pico_minimo_ema_low(escala):
                     ret = [True,escala,'buscar_rsi_minimo_super_volumen']
         return ret        
@@ -2374,8 +2374,19 @@ class Par:
             self.log.log(f'{marca_salida} ganancia flash {gan} Velas={duracion_en_velas}')
             return True
 
+
+
         rsi_max,rsi_max_pos,rsi = ind.rsi_maximo_y_pos(self.escala_de_salida,5)
         self.log.log(f'rsi {rsi} rsi_max {rsi_max} rsi_max_pos {rsi_max_pos}')
+
+
+        lista_max = ind.lista_picos_maximos_ema(self.escala_de_salida,3,'close',10)
+
+        if lista_max:
+            pos_max = lista_max[0][0] 
+            if pos_max <= 3 and rsi > 70:
+                self.log.log(f'{marca_salida} rsi > 70 y picoema {lista_max}')
+                return True
 
         if rsi_max > 90 and rsi_max > rsi and  1<= rsi_max_pos <= 3 and gan>gan_min: ## and self.filtro_volumen_calmado(self.escala_de_analisis):
             self.log.log(f'{marca_salida} rsi_max  > 90 {rsi_max}')
@@ -2389,8 +2400,8 @@ class Par:
             self.log.log(f'{marca_salida} rsi escala >65 {rsi}, volumen_calmado 3 0.7')
             return True
 
-        if rsi_max > 53 and rsi_max > rsi and 1<= rsi_max_pos <= 3 and precio_bajista and precio_no_sube:
-            self.log.log(f'{marca_salida} rsi_max > 53 {rsi_max} ,precio_bajista and precio_no_sube')
+        if rsi_max > 53 and rsi_max > rsi and 1<= rsi_max_pos <= 3 and precio_bajista:
+            self.log.log(f'{marca_salida} rsi_max > 53 {rsi_max} ,precio_bajista')
             return True
 
         if precio_no_sube and self.precio_objetivo_superado(self.escala_de_salida):

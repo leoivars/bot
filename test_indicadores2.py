@@ -329,18 +329,20 @@ def probar_detector(par):
     print (par,'1h','min',ind.minimo_x_vol('15m',16,1) )
     print (par,'1m','min',ind.minimo_x_vol('1m',120,1) )
 
-
-
+def probar_lista_maximos(par): 
+    ind=Indicadores(par,log,globales,mercado)
+    print (par,'1h','min',ind.lista_picos_maximos_ema('1m',3,'close',50) )
+ 
 
 
 t = time.time()
 
-moneda='ADA'
+moneda='BTC'
 par = moneda+'USDT'
 
 ind=Indicadores(par,log,globales,mercado)
 while time.time() -t < 600:
-    probar_detector(par)
+    probar_lista_maximos(par)
     time.sleep(15)
 
 mercado.detener_sockets()
