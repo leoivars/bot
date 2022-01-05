@@ -315,7 +315,7 @@ class Indicadores:
         return ret    
 
 
-    def lista_picos_minimos_ema_low(self,escala,periodos,cvelas):
+    def lista_picos_minimos_ema_low(self,escala,periodos,cvelas,izquierda=5,derecha=2):
         ''' entrega lista de picos minimos desde el final por cvelas
             para la ema low 
         '''    
@@ -336,7 +336,7 @@ class Indicadores:
             if cvel > cvelas:
                 break
             # print(f'if {rsi.iloc[i-1]} > {rsi.iloc[i]}:')
-            if self.hay_minimo_en(low,i,5,2):
+            if self.hay_minimo_en(low,i,izquierda,derecha):
                 #print(    strtime_a_fecha(  df.iloc[i]['close_time'] )   )
                 lista.append([ i*-1 , low.iloc[i]  ])
                 

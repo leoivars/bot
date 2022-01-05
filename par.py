@@ -1152,7 +1152,7 @@ class Par:
 
         if not listo:
             if self.analisis_provocador_entrada in "buscar_rsi_minimo_subiendo buscar_rsi_minimo_subiendo_alcista buscar_rsi_minimo_super_volumen buscar_rsi_bajo":
-                metodo="mercado"
+                metodo="market"
                 listo=True        
         
         if not listo:
@@ -1864,10 +1864,6 @@ class Par:
                 ret = True
         
         return ret        
-                
-
-
-
 
 
     def deshabiliar_brutalmente(self,minutos_al_futuro=60*24*3):
@@ -2133,11 +2129,11 @@ class Par:
         rsi_min, pos_rsi_min, precio_rsi_min,rsi = ind.rsi_minimo_y_pos(escala,2)
         self.log.log('---> rsi_minimo_y_pos',rsi_min, pos_rsi_min, precio_rsi_min,rsi)
 
-        if pos_rsi_min >0 and rsi_min < 30 and\
+        if pos_rsi_min >0 and rsi_min < 35 and\
                rsi_min < rsi and\
-               rsi < 33:
-            if self.filtro_volumen_encima_del_promedio(escala,cvelas=15,xvol=2.3,vela_ini=pos_rsi_min):
-                if self.filtro_pico_minimo_ema_low(escala):
+               rsi < 35:
+            if self.filtro_volumen_encima_del_promedio(escala,cvelas=7,xvol=2,vela_ini=pos_rsi_min):
+                if self.filtro_pico_minimo_ema_low(escala,izquierda=9,derecha=2):
                     ret = [True,escala,'buscar_rsi_minimo_super_volumen']
         return ret        
 
@@ -2155,9 +2151,9 @@ class Par:
         self.log.log(f'min velas({cvelas} menos {velas_del_final}) {minimo} {ret}')    
         return ret
 
-    def filtro_pico_minimo_ema_low(self,escala):
+    def filtro_pico_minimo_ema_low(self,escala,izquierda=5,derecha=2):
         ret = False
-        picos_low=self.ind.lista_picos_minimos_ema_low(escala,3,100)
+        picos_low=self.ind.lista_picos_minimos_ema_low(escala,3,100,izquierda,derecha)
         if len(picos_low) >0:
             pico = picos_low[0] 
             if pico[0] <= 3:
