@@ -314,6 +314,70 @@ class Indicadores:
             ret = None
         return ret    
 
+    def velas_imporantes(self,escala,cvelas,top_velas):
+        '''  
+           obtiene las las velas mas importantes de las ultimas cvelas 
+           y retorna las top_cvelas
+        '''    
+        df=self.get_df(self.par,escala)
+        df['importancia'] = (df.high - df.low)  * df.volume
+
+        lista=[]
+
+        l=len(df) 
+
+        lneg = l * -1
+        cvel = 1
+        i=-1
+        while i > lneg:
+            i -= 1
+            cvel += 1
+            if cvel > cvelas:
+                break
+        
+            lista.append([ i*-1 , round(df.iloc[i]['importancia'],2) ,Vela(df.iloc[i]) ]) 
+        
+        lista.sort(key=lambda x: x[1] ,reverse=True)
+        top = lista[0:top_velas]
+        top.sort()
+       
+        return top       
+        
+
+    def minimo_maximo_por_rango_velas_imporantes(self,escala,cvelas):
+        '''  
+           obtiene las las velas mas importantes de las ultimas cvelas 
+           y retorna el mínimo y maximo del rango determinado
+        '''    
+        df=self.get_df(self.par,escala)
+        df['importancia'] = (df.high - df.low)  * df.volume
+
+        lista=[]
+
+        l=len(df) 
+
+        lneg = l * -1
+        cvel = 1
+        i=-1
+        while i > lneg:
+            i -= 1
+            cvel += 1
+            if cvel > cvelas:
+                break
+            lista.append([ i*-1 , df.iloc[i]['importancia']  ]) 
+        
+        lista.sort(key=lambda x: x[1] ,reverse=True)
+        top = lista[0:int(cvelas/5)]
+        top.sort(reverse=True)
+        inicio_rango = top[0][0]
+
+        df1 = df.iloc[ -inicio_rango: ]
+
+        minimo = df1.low.min()
+        maximo = df1.high.max()
+       
+        return minimo,maximo       
+
 
     def lista_picos_minimos_ema_low(self,escala,periodos,cvelas,izquierda=5,derecha=2):
         ''' entrega lista de picos minimos desde el final por cvelas
@@ -325,8 +389,7 @@ class Indicadores:
         lista=[]
 
         l=len(low)
-        lneg = l * -1
-        
+                
         lneg = l * -1
         cvel = 1
         i=-1
@@ -451,15 +514,87 @@ class Indicadores:
     def ultima_vela_cerrada(self,escala):
         df=self.mercado.get_panda_df(self.par, escala, 3)
         #print(df['closed'])
-        print(df.iloc[-1]['closed'])
+        #print(df.iloc[-1]['closed'])
 
         if df.iloc[-1]['closed']:
             v = Vela(df.iloc[-1])
         else:
             v = Vela(df.iloc[-2])
-        return v    
+        return v 
 
-    
+    def ultimas_velas(self,escala,cvelas,cerradas=True):  
+        df=self.mercado.get_panda_df(self.par, escala, cvelas + 1)
+        #print(df['closed'])
+        #print(df.iloc[-1]['closed'])
+
+        if cerradas and not df.iloc[-1]['closed']:
+            fin = -1         #no incluye vela abierta
+        else:
+            fin = 0          #incluye vela -1 como esté  
+
+        ini = fin - cvelas 
+        velas=[]
+        for i in range(ini,fin):
+            velas.append( Vela(df.iloc[i]) )
+
+        return velas    
+
+    def patron_verde_supera_roja(self,escala):
+        velas = self.ultimas_velas(escala,cvelas=3,cerradas=False)
+        roja:Vela  = velas[0]
+        verde:Vela = velas[1]
+        confirma:Vela = velas[1]
+        ret = False        
+        if roja.signo == -1 and verde.signo == 1 and confirma.signo == 1 and\
+               roja.close > verde.open and roja.open < verde.close:
+            if roja.cuerpo() > self.cuerpo_promedio(escala,100) * 1.5:
+                ret = True
+        return ret
+
+    def patron_martillo_verde(self,escala):
+        velas = self.ultimas_velas(escala,cvelas=2,cerradas=True)
+        martillo:Vela  = velas[0]
+        verde:Vela = velas[1]
+        ret = False
+        if martillo.martillo() == 1 and verde.signo == 1:    #la verde es verde y el martillo es martillo
+            recorrido_minimo = self.recorrido_promedio(escala,50) * 2
+            recorrido = martillo.high - martillo.low
+            if recorrido > recorrido_minimo:
+                ret = True
+        return ret        
+
+    def patron_frenada_de_gusano_en_desarrollo(self,escala):
+        ''' en realidad es morning star https://youtu.be/I7azCpcVlAU?t=2087 
+            pero para mi es una frenada de gusano
+        '''
+        velas = self.ultimas_velas(escala,cvelas=4,cerradas=False)
+        roja_grande1:Vela  = velas[0]
+        roja_grande2:Vela  = velas[1]
+        frenada:Vela = velas[2]
+        verde:Vela = velas[3]
+        ret = False
+        cuerpo_minimo = self.cuerpo_promedio(escala,100) * 2
+        if roja_grande1.signo == -1 and roja_grande2.signo == -1:                                  #las rojas son rojas
+            if roja_grande1.cuerpo() > cuerpo_minimo and roja_grande2.cuerpo() > cuerpo_minimo:    #las rojas tienen cumplen con un cuerpo minimo
+                if roja_grande2.cuerpo() > frenada.cuerpo() * 4 and verde.signo == 1:
+                    ret = True
+        return ret
+   
+    def cuerpo_promedio(self,escala,cvelas):
+        df=self.mercado.get_panda_df(self.par, escala, cvelas + 1)
+        df['cuerpo'] = abs(df.open - df.close) 
+        return df["cuerpo"].mean()
+
+    def recorrido_promedio(self,escala,cvelas):
+        df=self.mercado.get_panda_df(self.par, escala, cvelas + 1)
+        df['recorrido'] = df.high - df.low
+        return df["recorrido"].mean()   
+
+    def recorrido_maximo(self,escala,cvelas):
+        df=self.mercado.get_panda_df(self.par, escala, cvelas + 1)
+        df['recorrido'] = df.high - df.low
+        return df["recorrido"].max()
+
     def rsi_contar_picos_maximos(self,escala,cvelas,mayor_de):
         ''' cuanta la cantidad de picos maximo desde el final por cvelas 
         para rsi mayor que el param mayor_de'''    
@@ -1712,12 +1847,12 @@ class Indicadores:
     #                     r_neg += ret[-1]    
 
     #     return {'alcista':r_pos,'bajista':r_neg,'patrones':patrones}         
-
+    
+    
  
 
 if __name__=='__main__':
     from variables_globales import VariablesEstado
-    from gestor_de_posicion import Gestor_de_Posicion
     from binance.client import Client #para el cliente
     from pws import Pws
     #from acceso_db_conexion_mysqldb import Conexion_DB

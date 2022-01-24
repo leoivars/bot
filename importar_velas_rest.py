@@ -48,6 +48,8 @@ class Actualizador_Rest:
                 klines =self.client.get_historical_klines(par, Client.KLINE_INTERVAL_1MINUTE, rango_ini,rango_fin) 
             elif escala=='5m':
                 klines =self.client.get_historical_klines(par, Client.KLINE_INTERVAL_5MINUTE, rango_ini,rango_fin) 
+            elif escala=='3m':
+                klines =self.client.get_historical_klines(par, Client.KLINE_INTERVAL_3MINUTE, rango_ini,rango_fin)     
             elif escala=='15m':
                 klines =self.client.get_historical_klines(par, Client.KLINE_INTERVAL_15MINUTE, rango_ini,rango_fin) 
             elif escala=='30m':
@@ -113,7 +115,7 @@ class Actualizador_Rest:
 
 if __name__=='__main__':
     from variables_globales import VariablesEstado
-    from gestor_de_posicion import Gestor_de_Posicion
+    #from gestor_de_posicion import Gestor_de_Posicion
     from pws import Pws
     client = Client()
     log=Logger('Test_indicadores.log') 
@@ -132,12 +134,12 @@ if __name__=='__main__':
     # print(fini,ffin)
     
     #pedido máximo en días por escala
-    deltas = {'1m':1,'5m':5,'15m':15,'30m':30,'1h':60,'2h':120,'4h':240,'1d':1440,'1w':10080,'1M':43200}
+    deltas = {'1m':1,'3m':3,'5m':5,'15m':15,'30m':30,'1h':60,'2h':120,'4h':240,'1d':1440,'1w':10080,'1M':43200}
     #deltas = {'15m':15,'30m':30,'1h':60,'2h':120,'4h':240,'1d':1440,'1w':10080,'1M':43200}
     
     #UTC	2021-06-13T07:02:34Z
-    fini='2021-08-06 21:00:00' 
-    ffin='2021-08-07 23:59:59' 
+    fini='2022-01-22 00:00:00' 
+    ffin='2022-01-23 23:59:59' 
     #pares=['BTCUSDT','BNBUSDT','XRPUSDT']
     pares=['BTCUSDT','BNBUSDT']
     # fini='202-01-01 00:00:00' 

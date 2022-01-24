@@ -1,3 +1,4 @@
+import mailbox
 from mercado import Mercado
 from indicadores2 import Indicadores
 from logger import *
@@ -10,6 +11,7 @@ from variables_globales import VariablesEstado
 from  formateadores import format_valor_truncando
 from acceso_db import Acceso_DB
 from acceso_db_conexion import Conexion_DB
+from vela import Vela
 #from gestor_de_posicion import Gestor_de_Posicion
 
 pws=Pws()
@@ -47,6 +49,12 @@ monedas_ahora =['FTM','QLC','ZIL','STRAT']
 pares=['AGIBTC','YOYOBTC','XRPBTC']
 #for m in primeras_monedas:
 #    pares.append(m+'BTC')
+
+def calculo_ganancias(pxcompra,pxventa,fee = 0.001):  #esta es la funcion definitiva a la que se tienen que remitir el resto.
+    comision=pxcompra * fee
+    comision+=pxventa * fee
+    gan=pxventa - pxcompra - comision #- self.tickSize
+    return round(gan/pxcompra*100,3) 
 
 def probar(par):
     prop=Par_Propiedades(par,client,log)
@@ -335,14 +343,33 @@ def probar_lista_maximos(par):
  
 
 
+def probar_minimo_maximo_por_rango_velas_imporantes(par): 
+    ind=Indicadores(par,log,globales,mercado)
+    for es in ['1m','3m','5m','15m','1h','4h','1d','1w','1M']:
+        minimo,maximo = ind.minimo_maximo_por_rango_velas_imporantes(es,90 ) 
+        delta = maximo - minimo
+        max_delta =  maximo - delta * .3
+        min_delta = minimo + delta *.3
+        gan = calculo_ganancias(min_delta,max_delta)
+        velas = ind.velas_imporantes(es,90,3)
+
+        print(f'{es} delta {delta} minimo {minimo} {min_delta} {max_delta}  {maximo} maximo  gan {gan}')
+        for i in velas:
+            v:Vela = i[2]
+            print( i[0],v.analisis())
+            
+        
+    print('-----------------------------------------')
+    
+
 t = time.time()
 
 moneda='BTC'
 par = moneda+'USDT'
 
 ind=Indicadores(par,log,globales,mercado)
-while time.time() -t < 600:
-    probar_lista_maximos(par)
+while time.time() -t < 1200:
+    probar_minimo_maximo_por_rango_velas_imporantes(par)
     time.sleep(15)
 
 mercado.detener_sockets()

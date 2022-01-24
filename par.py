@@ -1151,7 +1151,7 @@ class Par:
                 listo=True 
 
         if not listo:
-            if self.analisis_provocador_entrada in "buscar_rsi_minimo_subiendo buscar_rsi_minimo_subiendo_alcista buscar_rsi_minimo_super_volumen buscar_rsi_bajo":
+            if self.analisis_provocador_entrada in "patron_ buscar_vela_martillo_importante buscar_rsi_minimo_subiendo buscar_rsi_minimo_subiendo_alcista buscar_rsi_minimo_super_volumen buscar_rsi_bajo":
                 metodo="market"
                 listo=True        
         
@@ -1929,51 +1929,61 @@ class Par:
         if self.no_se_cumple_objetivo_compra():
             return False
 
+
+        if self.filtro_tendencia_alcista():
+            cvelas_rango = 45
+            cvelas_rango_importantes=30
+            porcentaje_bajo = 0.5
+        else:
+            cvelas_rango = 90
+            cvelas_rango_importantes=90
+            porcentaje_bajo = 0.3
+
+        if not self.filtro_parte_baja_rango('4h',cvelas_rango):       #previene que se compre en la parte alta de rango en 4 horas
+            return False    
+        
         comprar= False
         escalas_a_probar = self.entradas_a_escalas(self.temporalidades,entradas)
-        self.log.log(f'escala {escalas_a_probar}')
         
         for esc in escalas_a_probar:
-            
             if not comprar:
-                ret = self.buscar_rsi_minimo_super_volumen('1m')
-                self.log.log('---fin---super_volumen-----')    
+                ret = self.buscar_vela_martillo_importante('3m',cvelas_rango,cvelas_rango_importantes)
                 if ret[0]:
                     self.escala_de_analisis = ret[1]
                     self.sub_escala_de_analisis = ret[1]
-                    self.analisis_provocador_entrada='buscar_rsi_minimo_super_volumen'
+                    self.analisis_provocador_entrada=ret[2]
                     comprar = True
                     break
-
             if not comprar:
-                ret = self.buscar_rsi_minimo_subiendo_alcista('1m')
-                self.log.log('---fin---minimo_subiendo_alcista-----')    
+                ret = self.buscar_patrones_en_parte_baja('3m',cvelas_rango,cvelas_rango_importantes)
                 if ret[0]:
                     self.escala_de_analisis = ret[1]
                     self.sub_escala_de_analisis = ret[1]
-                    self.analisis_provocador_entrada='buscar_rsi_minimo_subiendo_alcista'
-                    comprar = True
-                    break    
-
-            if not comprar: 
-                ret = self.buscar_rsi_minimo_subiendo(esc)
-                self.log.log('---fin---minimo_subiendo-----')    
-                if ret[0]:
-                    self.escala_de_analisis = ret[1]
-                    self.sub_escala_de_analisis = ret[1]
-                    self.analisis_provocador_entrada='buscar_rsi_minimo_subiendo'
+                    self.analisis_provocador_entrada=ret[2]
                     comprar = True
                     break
-
+    
    
         if not comprar and entradas==0 and time.time() - self.tiempo_inicio_estado > 7200: # no está comprando, detengo el para para probar otro
             self.db.set_no_habilitar_hasta(self.calcular_fecha_futura(7200),self.moneda,self.moneda_contra)
             self.detener()
             
+        return comprar  
 
-        
-        return comprar        
-        
+    def filtro_parte_baja_rango(self,escala,cvelas,porcentaje_bajo=.3):
+        minimo,maximo = self.ind.minimo_maximo_por_rango_velas_imporantes(escala,cvelas)
+        maximo_compra = minimo + (maximo - minimo) *  porcentaje_bajo
+        ret = self.precio < maximo_compra
+        self.log.log( f'parte_baja_rango {escala} min {minimo} px {self.precio} max_compra {maximo_compra} maximo {maximo} {ret}'  )
+        return ret 
+
+    def filtro_parte_alta_rango(self,escala,cvelas):
+        minimo,maximo = self.ind.minimo_maximo_por_rango_velas_imporantes(escala,cvelas)
+        minimo_venta = maximo - (maximo - minimo) *.3
+        ret = self.precio > minimo_venta
+        self.log.log( f'parte_alta_rango min {minimo_venta} px {self.precio} {ret}'  )
+        return ret 
+    
     def entradas_a_escalas(self,escalas,entradas):
         if entradas <0:
             esc = escalas[0]
@@ -2120,7 +2130,35 @@ class Par:
             if self.filtro_pico_minimo_ema_low(escala):
                 ret = [True,escala,'buscar_rsi_minimo_subiendo_alcista']
     
-        return ret      
+        return ret    
+
+    def buscar_vela_martillo_importante(self,escala,cvelas_rango=90,cvelas_rango_importantes=90):
+        ret=[False,'xx']
+        ind: Indicadores = self.ind
+
+        if self.filtro_parte_baja_rango(escala,cvelas_rango,0.35):
+            velas_importantes_condideradas = int (cvelas_rango_importantes / 4) +1
+            velas = ind.velas_imporantes(escala,cvelas_rango_importantes,velas_importantes_condideradas)      #dos velas para el log, pero tomo la primera ( la mas cercana )
+            self.log.log(f'velas_importante {velas[0]}')
+            vela:Vela = velas[0][2]
+            posicion = velas[0][0]
+            vela_confirma:Vela = ind.ultimas_velas(escala,1,cerradas=True)[0]
+            if posicion <= 3 and vela.martillo() and vela_confirma.signo == 1:
+                ret = [True,escala,f'buscar_vela_martillo_importante_{cvelas_rango}_{cvelas_rango_importantes}']
+        return ret        
+    
+    def buscar_patrones_en_parte_baja(self,escala,cvelas_rango=90,cvelas_rango_importantes=90):
+        ret=[False,'xx']
+        ind: Indicadores = self.ind
+        
+        if self.filtro_parte_baja_rango(escala,cvelas_rango,0.25):     #importante estar en la parte baja.. pero baja!!
+            if ind.patron_verde_supera_roja(escala):
+                ret = [True,escala,f'patron_verde_supera_roja_{cvelas_rango}_{cvelas_rango_importantes}']
+            elif ind.patron_martillo_verde(escala):
+                ret = [True,escala,f'patron_martillo_verde{cvelas_rango}_{cvelas_rango_importantes}']
+            elif ind.patron_frenada_de_gusano_en_desarrollo(escala):
+                ret = [True,escala,f'patron_frenada_de_gusano_en_desarrollo_{cvelas_rango}_{cvelas_rango_importantes}']    
+        return ret        
 
     def buscar_rsi_minimo_super_volumen(self,escala): 
         ret=[False,'xx']
@@ -2150,6 +2188,9 @@ class Par:
             
         self.log.log(f'min velas({cvelas} menos {velas_del_final}) {minimo} {ret}')    
         return ret
+
+    #def filtro_precio_cerca_de_ema(self,escala,periodos,cerca=0.5):
+
 
     def filtro_pico_minimo_ema_low(self,escala,izquierda=5,derecha=2):
         ret = False
@@ -2337,9 +2378,12 @@ class Par:
         ind: Indicadores =self.ind
 
         if ind.ema_rapida_mayor_lenta('1h',9,20,0.3):
-           self.escala_de_salida ='3m'
+           self.escala_de_salida ='5m'
         else:        
-           self.escala_de_salida ='1m' 
+           self.escala_de_salida ='3m' 
+
+        if not self.filtro_parte_alta_rango(self.escala_de_salida,90):
+            return False   
 
         self.log.log(f'escala_de_salida {self.escala_de_salida}' )   
 
@@ -2722,7 +2766,15 @@ class Par:
 
         return sube
     
-
+    def filtro_tendencia_alcista(self):
+        ind: Indicadores =self.ind
+        if ind.ema_rapida_mayor_lenta('4h',20,50,0.5) and ind.ema_rapida_mayor_lenta('1d',20,50,0.7):
+            ret = True
+            self.log.log('Tendencia_Alcista!')
+        else:
+            ret = False 
+            self.log.log('Tendencia_Bajista')
+        return ret     
 
     def filtro_ema_de_tendencia(self,escala='1h',rapida=10,lenta=55): # en estado 7 para decidir comprar # en estado 2 para seguir comprando o abortar compra
         ind: Indicadores =self.ind
@@ -3559,7 +3611,6 @@ class Par:
         #ibtc=self.ind["BTCUSDT"]
         self.log.log(  "____E3 Esperar para vender - INICIO",self.par )
         
-
         trade=self.db.get_trade_menor_precio(self.moneda,self.moneda_contra)
         #self.log.log('TRADE',trade) 
         if trade['idtrade'] == -1:
@@ -3594,20 +3645,13 @@ class Par:
         self.vender_solo_en_positivo=True #esto afecta a estado 4
         
         self.precio_salir_derecho= self.precio_de_venta_minimo(0) 
-        
-        self.log.log ('Estado anterior',self.estado_anterior,'analisis_provocador_entrada', self.analisis_provocador_entrada)
-                
-                
 
 
     # ESTADO 3 - Accion #
     def estado_3_accion(self):
         self.retardo_dinamico(1)
-        ind: Indicadores =self.ind
         tiempo_en_estado = int (time.time() - self.tiempo_inicio_estado)
         duracion_trade =  calc_tiempo_segundos(  self.fecha_trade , datetime.now())
-        #esc_lp = self.escala_a_largo_plazo(self.escala_de_analisis,duracion_trade)
-        #zoom_esc_lp = self.zoom(esc_lp,1)
         self.actualizar_precio_ws()
         gan=self.ganancias() #creo esta variable para no llamar reiteradamente a la funcion
         self.set_tiempo_reposo(gan)
@@ -3619,27 +3663,25 @@ class Par:
        
         self.actualizar_precio_ws() 
 
-        ####TOMAR GANANCIAS #####
+        #### INICIAR STOPLOSS#####
+        self.iniciar_stop_loss_en_caso_de_ser_posible()
+        
+        ### control del STOP LOSS ###
+        self.controlar_stop_loss()
+
+        #### INICIAR LIQUIDEZ#####
         #if self.hay_que_tratar_de_tomar_ganancias(gan,atr):
-        if self.evaluar_si_hay_que_vender(self.escala_de_analisis,gan,duracion_trade):
-            self.log.log(  self.par,"cerrar_trade!" )
-            self.vender_solo_en_positivo = False
-            self.iniciar_estado( 4 )# vendemos
+        if not self.generar_liquidez and self.evaluar_si_hay_que_vender(self.escala_de_analisis,gan,duracion_trade):
+            self.generar_liquidez = True
+            if self.stoploss_habilitado == 1:
+                self.subir_stoploss(True)
+            else:
+                self.iniciar_stoploss()    
             self.tiempo_reposo = 0
             return
 
-        # #### TOMAR PERDIDAS ####
-        # self.log.log( "hay_que_tomar_perdidas?" )
-        # if self.filtro_ema_rapida_lenta_para_salir(self.escala_de_analisis ): 
-        #     self.log.log( "************tomar_PERDIDAS!******************" )
-        #     self.vender_solo_en_positivo = False
-        #     self.iniciar_estado( 4 )# vendemos
-        #     self.tiempo_reposo = 0
-        #     return   
-
         # PORNER A RECOMPRAR en caso de pérdidas
         # acá  si pasamos cierto umbral de pérdidas, ponemos a recomprar
-
         if self.momento_de_recomprar(self.escala_de_analisis,gan,duracion_trade):
             #self.enviar_correo_generico(f'RECOMPRA.')
             self.tiempo_reposo = 0
@@ -3647,6 +3689,82 @@ class Par:
             return
         
         self.log.log("FIN E3. Acciones")
+
+    def iniciar_stop_loss_en_caso_de_ser_posible(self):
+        ind:Indicadores = self.ind
+        precio_seguro = self.precio_salir_derecho + ind.recorrido_promedio(self.escala_de_analisis,50)
+        if self.stoploss_habilitado == 0 and self.precio > precio_seguro:
+            self.iniciar_stoploss()
+
+    def controlar_stop_loss(self): 
+        if self.stoploss_habilitado == 0:
+            return
+        ind = self.ind    
+        vela:Vela = ind.ultimas_velas('1m',1)[0]
+        if vela.low < self.stoploss_actual or self.ct_controlar_stoploss.tiempo_cumplido():
+            self.ct_controlar_stoploss.reiniciar()
+            self.controlar_orden_stop_loss()
+            
+
+    def controlar_orden_stop_loss(self):
+        self.log.log(  "controlar_orden_stop_loss" ,self.par )
+        orden=self.oe.consultar_estado_orden(self.ultima_orden)
+        
+        if orden['estado']=='FILLED':
+            self.log.log(  "FILLED" )
+            self.precio_venta=orden['precio']
+
+            #agrega al trade la cantidad vendida (ejecutada) que en este caso es el total.
+            self.db.trade_sumar_ejecutado(self.idtrade,orden['ejecutado'],orden['precio'],strtime_a_fecha(orden['time']),orden['orderId'])   
+
+            self.enviar_correo_filled_estado()
+            #se vendió como se esperaba
+
+            #calculo un precio de compra nuevo para comprar en caso de que se de la oportunidad
+            #self.precio_compra=self.precio_de_recompra_minimo(self.stoploss_actual,abs(self.ganancias()))
+
+            if self.hay_algo_para_vender_en_positivo():
+                self.iniciar_estado( 3 ) #mismo estado
+            else:    
+                if self.db.trades_cantidad(self.moneda,self.moneda_contra) > 0  or\
+                    self.todo_bonito_para_seguir_comprado():
+                    self.iniciar_estado( self.estado_siguiente() )
+                else:
+                    self.dormir_un_tiempo_prudencial()    
+            return
+
+        elif orden['estado']=='CANCELED': #Se dio un caso que apareció una orden cancelada... en este caso tratamos de vender nuevamente.
+            if orden['ejecutado']>0:
+                self.db.trade_sumar_ejecutado(self.idtrade,orden['ejecutado'],orden['precio'],strtime_a_fecha(orden['time']),orden['orderId'])
+                self.cant_moneda_compra= self.cant_moneda_compra - orden['ejecutado']
+                self.enviar_correo_error('Orden cancelada, controlar que pasó')
+                self.estado_0_inicio()
+                return
+
+        elif orden['estado']=='NEW':
+            self.log.log(  "NEW, intentamos subir el sl" )
+            self.subir_stoploss(False)
+
+        elif orden['estado']=='PARTIALLY_FILLED': #ojo hay que cancelar, y luego leer cuanto fue lo que se alanzó vender.
+            self.log.log(  "bucles   =",self.bucles_partial_filled )
+            self.log.log(  "ejecutado=",orden['ejecutado'] )
+            if self.bucles_partial_filled > 400: #15 seg cada iter 
+                ultima = self.ultima_orden
+                if self.cancelar_ultima_orden():
+                    order_cancelada=self.oe.consultar_estado_orden(ultima)
+                    if order_cancelada['estado']=='CANCELED':
+                        #agrega al trade la cantidad vendida (ejecutada) que en este caso es el total.
+                        self.db.trade_sumar_ejecutado(self.idtrade,order_cancelada['ejecutado'],order_cancelada['precio'],strtime_a_fecha(orden['time']),orden['orderId'])
+                        self.cant_moneda_compra= self.cant_moneda_compra - orden['ejecutado']
+                    
+                self.enviar_correo_error('stoploss PARTIALLY_FILLED resolver en forma manual')
+                self.deshabilitacion_de_emergencia()
+                return
+                
+            self.bucles_partial_filled+=1    
+
+        
+
 
  
     def momento_de_recomprar(self,escala,gan,duracion_trade):
@@ -3971,7 +4089,7 @@ class Par:
         ahora=time.time()
         
         if self.stoploss_habilitado == 1:
-            ret = ret = ahora - self.tiempo_inicio_stoploss
+            ret = ahora - self.tiempo_inicio_stoploss
         else:
             ret =0
 
@@ -4000,19 +4118,36 @@ class Par:
             return
                 
         if self.cancelar_ultima_orden():
-
             resultado = self.ajustar_stoploss(stoploss)
-
             if resultado =='OK':
                 self.enviar_correo_generico('SL.INI.')
-            else:
-                self.calcular_precio_objetivo()
-                self.estado_3_orden_vender('iniciar_stoploss fracasado')
         else:
             self.intentar_recuperar_venta()        
 
 
-    def subir_stoploss(self,tikcs,forzado=False):
+    def subir_stoploss(self,forzado=False):
+        if not forzado and not self.ct_subir_stoploss.tiempo_cumplido():         #para evitar subir el stoploss por este método, muy seguido
+            return
+        nuevo_stoploss = self.calcular_stoploss()
+        if nuevo_stoploss + self.tickSize * 2 < self.precio:
+            if self.stoploss_habilitado==1 and nuevo_stoploss > self.stoploss_actual:
+                if self.cancelar_ultima_orden():
+                    resultado = self.ajustar_stoploss(nuevo_stoploss)
+                    if resultado == "OK":
+                        ret='sl subido ' + str(nuevo_stoploss) 
+                        self.ct_subir_stoploss.reiniciar()
+                    else:    
+                        ret='falló subir el stoploss'
+                else:
+                    self.intentar_recuperar_venta()    
+            else:
+                ret=f'no se puede subir sl a {nuevo_stoploss}  stoploss_actual={self.stoploss_actual}'    
+        else:
+            ret=f'no se puede subir sl a {nuevo_stoploss} muy cerca del precio {self.precio}'    
+
+        return ret
+    
+    def subir_stoploss_viejo(self,tikcs,forzado=False):
         if not forzado and not self.ct_subir_stoploss.tiempo_cumplido(): #para evitar subir el stoploss por este método, muy seguido
             return
         nuevo_stoploss = self.stoploss_actual + self.tickSize * tikcs
@@ -4089,11 +4224,13 @@ class Par:
             self.tiempo_inicio_precio_bajo_stoploss = 0
             self.ultimo_calculo_stoploss = time.time()
             self.ct_subir_stoploss = Controlador_De_Tiempo(600)
+            self.ct_controlar_stoploss = Controlador_De_Tiempo(600)
             self.ct_subir_stoploss_uno = Controlador_De_Tiempo(600)
+            self.bucles_partial_filled = 0
         else:
             self.stoploss_habilitado=0
             self.stoploss_actual=0
-            self.log.log('No de puedo poner stoploss',nuevo_stoploss,resultado)    
+            self.log.log('No puedo poner stoploss',nuevo_stoploss,resultado)    
 
         return resultado    
 
@@ -4312,79 +4449,19 @@ class Par:
 
 
     def calcular_stoploss(self):
-        ind=self.ind
-        tiempo_en_stoploss = self.calcular_tiempo_stoploss()
         self.actualizar_precio_ws()
         self.ultimo_calculo_stoploss = time.time()
-        duracion_trade =  calc_tiempo_segundos(  self.fecha_trade , datetime.now())
-        escala_a_largo_plazo = self.escala_a_largo_plazo(self.escala_de_analisis,duracion_trade)
-
-        st = self.calculo_basico_stoploss() 
-
+     
         if self.stoploss_negativo == 1 and self.precio < self.precio_salir_derecho:
             return self.calculo_stoploss_negativo()
-
-        if self.funcion=='cazaliq':
-            
-            if tiempo_en_stoploss > 600:
-                st=self.intentar_subir_stoploss()
-                self.log.log('calc.intentar_subir_stoploss',st,'tiempo',tiempo_en_stoploss) 
-                return self.st_correccion_final(st)
-            else:
-                self.log.log('no se aplica intentar_subir_stoploss,tiempo',tiempo_en_stoploss) 
-        
-        
-        if self.g.escala_tiempo[ escala_a_largo_plazo ]  <= self.g.escala_tiempo['2h'] : # si la escala es menor o igual 2h
-            gan = self.ganancias()
-            self.log.log(  self.par,"stoploss  salvar el 1%-- gan:",gan)
-            if gan > 1:
-                pxgan = self.calc_precio(1)
-                if self.precio > pxgan + self.tickSize * 2:
-                    self.log.log(  self.par,"stoploss  salvar el 1% OK")
-                    st = max(pxgan,st)
-        
-        #    st = ind.stoploss_ema_minimos( "5m",5,1 )
-        #    self.log.log('hay_que_tratar_de_tomar_ganancias-->',st) 
-        #    return self.st_correccion_final(st)
-        
-        
-        
-        if self.hay_pump():
-            #punto medio entre la ema minimos y el precio actual
-            stx = (ind.stoploss_ema_minimos(  self.escala_de_analisis,4,1) + self.precio ) / 2
-            self.log.log('calc.sl hay_pump',stx)
-            st = max(stx,st)
-        else:
-            # se calcula un stoploss por debajo de los minimos registrados las ultimas 6 velas en una hora y sin tener en cuenta la ultima vela
-            stx= round( ind.stoploss_ema_minimos(  self.escala_de_analisis,4,1) , self.moneda_precision )
-            self.log.log('calc.sl ind.stoploss_ema_minimos',self.escala_de_analisis,stx)
-            st = max(stx,st)
-
-        if  st == -1 or st > self.precio:
-            stx = round( ind.retroceso_macd_hist_max(self.escala_de_analisis) , self.moneda_precision)
-            self.log.log('calc.sl retroceso_macd_hist_max',stx) 
-            st = max(stx,st)   
-
-        if  st > self.precio:
-            px = self.libro.precio_compra_grupo_mayor() - self.tickSize 
-            if px < self.precio and px > self.precio_salir_derecho + self.tickSize * 2:
-                self.log.log('calc.sl precio_compra_grupo_mayor',px) 
-                st = max(px,st)
-            
-        if self.generar_liquidez:
-            #punto mendio entre el stoploss calculado y el precio actual
-            #mas tick
-            stx = ind.stoploss_ema_minimos( "5m",4,1 )
-            self.log.log('calc.sl recalculo por general liquedez',stx) 
-            if stx > self.precio:
-                stx = self.precio - self.tickSize
-                st = max(stx,st)    
+     
+        st = self.calculo_basico_stoploss(self.generar_liquidez) 
 
         st =  self.st_correccion_final(st)
         
         return   st    
 
-    def calculo_basico_stoploss(self):
+    def calculo_basico_stoploss_viejo(self):
         #   salir_derecho     Px1     ganancia_infima   Px2       ganancia_segura  Px3
         #........|.............|............|:..........|...........|..............|...........> precio_objetivo    
         #        |             |            |           |           |              |
@@ -4404,6 +4481,32 @@ class Par:
                     sl = px1
 
         return sl
+
+
+    def calculo_basico_stoploss(self,generar_liquidez=False):
+        '''
+        Trata de conseguir un sl sobre una ema importante
+        caso contrario establece el precio salir derecho
+        '''
+        ind = self.ind            
+
+        if generar_liquidez:
+            periodos=[20,15,10,5]
+        else:
+            periodos=[200,100,50,20]     
+        
+        sl = self.stoploss_actual
+        
+        for p in periodos:
+            ema = ind.ema(self.escala_de_analisis,p)
+            if self.precio > ema and sl < ema:
+               sl = ema
+               break
+
+        if sl == 0:
+            self.precio_salir_derecho
+
+        return sl    
     
     def tomar_ganancias(self,ganancias):
         px_stoploss=self.calc_precio(ganancias)

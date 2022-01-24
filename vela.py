@@ -13,6 +13,7 @@ class Vela:
             self.close=0
             self.volume=0
             self.close_time=0
+            self.closed = 0
         else:
             self.open_time=open_time
             self.open=df.get('open')
@@ -21,6 +22,7 @@ class Vela:
             self.close=df.get('close')
             self.volume=df.get('volume')
             self.close_time=df.get('close_time')
+            self.closed = df.get('closed')
         
         self.set_signo()
 
@@ -61,7 +63,6 @@ class Vela:
             return self.high-self.close
         else:
             return self.high-self.open
-   
 
     def sombra_inf(self):
         if self.open<=self.close:
@@ -75,6 +76,39 @@ class Vela:
         else:
             return -1 #bajista
 
+    def martillo(self):
+        cc = self.cuerpo()
+        ss = self.sombra_sup()
+        ii = self.sombra_inf()
+        infinito = 99999999
+        
+        if cc != 0:
+            ii_cc = round( ii / cc ,2)
+        else:
+            ii_cc = infinito
+
+        if ss !=0:
+            ii_ss = round( ii / ss ,2)
+        else:
+            ii_ss = infinito        
+
+        if ii_cc > 2 and ii_ss > 2:
+            martillo = 1
+        else:
+            martillo = 0    
+
+        return martillo 
+
+
+    def __str__(self):
+        nombre='vela'
+        if self.martillo():
+            nombre='martillo'
+        
+        return f'{nombre} {self.close}'
+    
+    def __repr__(self):
+        return self.__str__()    
         
     def imprimir(self):
         #print( 'open_time' , datetime.datetime.fromtimestamp(self.open_time/1000 ).strftime('%Y-%m-%d %H:%M:%S.%f'))
