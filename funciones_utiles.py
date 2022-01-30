@@ -118,6 +118,8 @@ def compara(a,b):
     return ((b-a) /a) * 100
 
 def signo(numero):
+    if numero == 0 : 
+        return 0
     if numero >0 :
         return 1
     else:

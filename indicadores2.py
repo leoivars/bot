@@ -431,7 +431,45 @@ class Indicadores:
                 lista.append([ i*-1 , ema.iloc[i]  ])
                 
         return lista
+    
+    def cruce_de_emas(self,escala,per_rapida,per_lenta,cvelas):
+        '''  
+           busca un cruce de emas y retorna posición
+           cruce = 1  ema rapida cruza lenta de abajo hacia arriba
+           cruce = -1 ema rapida cruza hacia arriba a lenta
+           cruce = 0 no hay cruce
+           pos = -1 no hay cruce 
 
+        '''    
+        df=self.get_df(self.par,escala)
+        df_emar=ta.ema(df['close'],length=per_rapida) 
+        df_emal=ta.ema(df['close'],length=per_lenta)  
+
+        l = len(df) 
+
+        y_ant = signo( df_emar.iloc[-1] - df_emal.iloc[-1] )
+        cruce = 0
+        pos = -1
+
+        lneg = l * -1
+        cvel = 2
+        i=-2
+        while i > lneg:
+            y =  signo( df_emar.iloc[i] - df_emal.iloc[i] )
+
+            if y != y_ant:
+                cruce = y_ant
+                pos = -i -1
+                break
+
+            y_ant = y
+            i -= 1
+            cvel += 1
+            if cvel > cvelas:
+                break 
+
+        return cruce,pos
+        
 
     def rsi_lista_picos_minimos(self,escala,cvelas):
         ''' entrega lista de picos minimos desde el final por cvelas 
@@ -579,7 +617,21 @@ class Indicadores:
                 if roja_grande2.cuerpo() > frenada.cuerpo() * 4 and verde.signo == 1:
                     ret = True
         return ret
-   
+
+
+    def no_hay_velas_mayores_al_promedio(self,escala,cvelas,x_mayor_al_promedio=2):
+        ''' bueca que todos los cuerpos de las cvelas no superen al 
+            promedio multiplicado * x_mayor_al_promedio
+        '''
+        velas = self.ultimas_velas(escala,cvelas,cerradas=False)
+        promedio = self.cuerpo_promedio(escala,100)
+        ret = True
+        for v in velas:
+            if v.cuerpo() > promedio * x_mayor_al_promedio: 
+                ret = False
+                break
+        return ret     
+
     def cuerpo_promedio(self,escala,cvelas):
         df=self.mercado.get_panda_df(self.par, escala, cvelas + 1)
         df['cuerpo'] = abs(df.open - df.close) 

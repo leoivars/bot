@@ -351,16 +351,20 @@ def probar_minimo_maximo_por_rango_velas_imporantes(par):
         max_delta =  maximo - delta * .3
         min_delta = minimo + delta *.3
         gan = calculo_ganancias(min_delta,max_delta)
-        velas = ind.velas_imporantes(es,90,3)
+        #velas = ind.velas_imporantes(es,90,3)
 
-        print(f'{es} delta {delta} minimo {minimo} {min_delta} {max_delta}  {maximo} maximo  gan {gan}')
-        for i in velas:
-            v:Vela = i[2]
-            print( i[0],v.analisis())
+        print(f'{es} delta {delta} minimo {minimo} [{min_delta} {max_delta}]  {maximo} maximo  gan {gan}')
+        
             
         
     print('-----------------------------------------')
     
+
+
+def probar_cruce_de_emas(par): 
+    ind=Indicadores(par,log,globales,mercado)
+    print (par,'3m',ind.cruce_de_emas('3m',10,20,50) )
+
 
 t = time.time()
 
