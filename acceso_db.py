@@ -26,7 +26,7 @@ class Acceso_DB:
     obt_datos_moneda='SELECT idpar,habilitado,pstoploss,metodo_compra_venta,cantidad,precio_compra,estado,funcion,ganancia_segura,ganancia_infima,escala_analisis_entrada,rsi_analisis_entrada,tendencia_minima_entrada,solo_vender,solo_seniales,veces_tendencia_minima,xvela_corpulenta,cantidad_de_reserva,analisis_e7,e8_precio_inferior,e8_precio_superior,e3_ganancia_recompra,incremento_volumen_bueno,xobjetivo,shitcoin,min_notional,stoploss_habilitado,stoploss_cazaliq,uso_de_reserva,temporalidades,observaciones,objetivo_compra,objetivo_venta,max_entradas from pares where moneda= %s and moneda_contra= %s'
     mon_habilita_lin='SELECT moneda,moneda_contra from pares where habilitable=1 and habilitado=0 and no_habilitar_hasta < NOW() and coeficiente_ema_rapida_lenta  > 0 order by volumen desc'
     mon_habilita_feo='SELECT moneda,moneda_contra from pares where habilitable=1 and habilitado=0 and no_habilitar_hasta < NOW() and coeficiente_ema_rapida_lenta <= 0 order by volumen desc'
-    mon_habilitables='SELECT moneda,moneda_contra from pares where habilitable=1 and habilitado=0 and no_habilitar_hasta < NOW() order by volumen desc limit 10'
+    mon_habilitables='SELECT moneda,moneda_contra from pares where habilitable=1 and habilitado=0 and no_habilitar_hasta < NOW() order by volumen desc'
     mon_habilitables_todos='SELECT moneda,moneda_contra from pares where habilitable=1 and habilitado=0'
     mon_count_habilitados='SELECT count(1) as cant from pares where habilitado=1'
     mon_pares_top___='select moneda,moneda_contra,volumen  from pares  where habilitable=1  and moneda_contra=%s order by volumen desc limit %s'

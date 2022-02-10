@@ -5,7 +5,7 @@ class ReportesDB():
     def __init__(self,log,db,variables_estado):
         self.log = log
         self.db  = db   #Acceso_DB(log,conn.pool)
-        self.ve: VariablesEstado = variables_estado
+        self.g: VariablesEstado = variables_estado
     
     def campos(self,dict,str_keys):
         cam=''

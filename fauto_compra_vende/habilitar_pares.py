@@ -58,23 +58,12 @@ def actualizar_volumen_precio(moneda,moneda_contra,ind:Indicadores,db:Acceso_DB)
 
 def hay_precios_minimos_como_para_habilitar(ind:Indicadores,g:VariablesEstado,log):
         ret = True
-        escalas=['1d','4h'] 
+        escalas=['1d','4h','3m'] 
         for e in escalas:
             if not filtro_parte_baja_rango(ind,log,e,90,0.3):
                 ret = False
                 break
         return ret  
-        
-def hay_rsis_sobrevendidos(ind:Indicadores,log): 
-    ret = False
-    escalas=['1d','4h'] 
-    for e in escalas:
-        rsi = ind.rsi(e)
-        if rsi > 69.5:
-            ret = True
-            log.log(f'{ind.par} rsi {e} {rsi} sobrevendido')
-    return ret
-
 
 
 def precio_cerca(pxmin,precio,porcentaje=0.30):

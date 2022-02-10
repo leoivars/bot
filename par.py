@@ -24,7 +24,7 @@ from intentar_recuperar_venta_perdida import intentar_recuperar_venta_perdida
 from fpar.ganancias import calc_ganancia_minima
 from mercado import Mercado
 
-from fpar.filtros import filtro_parte_baja_rango
+from fpar.filtros import filtro_parte_baja_rango, filtro_zona_volumen, filtro_pendientes_emas_positivas
 import fauto_compra_vende.habilitar_pares
 
 
@@ -136,7 +136,7 @@ class Par:
         
         self.senial_entrada=''
         
-        self.stoploss_actual=999 
+        self.stoploss_actual=0 
 
         self.senial_compra=False # se pone True cuando necesita Comprar
 
@@ -1138,11 +1138,18 @@ class Par:
             listo=True 
 
         if not listo:
-            for ana in ["minimo_ema9","vela_martillo_importante","patron_"]:
+            for ana in ["minimo_ema","vela_martillo_importante","patron_"]:
                 if ana in self.analisis_provocador_entrada: # esto es viejo --> in "buscar_ema_positiva buscar_rebote_rsi":
                     metodo="market"
                     listo=True 
                     break
+
+        if not listo:
+            for ana in ['parte_muy_baja']:
+                if ana in self.analisis_provocador_entrada: # esto es viejo --> in "buscar_ema_positiva buscar_rebote_rsi":
+                    metodo="mercado"
+                    listo=True 
+                    break        
  
         if not listo:
             if self.analisis_provocador_entrada in "buscar_dos_emas_rsi":
@@ -1348,8 +1355,6 @@ class Par:
                 time.sleep(1)
 
             self.log.log('*** TRABAJO ***',self.par)    
-
-            
 
             if self.reset:
                 self.log.log(self.par,"(*) RESET (*)" ) 
@@ -1834,9 +1839,13 @@ class Par:
         dormir=False
         if self.estado!=3:
             entradas = self.db.trades_cantidad(self.moneda,self.moneda_contra)
-            if entradas==0 and self.db.trades_cantidad_de_pares_con_trades() >= self.g.maxima_cantidad_de_pares_con_trades:
-                self.log.log(f'maxima_cantidad_de_pares_con_trades superada: A dormir')  
-                dormir = True 
+            if entradas==0:
+                if self.db.trades_cantidad_de_pares_con_trades() >= self.g.maxima_cantidad_de_pares_con_trades:
+                    self.log.log(f'maxima_cantidad_de_pares_con_trades superada: A dormir')  
+                    dormir = True 
+                if time.time() - self.tiempo_inicio_estado >  86400:     #  un día
+                    self.log.log(f'mucho tiempo sin conseguir entradas ')  
+                    dormir = True
 
             if dormir:
                 minutos = self.g.horas_deshabilitar_par * 60 + random.randint(0, 45)
@@ -1922,47 +1931,70 @@ class Par:
         if self.filtro_tendencia_alcista():
             cvelas_rango = 45
             cvelas_rango_importantes=30
-            porcentaje_bajo = 0.5
+            porcentaje_bajo = 0.45
+            if not filtro_parte_baja_rango(self.ind,self.log,'1d',120,.5):    #previene que se compre en la parte alta de rango en 4 horas
+                return False  
+            if not filtro_parte_baja_rango(self.ind,self.log,'15m',cvelas_rango,.38):    #previene que se compre en la parte alta de rango en 4 horas
+                return False    
         else:
             cvelas_rango = 90
             cvelas_rango_importantes=90
-            porcentaje_bajo = 0.3
-            if not filtro_parte_baja_rango(self.ind,self.log,'1d',120,.4):    #previene que se compre en la parte alta de rango en 4 horas
+            porcentaje_bajo = 0.382
+            if not filtro_parte_baja_rango(self.ind,self.log,'1d',120,.38):    #previene que se compre en la parte alta de rango en 4 horas
+                return False  
+            if not filtro_parte_baja_rango(self.ind,self.log,'4h',cvelas_rango,.24):    #previene que se compre en la parte alta de rango en 4 horas
                 return False    
-        
-        if not filtro_parte_baja_rango(self.ind,self.log,'4h',cvelas_rango,.4):    #previene que se compre en la parte alta de rango en 4 horas
-            return False    
+
         
         comprar= False
         escalas_a_probar = self.entradas_a_escalas(self.temporalidades,entradas)
         
         for esc in escalas_a_probar:
 
-            if not comprar:
-                ret = self.buscar_minimo_ema9('3m',cvelas_rango,cvelas_rango_importantes) 
-                if ret[0]:
-                    self.escala_de_analisis = ret[1]
-                    self.sub_escala_de_analisis = ret[1]
-                    self.analisis_provocador_entrada=ret[2]
-                    comprar = True
-                    break
+            # if not comprar:
+            #     ret = self.buscar_minimo_ema9('5m',cvelas_rango,porcentaje_bajo) 
+            #     if ret[0]:
+            #         self.escala_de_analisis = ret[1]
+            #         self.sub_escala_de_analisis = ret[1]
+            #         self.analisis_provocador_entrada=ret[2]
+            #         comprar = True
+            #         break
+
+            # if not comprar:
+            #     ret = self.buscar_minimo_ema_pendiente_positiva('5m',cvelas_rango,porcentaje_bajo) 
+            #     if ret[0]:
+            #         self.escala_de_analisis = ret[1]
+            #         self.sub_escala_de_analisis = ret[1]
+            #         self.analisis_provocador_entrada=ret[2]
+            #         comprar = True
+            #         break    
             
+            # if not comprar:
+            #     ret = self.buscar_vela_martillo_importante('5m',cvelas_rango,cvelas_rango_importantes=90)
+            #     if ret[0]:
+            #         self.escala_de_analisis = ret[1]
+            #         self.sub_escala_de_analisis = ret[1]
+            #         self.analisis_provocador_entrada=ret[2]
+            #         comprar = True
+            #         break
+
+            # if not comprar:
+            #     ret = self.buscar_patrones_en_parte_baja('5m',cvelas_rango,porcentaje_bajo)
+            #     if ret[0]:
+            #         self.escala_de_analisis = ret[1]
+            #         self.sub_escala_de_analisis = ret[1]
+            #         self.analisis_provocador_entrada=ret[2]
+            #         comprar = True
+            #         break
+
             if not comprar:
-                ret = self.buscar_vela_martillo_importante('3m',cvelas_rango,cvelas_rango_importantes)
+                ret = self.buscar_minimo_parte_muy_baja('5m',120,0.10)
                 if ret[0]:
                     self.escala_de_analisis = ret[1]
                     self.sub_escala_de_analisis = ret[1]
                     self.analisis_provocador_entrada=ret[2]
                     comprar = True
-                    break
-            if not comprar:
-                ret = self.buscar_patrones_en_parte_baja('3m',cvelas_rango,cvelas_rango_importantes)
-                if ret[0]:
-                    self.escala_de_analisis = ret[1]
-                    self.sub_escala_de_analisis = ret[1]
-                    self.analisis_provocador_entrada=ret[2]
-                    comprar = True
-                    break
+                    break    
     
    
         if not comprar and entradas==0 and time.time() - self.tiempo_inicio_estado > 7200: # no está comprando, detengo el para para probar otro
@@ -2138,36 +2170,55 @@ class Par:
             posicion = velas[0][0]
             vela_confirma:Vela = ind.ultimas_velas(escala,1,cerradas=True)[0]
             if posicion <= 3 and vela.martillo() and vela_confirma.signo == 1:
-                recorrido_minimo = ind.recorrido_promedio(escala,50) * 2
+                recorrido_minimo = ind.recorrido_promedio(escala,50) * 3
                 recorrido = vela.high - vela.low
                 if recorrido > recorrido_minimo:
                     ret = [True,escala,f'buscar_vela_martillo_importante_{cvelas_rango}_{cvelas_rango_importantes}']
         return ret        
     
-    def buscar_patrones_en_parte_baja(self,escala,cvelas_rango=90,cvelas_rango_importantes=90):
+    def buscar_minimo_ema9(self,escala,cvelas_rango=90,porcentaje_bajo=.35):
+        ret=[False,'xx']
+        ind: Indicadores = self.ind
+        if filtro_parte_baja_rango(self.ind,self.log,escala,cvelas_rango,porcentaje_bajo):     #importante estar en la parte baja.. pero baja!!
+            if not ind.ema_rapida_mayor_lenta(escala,9,21):
+                if self.filtro_pico_minimo_ema(escala,9,'close',6,2):
+                    if filtro_zona_volumen(ind,self.log,escala,9):
+                        if ind.no_hay_velas_mayores_al_promedio(escala,4,2):
+                            ret = [True,escala,f'buscar_minimo_ema9_{cvelas_rango}_{porcentaje_bajo}']
+        return ret        
+
+    def buscar_patrones_en_parte_baja(self,escala,cvelas_rango=90,porcentaje_bajo=0.5):
         ret=[False,'xx']
         ind: Indicadores = self.ind
         
-        if filtro_parte_baja_rango(self.ind,self.log,escala,cvelas_rango,0.25):     #importante estar en la parte baja.. pero baja!!
+        if filtro_parte_baja_rango(self.ind,self.log,escala,cvelas_rango,porcentaje_bajo):     #importante estar en la parte baja.. pero baja!!
             if ind.patron_verde_supera_roja(escala):
-                ret = [True,escala,f'patron_verde_supera_roja_{cvelas_rango}_{cvelas_rango_importantes}']
+                ret = [True,escala,f'patron_verde_supera_roja_{cvelas_rango}_{porcentaje_bajo}']
             elif ind.patron_martillo_verde(escala):
-                ret = [True,escala,f'patron_martillo_verde{cvelas_rango}_{cvelas_rango_importantes}']
-            elif ind.patron_frenada_de_gusano_en_desarrollo(escala):
-                ret = [True,escala,f'patron_frenada_de_gusano_en_desarrollo_{cvelas_rango}_{cvelas_rango_importantes}']    
+                ret = [True,escala,f'patron_martillo_verde{cvelas_rango}_{porcentaje_bajo}']
+            #elif ind.patron_frenada_de_gusano_en_desarrollo(escala):
+            #    ret = [True,escala,f'patron_frenada_de_gusano_en_desarrollo_{cvelas_rango}_{cvelas_rango_importantes}']    
         return ret        
 
-    def buscar_minimo_ema9(self,escala,cvelas_rango=90,cvelas_rango_importantes=90):
+    def buscar_minimo_ema_pendiente_positiva(self,escala,cvelas_rango=90,porcentaje_bajo=.5):
         ret=[False,'xx']
         ind: Indicadores = self.ind
-        if filtro_parte_baja_rango(self.ind,self.log,escala,cvelas_rango,0.4):     #importante estar en la parte baja.. pero baja!!
+        if filtro_parte_baja_rango(self.ind,self.log,escala,cvelas_rango,porcentaje_bajo):     #importante estar en la parte baja.. pero baja!!
             if not ind.ema_rapida_mayor_lenta(escala,9,21):
-                if self.filtro_pico_minimo_ema(escala,9,'close',10,2):
-                    if ind.no_hay_velas_mayores_al_promedio(escala,4,2):
-                        ultima:Vela = ind.ultimas_velas(escala,cvelas=1,cerradas=False)[0] #vela de confirmación
-                        if ultima.signo == 1:
-                            ret = [True,escala,f'buscar_minimo_ema9_{cvelas_rango}_{cvelas_rango_importantes}']
-        return ret        
+                if filtro_pendientes_emas_positivas(ind,self.log,escala,9,4):                  #4 pendientes positivas
+                    if filtro_zona_volumen(ind,self.log,escala,9):
+                        if ind.no_hay_velas_mayores_al_promedio(escala,4,2):
+                            ret = [True,escala,f'buscar_minimo_ema_pendiente_positiva{cvelas_rango}_{porcentaje_bajo}']
+        return ret 
+    
+    def buscar_minimo_parte_muy_baja(self,escala,cvelas_rango=90,porcentaje_bajo=.2):
+        ret=[False,'xx']
+        ind: Indicadores = self.ind
+        if filtro_parte_baja_rango(self.ind,self.log,escala,cvelas_rango,porcentaje_bajo):     #importante estar en la parte baja.. pero baja!!
+            if not ind.ema_rapida_mayor_lenta(escala,9,21):
+                if filtro_zona_volumen(ind,self.log,escala,9):
+                    ret = [True,escala,f'buscar_minimo_parte_muy_baja{cvelas_rango}_{porcentaje_bajo}']
+        return ret         
 
     def buscar_rsi_minimo_super_volumen(self,escala): 
         ret=[False,'xx']
@@ -2201,7 +2252,7 @@ class Par:
     #def filtro_precio_cerca_de_ema(self,escala,periodos,cerca=0.5):
 
 
-    def filtro_pico_minimo_ema(self,escala,periodos,origen='close',izquierda=5,derecha=2):
+    def filtro_pico_minimo_ema(self,escala,periodos,origen='close',izquierda=15,derecha=2):
         ret = False
         picos_low=self.ind.lista_picos_minimos_ema(escala,periodos,100,origen,izquierda,derecha)
         if len(picos_low) >0:
@@ -2387,9 +2438,9 @@ class Par:
         ind: Indicadores =self.ind
 
         if ind.ema_rapida_mayor_lenta('1h',9,20,0.3):
-           self.escala_de_salida ='5m'
+           self.escala_de_salida ='1h'
         else:        
-           self.escala_de_salida ='3m' 
+           self.escala_de_salida ='5m' 
 
         if not self.filtro_parte_alta_rango(self.escala_de_salida,90):
             return False   
@@ -2429,7 +2480,7 @@ class Par:
         self.log.log(f'rsi {rsi} rsi_max {rsi_max} rsi_max_pos {rsi_max_pos}')
 
 
-        lista_max = ind.lista_picos_maximos_ema(self.escala_de_salida,3,'close',10)
+        lista_max = ind.lista_picos_maximos_ema(self.escala_de_salida,3,10,'close')
 
         if lista_max:
             pos_max = lista_max[0][0] 
@@ -2777,7 +2828,7 @@ class Par:
     
     def filtro_tendencia_alcista(self):
         ind: Indicadores =self.ind
-        if ind.ema_rapida_mayor_lenta('4h',20,50,0.5) and ind.ema_rapida_mayor_lenta('1d',20,50,0.7):
+        if ind.ema_rapida_mayor_lenta('4h',20,50,1): #and ind.ema_rapida_mayor_lenta('1d',20,50,0.7):
             ret = True
             self.log.log('Tendencia_Alcista!')
         else:
@@ -3706,10 +3757,14 @@ class Par:
         '''
         if self.stoploss_habilitado == 0 and self.precio > self.precio_salir_derecho: 
             if self.ind.ema_rapida_mayor_lenta2('1d',10,55,diferencia_porcentual_minima=0.5,pendientes_positivas=True):
+                precio_seguro = self.precio_salir_derecho + self.ind.recorrido_maximo(self.escala_de_analisis,50) 
+                if self.precio > precio_seguro:
+                    self.iniciar_stoploss()
+            elif self.ind.ema_rapida_mayor_lenta2('1h',10,55,diferencia_porcentual_minima=0.5,pendientes_positivas=True):
                 precio_seguro = self.precio_salir_derecho + self.ind.recorrido_promedio(self.escala_de_analisis,50) 
                 if self.precio > precio_seguro:
                     self.iniciar_stoploss()
-            elif self.precio >= self.precio_salir_derecho: 
+            elif self.precio >= self.precio_salir_derecho + self.ind.recorrido_minimo(self.escala_de_analisis,30):
                 self.iniciar_stoploss()
 
     def controlar_stop_loss(self): 
@@ -4503,14 +4558,19 @@ class Par:
         
         sl = self.stoploss_actual
         
+        per_ema = 0
         for p in periodos:
             ema = ind.ema(self.escala_de_analisis,p)
+            self.log.log( f'--> {ema} ema({per_ema})') 
             if self.precio > ema and sl < ema:
                sl = ema
+               per_ema = p
                break
 
         if sl == 0:
             self.precio_salir_derecho
+
+        self.log.log( f'calculo_basico_stoploss {sl} ema({per_ema})')    
 
         return sl    
     
@@ -5644,9 +5704,9 @@ class Par:
     def txt_precio_y_stoploss(self):
         try:
             if self.stoploss_habilitado==1:
-                st='sl'
+                st=f'[sl {self.format_valor_truncando( self.stoploss_actual,self.cant_moneda_precision)}]  '
             else:
-                st='--'    
+                st=' '    
             #stop_loss_calculado=self.calcular_stoploss()
             tiempo_trade=self.calc_tiempo_trade()
 

@@ -44,7 +44,7 @@ class ReporteEstado(ReportesDB):
         abiertos=''
         for a in ab:
             par=a['moneda']+a['moneda_contra']
-            #px_actual=self.mo_pre.precio(par)
+            #px_actual=self.mo_pre.precio(pa
         
             linea  = self.campos(a,'idtrade fecha') + ' ' + par + ' '
             linea += self.campos(a,'senial_entrada cantidad precio ganancia_infima ganancia_segura tomar_perdidas') 

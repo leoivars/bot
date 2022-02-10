@@ -405,12 +405,12 @@ class Indicadores:
                 
         return lista 
 
-    def lista_picos_maximos_ema(self,escala,periodos,valor='close',cvelas=10):
+    def lista_picos_maximos_ema(self,escala,periodos,cvelas,origen='close',izquierda=5,derecha=2):
         ''' entrega lista de picos maximo desde el final por cvelas
             para la ema valor('close' u otras) 
         '''    
         df=self.get_df(self.par,escala)
-        ema = ta.ema(df[valor],length=periodos) 
+        ema = ta.ema(df[origen],length=periodos) 
         
         lista=[]
 
@@ -426,11 +426,27 @@ class Indicadores:
             if cvel > cvelas:
                 break
             # print(f'if {rsi.iloc[i-1]} > {rsi.iloc[i]}:')
-            if self.hay_maximo_en(ema,i,5,2):
+            if self.hay_maximo_en(ema,i,izquierda,derecha):
                 #print(    strtime_a_fecha(  df.iloc[i]['close_time'] )   )
                 lista.append([ i*-1 , ema.iloc[i]  ])
                 
         return lista
+
+    def lista_picos_maximos(self,df,izquierda=5,derecha=2):
+        ''' entrega lista de picos maximos de un df 
+        '''    
+        lista=[]
+        l=len(df)
+        lneg = l * -1
+        i=-1
+ 
+        while i > lneg:
+            i -= 1
+            # print(f'if {rsi.iloc[i-1]} > {rsi.iloc[i]}:')
+            if self.hay_maximo_en(df,i,izquierda,derecha):
+                #print(    strtime_a_fecha(  df.iloc[i]['close_time'] )   )
+                lista.append([ i*-1 , df.iloc[i]  ])
+        return lista    
     
     def cruce_de_emas(self,escala,per_rapida,per_lenta,cvelas):
         '''  
@@ -605,7 +621,7 @@ class Indicadores:
         ''' en realidad es morning star https://youtu.be/I7azCpcVlAU?t=2087 
             pero para mi es una frenada de gusano
         '''
-        velas = self.ultimas_velas(escala,cvelas=4,cerradas=False)
+        velas = self.ultimas_velas(escala,cvelas=5,cerradas=False)
         roja_grande1:Vela  = velas[0]
         roja_grande2:Vela  = velas[1]
         frenada:Vela = velas[2]
@@ -618,7 +634,21 @@ class Indicadores:
                     ret = True
         return ret
 
+    
+    def _____hay_velas_mayores_al_promedio(self,escala,cvelas,x_mayor_al_promedio=2):
+        ''' bueca que todos los cuerpos de las cvelas no superen al 
+            promedio multiplicado * x_mayor_al_promedio
+        '''
+        velas = self.ultimas_velas(escala,cvelas,cerradas=False)
+        promedio = self.cuerpo_promedio(escala,100)
+        ret = True
+        for v in velas:
+            if v.cuerpo() > promedio * x_mayor_al_promedio: 
+                ret = False
+                break
+        return ret     
 
+    
     def no_hay_velas_mayores_al_promedio(self,escala,cvelas,x_mayor_al_promedio=2):
         ''' bueca que todos los cuerpos de las cvelas no superen al 
             promedio multiplicado * x_mayor_al_promedio
@@ -647,6 +677,11 @@ class Indicadores:
         df['recorrido'] = df.high - df.low
         return df["recorrido"].max()
 
+    def recorrido_minimo(self,escala,cvelas):
+        df=self.mercado.get_panda_df(self.par, escala, cvelas + 1)
+        df['recorrido'] = df.high - df.low
+        return df["recorrido"].min()
+
     def rsi_contar_picos_maximos(self,escala,cvelas,mayor_de):
         ''' cuanta la cantidad de picos maximo desde el final por cvelas 
         para rsi mayor que el param mayor_de'''    
@@ -673,7 +708,43 @@ class Indicadores:
                 picos +=1
         return picos        
 
+    
+# RESCRIBIR  hay maximo en   estableciendo un rango  y buscando el mayor del rango...
+#   falso apenas aparezca uno mayor o igual==? pensar...
+
+ #  luego probar lista de maximos y zona de volumen para corregir estrategias de compra  
     def hay_maximo_en(self,df,p,entorno_izq=5,entorno_der=5):
+
+        ret = True
+        
+        primer_elemento = len(df) * -1
+        ini = p - entorno_izq
+        if ini < primer_elemento:
+            ret = False
+
+        if ret:
+            fin = p + entorno_der +1
+            if fin > 0:
+                ret=False
+            
+        #print(p,ini,fin,primer_elemento)
+
+        if ret:
+            for i in range(ini,p):
+            #  print (i,df.iloc[i])
+                if df.iloc[i] > df.iloc[p]:
+                    ret = False
+                    break
+
+        if ret:
+            for i in range(p-1 , fin) :       
+                if df.iloc[i] > df.iloc[p]:
+                    ret = False
+                    break
+
+        return ret            
+    
+    def hay_maximo_en___viejo__no__usar(self,df,p,entorno_izq=5,entorno_der=5):
         lado_uno=True
         fin = -1
         i=p+1
@@ -699,29 +770,34 @@ class Indicadores:
         return lado_uno and lado_dos     
 
     def hay_minimo_en(self,df,p,entorno_izq=5,entorno_der=5):
-        lado_uno=True
-        fin = -1
-        i=p+1
-        c_entorno=0
-        while i <= fin and c_entorno < entorno_der :
-            if df.iloc[p] > df.iloc[i]:
-                lado_uno=False
-                break
-            i +=1
-            c_entorno +=1
+        ret = True
+        
+        primer_elemento = len(df) * -1
+        ini = p - entorno_izq
+        if ini < primer_elemento:
+            ret = False
 
-        lado_dos=True
-        ini = len(df) * -1
-        i=p-1
-        c_entorno=0
-        while ini <= i and c_entorno < entorno_izq:
-            if df.iloc[p] > df.iloc[i]:
-                lado_dos=False
-                break
-            i -=1
-            c_entorno +=1
+        if ret:
+            fin = p + entorno_der +1
+            if fin > 0:
+                ret=False
+            
+        #print(p,ini,fin,primer_elemento)
 
-        return lado_uno and lado_dos    
+        if ret:
+            for i in range(ini,p):
+            #  print (i,df.iloc[i])
+                if df.iloc[i] < df.iloc[p]: #and not self.hay_maximo_en(df.iloc[i],1,1):  hay que probar esto en las dos funciones..
+                    ret = False
+                    break
+
+        if ret:
+            for i in range(p-1 , fin) :       
+                if df.iloc[i] < df.iloc[p]:
+                    ret = False
+                    break
+
+        return ret 
 
 
     def firma(self,funcion,parametros):
@@ -874,7 +950,49 @@ class Indicadores:
             ivela -= 1
         
         return calmado
+
+    def zona_de_alto_volumen(self,escala,vela_ini=-1,vela_fin=-20):
+        ''' buaca un grupo de velas con volumen alto que indican una caía previa
+        '''
+        df=self.mercado.get_panda_df(self.par, escala)     #self.velas[escala].panda_df(cvelas + 60)
+        df_ema=ta.ma('ma',df['volume'],length=10)
         
+        lista=[]
+              
+        if vela_fin < -290:
+            vela_fin = -290      
+
+        ini_testigo = vela_fin - 10
+        fin_testigo = vela_fin
+        
+        df_testigo=df_ema.iloc[ini_testigo:fin_testigo]
+        df_zona = df_ema.iloc[vela_fin:vela_ini]
+        df_actual = df_zona.iloc[-4:-1]
+        
+        vol_testigo = df_testigo.mean()
+        vol_actual = df_actual.mean()
+
+        lista=self.lista_picos_maximos(df_zona,5,5)
+
+        if len(lista)>0:
+            pos_pico = lista[0][0]
+            vol_pico = lista[0][1]
+        else:
+            pos_pico = -1
+            vol_pico = 0
+
+        r_vol_pico = round( vol_pico /vol_testigo , 2 )    
+        r_vol = round(vol_actual / vol_testigo, 2   )
+
+        #calculo volumen/ema sobre al últimavela cerrada
+        if df.iloc[-1]['closed']:
+            i_cerrada = -1
+        else:
+            i_cerrada = -2
+        vol_ema = df.iloc[i_cerrada]['volume'] / df_ema.iloc[i_cerrada]
+
+        return pos_pico, r_vol_pico, r_vol, vol_ema
+
     
     def busca_pico_loma_hist(self,hist,high,low,psigno_loma,principio,velas_minimas_de_la_loma=5):
         ''' Busca la posición de la prime loma del histograma del macd que cumpla con el sigo + o - según psigno_loma y que tenga
@@ -1212,6 +1330,22 @@ class Indicadores:
         pend=round( self.pendientes(escala,df_ema.to_list(),1)[0] * 100,9 )
         
         return pend >0 
+
+    def pendientes_positivas_ema(self,escala,periodos,cpendientes=2):
+        '''
+        retorna True si las ultimas cpendientes son positivas
+        '''
+        df=self.get_df(self.par,escala)
+        df_ema=ta.ema(df['close'],length=periodos) 
+        
+        pendientes = self.pendientes(escala,df_ema.to_list(),cpendientes)
+        ret = True
+        for p in pendientes:
+            if p <0:
+                ret =False
+                break
+        return ret
+
  
     def minimo_en_ma(self,escala,periodos,datos='close',cvelas=3):
         '''retorna un minimo en la media movil y su posicion'''

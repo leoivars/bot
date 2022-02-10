@@ -339,7 +339,7 @@ def probar_detector(par):
 
 def probar_lista_maximos(par): 
     ind=Indicadores(par,log,globales,mercado)
-    print (par,'1h','min',ind.lista_picos_maximos_ema('1m',3,'close',50) )
+    print (par,'3m','min',ind.lista_picos_maximos_ema('3m',9,20,'close',2,5) )
  
 
 
@@ -366,14 +366,22 @@ def probar_cruce_de_emas(par):
     print (par,'3m',ind.cruce_de_emas('3m',10,20,50) )
 
 
+def probar_zona_volumen(par): 
+    ind=Indicadores(par,log,globales,mercado)
+    maximos=ind.lista_picos_maximos_ema('3m',9,100,'close',15,15) 
+    fin = -maximos[0][0]
+    print(fin)
+    print(ind.hubo_zona_de_alto_volumen('3m',-1,fin)  )
+
+
 t = time.time()
 
-moneda='BTC'
+moneda='BNB'
 par = moneda+'USDT'
 
 ind=Indicadores(par,log,globales,mercado)
 while time.time() -t < 1200:
-    probar_minimo_maximo_por_rango_velas_imporantes(par)
+    probar_zona_volumen(par)
     time.sleep(15)
 
 mercado.detener_sockets()
