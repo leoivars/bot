@@ -5,6 +5,7 @@ from time import time
 from variables_globales import VariablesEstado
 from acceso_db import Acceso_DB
 import time
+from fpar.filtros import filtro_parte_baja_rango
 
 def habilitar_deshabilitar_pares(g:VariablesEstado,db:Acceso_DB,mercado,log):
     ''' Controla la cantidad de pares que tienen trades en este momento y lo compara con 
@@ -39,8 +40,7 @@ def habilitar_pares(g:VariablesEstado,db:Acceso_DB,mercado:Mercado,log,pares_con
         
         actualizar_volumen_precio(moneda,moneda_contra,ind,db)          # ya que estamos actualizamos volumen y precio
         
-        if hay_precios_minimos_como_para_habilitar(ind,g,log)  or\
-            (el_precio_no_esta_cerca_del_maximo(ind,log) and  para_alcista_como_para_habilitar(ind,g,log) ):         #habilito pares con tendencia alcista que no esten cerca de su maximo 
+        if hay_precios_minimos_como_para_habilitar(ind,g,log):          #habilito pares en la parte baja del rango
             db.habilitar(1,moneda,moneda_contra)
             c_habilitados += 1
             log.log(f'{par} habilitando total {c_habilitados}') 
@@ -60,24 +60,10 @@ def hay_precios_minimos_como_para_habilitar(ind:Indicadores,g:VariablesEstado,lo
         ret = True
         escalas=['1d','4h'] 
         for e in escalas:
-            pxmin = ind.minimo_x_vol(e,75,3) 
-            precio = ind.precio_mas_actualizado()
-            px_cerca=precio_cerca(pxmin,precio,g.escala_entorno[e])
-            log.log(f'{ind.par} min {pxmin} < {precio} px {px_cerca} ')
-
-            if not px_cerca:
-                ret =False
+            if not filtro_parte_baja_rango(ind,log,e,90,0.3):
+                ret = False
                 break
         return ret  
-
-def para_alcista_como_para_habilitar(ind:Indicadores,g:VariablesEstado,log): 
-    if not ind.ema_rapida_mayor_lenta('4h',9,20,0.1):
-        log.log(f'{ind.par} bajista 4h ')
-        return False
-    if hay_rsis_sobrevendidos(ind,log):
-        return False
-    else:
-        return True    
         
 def hay_rsis_sobrevendidos(ind:Indicadores,log): 
     ret = False
@@ -89,19 +75,6 @@ def hay_rsis_sobrevendidos(ind:Indicadores,log):
             log.log(f'{ind.par} rsi {e} {rsi} sobrevendido')
     return ret
 
-def el_precio_no_esta_cerca_del_maximo(ind:Indicadores,log):
-    ret = False
-    px_max=ind.maximo_x_vol('1d',300,5)     #300 dias hacia atrás para controlar el máximo
-    px = ind.precio_mas_actualizado() 
-    print (px_max,px)
-    if px_max>0:
-        pmaximo = px/px_max
-        if pmaximo > 0.7:
-            log.log(f'{ind.par} px {px} max {px_max} muy cerca {pmaximo} ')
-        else:
-            ret = True 
-
-    return ret          
 
 
 def precio_cerca(pxmin,precio,porcentaje=0.30):

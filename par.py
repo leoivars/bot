@@ -23,7 +23,10 @@ from calc_px_compra import Calculador_Precio_Compra
 from intentar_recuperar_venta_perdida import intentar_recuperar_venta_perdida
 from fpar.ganancias import calc_ganancia_minima
 from mercado import Mercado
+
+from fpar.filtros import filtro_parte_baja_rango
 import fauto_compra_vende.habilitar_pares
+
 
 from numpy import isnan
 import random
@@ -1135,15 +1138,12 @@ class Par:
             listo=True 
 
         if not listo:
-            if self.analisis_provocador_entrada in "buscar_ema_positiva buscar_rebote_rsi":
-                metodo="mercado"
-                listo=True 
-
-        if not listo:
-            if self.analisis_provocador_entrada in "buscar_ema_rapida_supera_lenta patron_  buscar_vela_martillo_importante buscar_rsi_minimo_subiendo buscar_rsi_minimo_subiendo_alcista buscar_rsi_minimo_super_volumen buscar_rsi_bajo":
-                metodo="market"
-                listo=True        
-        
+            for ana in ["minimo_ema9","vela_martillo_importante","patron_"]:
+                if ana in self.analisis_provocador_entrada: # esto es viejo --> in "buscar_ema_positiva buscar_rebote_rsi":
+                    metodo="market"
+                    listo=True 
+                    break
+ 
         if not listo:
             if self.analisis_provocador_entrada in "buscar_dos_emas_rsi":
                 metodo="ema_7"
@@ -1927,10 +1927,10 @@ class Par:
             cvelas_rango = 90
             cvelas_rango_importantes=90
             porcentaje_bajo = 0.3
-            if not self.filtro_parte_baja_rango('1d',120,.4):    #previene que se compre en la parte alta de rango en 4 horas
+            if not filtro_parte_baja_rango(self.ind,self.log,'1d',120,.4):    #previene que se compre en la parte alta de rango en 4 horas
                 return False    
         
-        if not self.filtro_parte_baja_rango('4h',cvelas_rango,.4):    #previene que se compre en la parte alta de rango en 4 horas
+        if not filtro_parte_baja_rango(self.ind,self.log,'4h',cvelas_rango,.4):    #previene que se compre en la parte alta de rango en 4 horas
             return False    
         
         comprar= False
@@ -1939,7 +1939,7 @@ class Par:
         for esc in escalas_a_probar:
 
             if not comprar:
-                ret = self.buscar_ema_rapida_supera_lenta('3m',cvelas_rango,cvelas_rango_importantes) 
+                ret = self.buscar_minimo_ema9('3m',cvelas_rango,cvelas_rango_importantes) 
                 if ret[0]:
                     self.escala_de_analisis = ret[1]
                     self.sub_escala_de_analisis = ret[1]
@@ -1970,13 +1970,6 @@ class Par:
             self.detener()
             
         return comprar  
-
-    def filtro_parte_baja_rango(self,escala,cvelas,porcentaje_bajo=.3):
-        minimo,maximo = self.ind.minimo_maximo_por_rango_velas_imporantes(escala,cvelas)
-        maximo_compra = minimo + (maximo - minimo) *  porcentaje_bajo
-        ret = self.precio < maximo_compra
-        self.log.log( f'parte_baja_rango {escala} min {minimo} px {self.precio} [max_compra {maximo_compra}] maximo {maximo} {ret}'  )
-        return ret 
 
     def filtro_parte_alta_rango(self,escala,cvelas):
         minimo,maximo = self.ind.minimo_maximo_por_rango_velas_imporantes(escala,cvelas)
@@ -2137,7 +2130,7 @@ class Par:
         ret=[False,'xx']
         ind: Indicadores = self.ind
 
-        if self.filtro_parte_baja_rango(escala,cvelas_rango,0.35):
+        if filtro_parte_baja_rango(self.ind,self.log,escala,cvelas_rango,0.35):
             velas_importantes_condideradas = int (cvelas_rango_importantes / 4) +1
             velas = ind.velas_imporantes(escala,cvelas_rango_importantes,velas_importantes_condideradas)      #dos velas para el log, pero tomo la primera ( la mas cercana )
             self.log.log(f'velas_importante {velas[0]}')
@@ -2155,7 +2148,7 @@ class Par:
         ret=[False,'xx']
         ind: Indicadores = self.ind
         
-        if self.filtro_parte_baja_rango(escala,cvelas_rango,0.25):     #importante estar en la parte baja.. pero baja!!
+        if filtro_parte_baja_rango(self.ind,self.log,escala,cvelas_rango,0.25):     #importante estar en la parte baja.. pero baja!!
             if ind.patron_verde_supera_roja(escala):
                 ret = [True,escala,f'patron_verde_supera_roja_{cvelas_rango}_{cvelas_rango_importantes}']
             elif ind.patron_martillo_verde(escala):
@@ -2164,17 +2157,16 @@ class Par:
                 ret = [True,escala,f'patron_frenada_de_gusano_en_desarrollo_{cvelas_rango}_{cvelas_rango_importantes}']    
         return ret        
 
-    def buscar_ema_rapida_supera_lenta(self,escala,cvelas_rango=90,cvelas_rango_importantes=90):
+    def buscar_minimo_ema9(self,escala,cvelas_rango=90,cvelas_rango_importantes=90):
         ret=[False,'xx']
         ind: Indicadores = self.ind
-        if self.filtro_parte_baja_rango(escala,cvelas_rango,0.6):     #importante estar en la parte baja.. pero baja!!
-            cruce,posicion = ind.cruce_de_emas(escala,9,21,50)           #busca cruce de abajo haci arriba
-            self.log.log(f'cruce {cruce} posicion {posicion}')         
-            if cruce == 1 and posicion <= 2:                           
-                ultima:Vela = ind.ultimas_velas(escala,cvelas=1,cerradas=False)[0] #vela de confirmación
-                if ind.no_hay_velas_mayores_al_promedio(escala,4,2):
-                    if ultima.signo == 1:
-                        ret = [True,escala,f'buscar_ema_rapida_supera_lenta_{cvelas_rango}_{cvelas_rango_importantes}']
+        if filtro_parte_baja_rango(self.ind,self.log,escala,cvelas_rango,0.4):     #importante estar en la parte baja.. pero baja!!
+            if not ind.ema_rapida_mayor_lenta(escala,9,21):
+                if self.filtro_pico_minimo_ema(escala,9,'close',10,2):
+                    if ind.no_hay_velas_mayores_al_promedio(escala,4,2):
+                        ultima:Vela = ind.ultimas_velas(escala,cvelas=1,cerradas=False)[0] #vela de confirmación
+                        if ultima.signo == 1:
+                            ret = [True,escala,f'buscar_minimo_ema9_{cvelas_rango}_{cvelas_rango_importantes}']
         return ret        
 
     def buscar_rsi_minimo_super_volumen(self,escala): 
@@ -2188,7 +2180,7 @@ class Par:
                rsi_min < rsi and\
                rsi < 35:
             if self.filtro_volumen_encima_del_promedio(escala,cvelas=7,xvol=2,vela_ini=pos_rsi_min):
-                if self.filtro_pico_minimo_ema_low(escala,izquierda=9,derecha=2):
+                if self.filtro_pico_minimo_ema(escala,3,'low',izquierda=9,derecha=2):
                     ret = [True,escala,'buscar_rsi_minimo_super_volumen']
         return ret        
 
@@ -2209,15 +2201,15 @@ class Par:
     #def filtro_precio_cerca_de_ema(self,escala,periodos,cerca=0.5):
 
 
-    def filtro_pico_minimo_ema_low(self,escala,izquierda=5,derecha=2):
+    def filtro_pico_minimo_ema(self,escala,periodos,origen='close',izquierda=5,derecha=2):
         ret = False
-        picos_low=self.ind.lista_picos_minimos_ema_low(escala,3,100,izquierda,derecha)
+        picos_low=self.ind.lista_picos_minimos_ema(escala,periodos,100,origen,izquierda,derecha)
         if len(picos_low) >0:
             pico = picos_low[0] 
             if pico[0] <= 3:
                 ret =True
             else:
-                self.log.log(f'no se cumpe pico low {pico}')    
+                self.log.log(f'no se cumpe pico minimo {origen} {pico}')    
         return ret        
 
 
@@ -3707,13 +3699,17 @@ class Par:
         self.log.log("FIN E3. Acciones")
 
     def iniciar_stop_loss_en_caso_de_ser_posible(self):
-        ''' si estoy en positivo, calculo un precio_seguro para poner el stoploss y si el precio está por encima 
+        ''' si estoy en positivo y alcista, calculo un precio_seguro para poner el stoploss y si el precio está por encima 
             del precio_seguro, inicio el stoploss
             precio_seguro es aquel menos probable a ser alcanzadoen caso de que el precio baje.
+            sino no estoy alcista, apensa puesa salir derecho clavo stoploss
         '''
         if self.stoploss_habilitado == 0 and self.precio > self.precio_salir_derecho: 
-            precio_seguro = self.precio_salir_derecho + self.ind.recorrido_promedio(self.escala_de_analisis,50) 
-            if self.precio > precio_seguro:
+            if self.ind.ema_rapida_mayor_lenta2('1d',10,55,diferencia_porcentual_minima=0.5,pendientes_positivas=True):
+                precio_seguro = self.precio_salir_derecho + self.ind.recorrido_promedio(self.escala_de_analisis,50) 
+                if self.precio > precio_seguro:
+                    self.iniciar_stoploss()
+            elif self.precio >= self.precio_salir_derecho: 
                 self.iniciar_stoploss()
 
     def controlar_stop_loss(self): 
@@ -3782,10 +3778,6 @@ class Par:
                 return
                 
             self.bucles_partial_filled+=1    
-
-        
-
-
  
     def momento_de_recomprar(self,escala,gan,duracion_trade):
         #gan_atr = round ( atr/self.precio * 100 * self.g.x_neg_patr,2 ) #multiplicador de atr negativo para recomprar cuando se pasa cierta perdida
@@ -3793,7 +3785,7 @@ class Par:
         #if self.moneda=='BTC' < 0.5 and duracion_trade > 60:    #experimental, esto podría comprar demasiado
         #    recomprar = True
         #else:    
-        recomprar =  gan < self.g.escala_ganancia[escala] * -2 and duracion_trade > 60
+        recomprar =  gan < self.g.escala_ganancia[escala] * -4 and duracion_trade > 60
         ret = False            
         if recomprar:
             self.log.log( 'Intento recomprar---> Sí')

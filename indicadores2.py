@@ -379,16 +379,16 @@ class Indicadores:
         return minimo,maximo       
 
 
-    def lista_picos_minimos_ema_low(self,escala,periodos,cvelas,izquierda=5,derecha=2):
+    def lista_picos_minimos_ema(self,escala,periodos,cvelas,origen='close',izquierda=5,derecha=2):
         ''' entrega lista de picos minimos desde el final por cvelas
-            para la ema low 
+            para la ema origen 
         '''    
         df=self.get_df(self.par,escala)
-        low = ta.ema(df['low'],length=periodos) 
+        ema = ta.ema(df[origen],length=periodos) 
         
         lista=[]
 
-        l=len(low)
+        l=len(ema)
                 
         lneg = l * -1
         cvel = 1
@@ -399,9 +399,9 @@ class Indicadores:
             if cvel > cvelas:
                 break
             # print(f'if {rsi.iloc[i-1]} > {rsi.iloc[i]}:')
-            if self.hay_minimo_en(low,i,izquierda,derecha):
+            if self.hay_minimo_en(ema,i,izquierda,derecha):
                 #print(    strtime_a_fecha(  df.iloc[i]['close_time'] )   )
-                lista.append([ i*-1 , low.iloc[i]  ])
+                lista.append([ i*-1 , ema.iloc[i]  ])
                 
         return lista 
 
@@ -611,7 +611,7 @@ class Indicadores:
         frenada:Vela = velas[2]
         verde:Vela = velas[3]
         ret = False
-        cuerpo_minimo = self.cuerpo_promedio(escala,100) * 2
+        cuerpo_minimo = self.cuerpo_promedio(escala,100) * 3
         if roja_grande1.signo == -1 and roja_grande2.signo == -1:                                  #las rojas son rojas
             if roja_grande1.cuerpo() > cuerpo_minimo and roja_grande2.cuerpo() > cuerpo_minimo:    #las rojas tienen cumplen con un cuerpo minimo
                 if roja_grande2.cuerpo() > frenada.cuerpo() * 4 and verde.signo == 1:

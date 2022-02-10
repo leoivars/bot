@@ -24,12 +24,12 @@ log=Logger('auto_compra_vende.log')              #log para este modulo
 log.set_log_level(e.log_level)
 pws=Pws()
 client = crear_cliente(pws,log)
-esperar_correcto_funcionamiento(client,e,log)    #antes de hacer algo mas controlo que el exchange esté funcionando
+esperar_correcto_funcionamiento(client,e,log)    #antes de hacer algo, controlo que el exchange esté funcionando
 
-conn=Conexion_DB(log)                            #apertura del pull de conexiones
+conn=Conexion_DB(log)                            #apertura del poll de conexiones
 hpdb = Acceso_DB(log,conn.pool)                  #objeto de acceso a datos hpdb hilo principal db
 
-logm=Logger('mercado.log')                        #log para para mercado 
+logm=Logger('mercado.log')                       #log para para mercado 
 logm.set_log_level(e.log_level)
 mercado = Mercado(logm,e,client)                 #objeto encargado de la obtención de datos desde el exchange
 
