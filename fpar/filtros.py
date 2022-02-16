@@ -1,6 +1,7 @@
 from indicadores2 import Indicadores
 from logger import Logger
 
+
 def filtro_parte_baja_rango(ind:Indicadores,log:Logger,escala,cvelas,porcentaje_bajo=.3):
     minimo,maximo = ind.minimo_maximo_por_rango_velas_imporantes(escala,cvelas)
     maximo_compra =  minimo + (maximo - minimo) *  porcentaje_bajo 
@@ -8,6 +9,35 @@ def filtro_parte_baja_rango(ind:Indicadores,log:Logger,escala,cvelas,porcentaje_
     ret = precio < maximo_compra
     log.log( f'parte_baja_rango {escala} min {minimo} px {precio} [max_compra {maximo_compra}] maximo {maximo} {ret}'  )
     return ret 
+
+def filtro_parte_alta_rango(ind:Indicadores,log:Logger,escala,cvelas,porcentaje_bajo=.75):
+    minimo,maximo = ind.minimo_maximo_por_rango_velas_imporantes(escala,cvelas)
+    maximo_compra =  minimo + (maximo - minimo) *  porcentaje_bajo 
+    precio = ind.precio_mas_actualizado()
+    ret = precio > maximo_compra
+    log.log( f'filtro_parte_alta_rango {escala} min {minimo} px {precio} [max_compra {maximo_compra}] maximo {maximo} {ret}'  )
+    return ret 
+
+def filtro_precio_mayor_maximo(ind:Indicadores,log:Logger,escala,cvelas,vela_ini):
+    maximo = ind.maximo_x_vol(escala,cvelas,3,vela_ini)
+    if maximo is None:
+        ret = False
+        precio = None
+    else:
+        precio = ind.precio_mas_actualizado()
+        ret = precio > maximo
+    log.log( f'filtro_precio_mayor_maximo {escala} cvel {cvelas} ini {vela_ini} maximo {maximo} px {precio} {ret}' )
+    return ret
+
+def filtro_precio_mayor_minimo(ind:Indicadores,log:Logger,escala,cvelas,vela_ini):
+    minimo = ind.minimo_x_vol(escala,cvelas,3,vela_ini)
+    if minimo is None:
+        ret = False
+    else:    
+        precio = ind.precio_mas_actualizado()
+        ret = precio > minimo
+    log.log( f'filtro_precio_mayor_minimo {escala} cvel {cvelas} ini {vela_ini} minimo {minimo} px {precio} {ret}' )
+    return ret
 
 def filtro_zona_volumen(ind:Indicadores,log:Logger,escala,periodos):
     ret = False
@@ -21,7 +51,7 @@ def filtro_zona_volumen(ind:Indicadores,log:Logger,escala,periodos):
        # el volumen pico es mayor a 2
        # el volumen pico es mayor el que volumen promedio de las ultimas velas
        # el volumen de la ultima vela cerrada esta por debajo del promedio (ma)
-       ret = pos_pico < 25 and r_vol_pico > 2 and r_vol_pico > r_vol and r_vol < 2 and vol_ema < 1 
+       ret = pos_pico < 7 and r_vol_pico > 1 #and r_vol_pico > r_vol and r_vol > vol_ema 
     
     return ret
 
@@ -29,4 +59,5 @@ def filtro_pendientes_emas_positivas(ind:Indicadores,log:Logger,escala,periodos,
     ret = ind.pendientes_positivas_ema(escala,periodos,cpendientes)
     log.log(f'filtro_pendientes_emas_positivas {ret}')
     return ret
+
 

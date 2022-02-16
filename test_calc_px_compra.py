@@ -7,9 +7,10 @@ from binance.client import Client #para el cliente
 from numpy import isnan
 from par_propiedades import Par_Propiedades
 from variables_globales import VariablesEstado
-from LibroOrdenes import LibroOrdenes
+from libro_ordenes2 import Libro_Ordenes_DF
 from ordenes_binance import OrdenesExchange
 from  formateadores import format_valor_truncando
+from mercado import Mercado
 
 from calc_px_compra import Calculador_Precio_Compra
 
@@ -19,11 +20,11 @@ client = Client(pws.api_key, pws.api_secret)
 
 log=Logger('Test_calc_px_compra.log') 
 
-moneda = 'AVAX'
+moneda = 'BTC'
 moneda_contra ='USDT'
 
 par=moneda+moneda_contra
-libro=LibroOrdenes(client,moneda,moneda_contra,25) #cleación del libro
+libro=Libro_Ordenes_DF(client,moneda,moneda_contra,25) #cleación del libro
 
 g = VariablesEstado()
 
@@ -33,18 +34,18 @@ tickSize  = info['tickSize']
 precision = info['moneda_precision']
 
 par_prop = Par_Propiedades(par,client,log)
+mercado = Mercado(log,g,client)
+#ind_par= Indicadores(par,log,g,client)
+ind_btc= Indicadores("BTCUSDT",log,g,Mercado)
 
-ind_par= Indicadores(par,log,g,client)
-ind_btc= Indicadores("BTCUSDT",log,g,client)
 
-
-calc = Calculador_Precio_Compra(par,tickSize,precision,libro,g,log,ind_par,ind_btc)
+calc = Calculador_Precio_Compra(par,g,log,ind_btc,libro)
 
 escalas=['1d','4h','1h']
 metodos=[]
-metodos.append('mercado')
 metodos.append('libro_grupo_mayor')
-metodos.append('pefil_volumen')
+#metodos.append('libro_grupo_mayor')
+#metodos.append('pefil_volumen')
 #metodos.append('rango_macd_menor')     # NO ESTÁ FUNCIONAN BIEN para situaciones rango o alcistas
 #metodos.append('parte_baja_rango_macd') # situaciones rango, bajistas
 # metodos.append('libro_mejor_px')

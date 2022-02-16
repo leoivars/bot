@@ -373,15 +373,23 @@ def probar_zona_volumen(par):
     print(fin)
     print(ind.hubo_zona_de_alto_volumen('3m',-1,fin)  )
 
+def probar_porcentaje_recorrido_del_rango(par):
+    ind=Indicadores(par,log,globales,mercado)
+    print (par,'1m',ind.porcentaje_recorrido_del_rango('5m',120) )
+
+def probar_minimo_maximo_por_rango_velas_imporantes(par,escala):
+    ind=Indicadores(par,log,globales,mercado)
+    minimo,maximo = ind.minimo_maximo_por_rango_velas_imporantes(escala,65 ) 
+    print(minimo,maximo)
 
 t = time.time()
 
-moneda='BNB'
+moneda='BTC'
 par = moneda+'USDT'
 
 ind=Indicadores(par,log,globales,mercado)
 while time.time() -t < 1200:
-    probar_zona_volumen(par)
+    probar_minimo_maximo_por_rango_velas_imporantes(par,'1m')
     time.sleep(15)
 
 mercado.detener_sockets()

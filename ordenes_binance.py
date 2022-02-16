@@ -199,7 +199,7 @@ class OrdenesExchange:
             try:
                 if len(ordenes)>0:
                     for orden in (ordenes):
-                        self.log.log(orden)
+                        #self.log.log(orden)
                         self.log.log( "Cancelando-->",orden['orderId'])
                         self.cancelar_orden(orden['orderId'])
             except Exception as e: 

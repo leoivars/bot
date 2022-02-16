@@ -264,7 +264,7 @@ class Indicadores:
                 
         return lista 
 
-    def lista_picos_maximos_x_vol(self,escala,cvelas):
+    def lista_picos_maximos_x_vol(self,escala,cvelas,vela_ini=1):
         ''' entrega lista de picos minimos desde el final por cvelas
             y una ponderación  de volumen( i-1 + i +i+1) * minimo * posicion 
         '''    
@@ -275,7 +275,7 @@ class Indicadores:
         l=len(high)
         lneg = l * -1
         cvel = 1
-        i=-1
+        i=-1 * vela_ini
         while i > lneg:
             i -= 1
             cvel += 1
@@ -294,7 +294,7 @@ class Indicadores:
         minimos = sorted(lista, key=lambda x: x[2]  ) # ordno por la ponderacion
         return self.calc_top(minimos,cminimos)
 
-    def maximo_x_vol(self,escala,cvelas=100,cant_maximos=3):    
+    def maximo_x_vol(self,escala,cvelas=100,cant_maximos=3,vela_ini=1):    
         lista=self.lista_picos_maximos_x_vol(escala,cvelas)
         maximos = sorted(lista, key=lambda x: x[2] ,reverse=True )
         return self.calc_top(maximos,cant_maximos)
@@ -373,9 +373,16 @@ class Indicadores:
 
         df1 = df.iloc[ -inicio_rango: ]
 
-        minimo = df1.low.min()
-        maximo = df1.high.max()
+        
+        des_min =df1['low'].describe()
+        des_max =df1['high'].describe()
+        #print (des)
+        #print(    (des['min']+des['25%']) /2   )
+        #print(    des['mean'] - des['std'] * 2    )
        
+        minimo = des_min['25%']
+        maximo = des_max['75%']
+
         return minimo,maximo       
 
 
@@ -648,7 +655,14 @@ class Indicadores:
                 break
         return ret     
 
+    def porcentaje_recorrido_del_rango(self,escala,cvelas):
+        ''' retorna el porcentaje del recorrido del rango'''
+        minimo,maximo = self.minimo_maximo_por_rango_velas_imporantes(escala,cvelas)
+        #print(minimo,maximo)
+        recorrido = round( (self.precio_mas_actualizado() - minimo) / (maximo - minimo) * 100  ,2)
+        return recorrido
     
+
     def no_hay_velas_mayores_al_promedio(self,escala,cvelas,x_mayor_al_promedio=2):
         ''' bueca que todos los cuerpos de las cvelas no superen al 
             promedio multiplicado * x_mayor_al_promedio
@@ -972,7 +986,7 @@ class Indicadores:
         vol_testigo = df_testigo.mean()
         vol_actual = df_actual.mean()
 
-        lista=self.lista_picos_maximos(df_zona,5,5)
+        lista=self.lista_picos_maximos(df_zona,5,2)
 
         if len(lista)>0:
             pos_pico = lista[0][0]

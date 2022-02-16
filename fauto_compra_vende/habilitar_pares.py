@@ -48,7 +48,7 @@ def habilitar_pares(g:VariablesEstado,db:Acceso_DB,mercado:Mercado,log,pares_con
             mercado.desuscribir_todas_las_escalas(par)                  #solo desuscribo cuando no habilito, para recuperar recursos
                                                                             
         time.sleep(30)
-        if c_habilitados + pares_con_trades >= g.max_pares_activos_config:
+        if c_habilitados  >= g.max_pares_activos_config:
             break
 
 def actualizar_volumen_precio(moneda,moneda_contra,ind:Indicadores,db:Acceso_DB):
@@ -58,9 +58,9 @@ def actualizar_volumen_precio(moneda,moneda_contra,ind:Indicadores,db:Acceso_DB)
 
 def hay_precios_minimos_como_para_habilitar(ind:Indicadores,g:VariablesEstado,log):
         ret = True
-        escalas=['1d','4h','3m'] 
+        escalas=['1d','4h'] 
         for e in escalas:
-            if not filtro_parte_baja_rango(ind,log,e,90,0.3):
+            if not filtro_parte_baja_rango(ind,log,e,120,0.2):
                 ret = False
                 break
         return ret  

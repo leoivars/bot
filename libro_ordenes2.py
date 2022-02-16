@@ -1,11 +1,13 @@
 # # -*- coding: UTF-8 -*-
 #from binance.enums import * #para  create_order
+from audioop import minmax
 import sys
 import time
 from termcolor import colored
+import pandas as pd
 
 
-class LibroOrdenes:
+class Libro_Ordenes_DF:
 
     client=''
     libro=''
@@ -41,61 +43,56 @@ class LibroOrdenes:
             except Exception as e:
                 print  ('client.get_order_book',self.par,'espero 15s')
                 time.sleep(15)
-         
-        #grupo de bids, quiern comprar a x 
-        self.asks=self.agrupar('asks',libro_oficial)
-        #grupo de asks, quieren vender a x
-        self.bids=self.agrupar('bids',libro_oficial)
-        self.momento_ultima_actuazacion=ahora
-            
-        #print (max_bids[0][2]/max_asks[0][2]*100,"%")    
-        #return ( float(depth['bids'][0][0])  )# el primer precio de los bids
-  
+        
+        df=self.agrupar('bids',libro_oficial)    
+        idx =  df['pxq'].idxmax() 
+        df1=self.agrupar('bids',libro_oficial,df.iloc[idx]['min'],df.iloc[idx]['max']) 
+        idx1 =  df1['pxq'].idxmax() 
+        
+        self.precio_compra0 = df.iloc[0]['min']       #el minimo del primer bloque
+        self.precio_compra1 = df1.iloc[idx1]['max']   #el maximo del bloque mayoritario
 
-    def agrupar(self,cod,oderbook): #cod c oferta demanda,  cantidad de grupos
-        filas_grupo=int(len(oderbook[cod])/self.cant_grupos)
-        ifila=1 
-        igrupo=0
-        grupos=[]
-        total=0
+
+
+    def agrupar(self,cod,oderbook,filtro_min=None,filtro_max=None): #cod c oferta demanda,  cantidad de grupos
+        cantidad_elementeos = len(oderbook[cod])
+        if filtro_min is None or filtro_max is None:
+            maximo = self.px(oderbook[cod][0])
+            minimo = self.px(oderbook[cod][cantidad_elementeos-1])
+        else:
+            maximo=filtro_max
+            minimo=filtro_min
+
+        tam_intervalo = (maximo-minimo) / self.cant_grupos
+        df=pd.DataFrame(columns=['min', 'max', 'pxq'] )  
+        
+        capturando=False
         for pxs in oderbook[cod]:
-            subtotal=self.pxc(pxs)
-            total+=subtotal
-            if (ifila==1):
-                grupos.append([pxs[0],'',subtotal])# pxini,nada, subtotal
-            else:
-                grupos[igrupo][2]+=subtotal #agrego al subtotal
-            ifila+=1    
-            if (ifila==filas_grupo):
-                grupos[igrupo][1]=pxs[0] #pxfin 
-                ifila=1
-                igrupo+=1
-        if (ifila != filas_grupo and ifila!=1): #agrego ultima fila suelta
-            grupos[igrupo][1]=pxs[0] #pxfin 
-                #grupos[igrupo][1]=oderbook[cod][len(oderbook[cod])][0] #pxfin
+            precio,cantidad=self.pq(pxs)
+            subtotal = precio * cantidad
+            if not capturando and precio <= maximo:
+                capturando = True            
+                ifila=1 
+                igrupo=0
+                pmax = maximo
+                pmin = pmax - tam_intervalo
+            
+            if capturando:
+                if precio < minimo:
+                    break
+                if precio < pmin:
+                    pmax = pmin
+                    pmin = pmax - tam_intervalo
+                    igrupo +=1
+                    ifila  = 1
+                if ifila ==1:
+                    df.loc[igrupo] = [pmin ,pmax , subtotal] 
+                else:
+                    df.loc[igrupo]['pxq'] += subtotal 
+                ifila +=1    
 
-        self.tot[cod]=total#guardo el total         
-
-        #nuevo grupo con los porcentajes y acumulados    
-        #y el mayor
-        grupos1=[] 
-        mayor=0
-        imayor=0
-        porce_acum=0
-        for i in range (len(grupos)):
-            g=grupos[i]
-            p=g[2]/total * 100
-            porce_acum+=p
-
-            grupos1.append([g[0],g[1],g[2],p,porce_acum,False])
-            #ahora comparo y guardo el mayor y la posicion        
-            if mayor<g[2]:
-               mayor=g[2]
-               imayor=i 
-        grupos1[imayor][5]=True #verdadero para el elemento mayor
-        self.grupo_imax[cod]=[imayor] # guardo la posicion del maximo
-      
-        return grupos1  
+        return df   
+ 
 
     def tot_compran_venden(self):  
         self.actualizar()  
@@ -138,6 +135,13 @@ class LibroOrdenes:
 
     def pxc(self,pxs):
         return float(pxs[0])*float(pxs[1])
+
+    def pq(self,pxs):
+        return float(pxs[0]) , float(pxs[1])
+
+    def px(self,pxs):
+        return float(pxs[0])
+    
 
     def imprimir(self):
         
@@ -306,5 +310,3 @@ class LibroOrdenes:
     def linea(self,*args):
         return  ' '.join([str(a) for a in args])                
 
-
-    

@@ -1,4 +1,5 @@
 from indicadores2 import Indicadores
+from libro_ordenes2 import Libro_Ordenes_DF
 from logger import Logger
 from variables_globales import VariablesEstado
 from funciones_utiles import format_valor_truncando
@@ -6,12 +7,13 @@ from numpy import isnan
 
 
 class Calculador_Precio_Compra:
-    def __init__(self,par,g: VariablesEstado,log:Logger,ind_par):
+    def __init__(self,par,g: VariablesEstado,log:Logger,ind_par:Indicadores,libro:Libro_Ordenes_DF):
         self.par = par 
         self.ind_par :Indicadores = ind_par
         self.log:Logger = log
         self.g :VariablesEstado = g
         self.escala_de_analisis = '1d'
+        self.libro: Libro_Ordenes_DF = libro
 
     def calcular_precio_de_compra(self,metodo,escala):
         ind: Indicadores = self.ind_par
@@ -31,8 +33,35 @@ class Calculador_Precio_Compra:
         if metodo=="market":
             px= ind.precio_mas_actualizado()
             self.calculo_precio_compra='market'
-            self.log.log('calc.market',px) 
-     
+            self.log.log('calc.market',px)
+
+        if metodo=="minimo_del_rango":
+            px1,maximo = ind.minimo_maximo_por_rango_velas_imporantes(escala,120) 
+            px2 = self.libro.precio_compra_grupo_porc_acumulado(25)
+            px = (px1+px2) / 2
+            self.calculo_precio_compra='minimo_del_rango'
+            self.log.log(f'minimo {px1} %25acum {px2}')
+            self.log.log('calc.minimo_del_rango',px)
+            self.libro.actualizar()
+            self.log.log(self.libro.dump_libro()) 
+
+        if metodo=="libro_grupo_mayor":
+            self.libro.actualizar()
+            if self.ind_par.ema_rapida_mayor_lenta2('4h',9,21,.1):
+                px = self.libro.precio_compra0
+            else:    
+                px = self.libro.precio_compra1
+            
+            self.calculo_precio_compra='libro_grupo_mayor'
+            self.log.log('calc.libro_grupo_mayor',px)
+            #self.log.log(self.libro.dump_libro())
+
+        elif metodo=="scalping":
+            self.libro.actualizar()
+            px = self.libro.precio_compra1
+            self.calculo_precio_compra='scalping'
+            self.log.log('calc.scalping',px)
+           
         elif metodo=="parte_baja_rango_macd":
             px = self.calc_parte_baja_rango_macd()
             self.calculo_precio_compra = 'parte_baja_rango_macd'
@@ -80,30 +109,7 @@ class Calculador_Precio_Compra:
         
         
 
-        elif metodo=="scalping":
-            '''
-            metodo mas agresivo despues de mercado
-
-            '''
-            escala_chica='15m'
-            indicador="ema"
-            px = ind.ema(escala_chica,55)
-
-            if self.precio<= px:
-                indicador="ema_minimos_5,0"
-                px = ind.stoploss_ema_minimos(escala_chica,5,0)
-
-            if self.precio <= px:
-                indicador="minmax_2"
-                mm  = ind.minmax(escala_chica,2)
-                px = mm[0] 
-            
-            if self.precio <= px:
-                indicador="precio_de_rsi_20"   
-                px = ind.precio_de_rsi(escala_chica,20)   
-            
-            self.calculo_precio_compra='scalping_'+indicador
-            self.log.log('calc.scalping minimo',indicador,escala_chica,px)
+        
 
         elif metodo=="ema_minimos_1":
             px=ind.stoploss_ema_minimos(self.escala_de_analisis,1,0)
@@ -156,8 +162,9 @@ class Calculador_Precio_Compra:
 
         #px= self.restar_cuando_son_malas_condiciones(self.escala_de_analisis,px)
 
-        if px > self.precio:
-            self.log.log('ERRORCALCULO, ind.promedio_de_bajos',px,self.precio)
+        precio = ind.precio_mas_actualizado()
+        if px > precio:
+            self.log.log('ERRORCALCULO, ind.promedio_de_bajos',px,precio)
             px = self.precio / 1.01
             self.calculo_precio_compra='self.precio / 1.01'
 
