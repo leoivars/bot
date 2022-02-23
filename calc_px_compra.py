@@ -57,10 +57,14 @@ class Calculador_Precio_Compra:
             #self.log.log(self.libro.dump_libro())
 
         elif metodo=="scalping":
-            self.libro.actualizar()
-            px = self.libro.precio_compra1
-            self.calculo_precio_compra='scalping'
-            self.log.log('calc.scalping',px)
+            px,_ =self.ind_par.minimo_maximo_por_rango_velas_imporantes(escala,100)
+            self.calculo_precio_compra='scalping_pxminimo'
+            if px > self.ind_par.precio_mas_actualizado:
+                self.libro.actualizar()
+                px = self.libro.precio_compra2
+                self.calculo_precio_compra='scalping_min_libro_grp_mayor'
+            
+            self.log.log(f'calc.{self.calculo_precio_compra}',px)
            
         elif metodo=="parte_baja_rango_macd":
             px = self.calc_parte_baja_rango_macd()

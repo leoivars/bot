@@ -27,6 +27,7 @@ from mercado import Mercado
 
 from fpar.filtros import filtro_parte_baja_rango, filtro_zona_volumen, filtro_pendientes_emas_positivas,filtro_parte_alta_rango
 from fpar.filtros import filtro_precio_mayor_maximo,filtro_precio_mayor_minimo
+from fpar.filtros import filtro_pico_minimo_ema_low,filtro_velas_de_impulso,filtro_dos_emas_positivas
 import fauto_compra_vende.habilitar_pares
 
 
@@ -1156,8 +1157,6 @@ class Par:
                     metodo="scalping"
                     listo=True 
                     break         
-
-                  
  
         if not listo:
             if self.analisis_provocador_entrada in "buscar_dos_emas_rsi":
@@ -1942,16 +1941,16 @@ class Par:
         escalas_a_probar = self.entradas_a_escalas(self.temporalidades,entradas)
         
         for esc in escalas_a_probar:
-            if not comprar:
-                ret = self.buscar_minimo_parte_muy_baja('1h',90,0.25)
-                if ret[0]:
-                    self.escala_de_analisis = ret[1]
-                    self.sub_escala_de_analisis = ret[1]
-                    self.analisis_provocador_entrada=ret[2]
-                    comprar = True
-                    break
-            if not comprar and self.moneda=='BTC':
-                ret = self.scalping_parte_muy_baja('1m',250,0.125)
+            # if not comprar: #and self.moneda!='BTC':
+            #     ret = self.buscar_minimo_parte_muy_baja('1h',90,0.25)
+            #     if ret[0]:
+            #         self.escala_de_analisis = ret[1]
+            #         self.sub_escala_de_analisis = ret[1]
+            #         self.analisis_provocador_entrada=ret[2]
+            #         comprar = True
+            #         break
+            if not comprar: #and self.moneda=='BTC':
+                ret = self.scalping_parte_muy_baja('1m',250,0.3)
                 if ret[0]:
                     self.escala_de_analisis = ret[1]
                     self.sub_escala_de_analisis = ret[1]
@@ -2213,6 +2212,7 @@ class Par:
         return ret 
     
     def buscar_minimo_parte_muy_baja(self,escala,cvelas_rango=90,porcentaje_bajo=.2):
+        self.log.log('===== buscar_minimo_parte_muy_baja =====')
         ret=[False,'xx']
         if self.filtro_tendencia_alcista():
             if not filtro_parte_baja_rango(self.ind,self.log,'1d',120,.38):    #previene que se compre en la parte alta de rango en 4 horas
@@ -2230,10 +2230,13 @@ class Par:
         return ret    
 
     def scalping_parte_muy_baja(self,escala,cvelas_rango=90,porcentaje_bajo=.2):
+        self.log.log('====== scalping_parte_muy_baja ======')
         ret=[False,'xx']
         ind: Indicadores = self.ind
-        if filtro_parte_baja_rango(self.ind,self.log,escala,cvelas_rango,porcentaje_bajo):     #importante estar en la parte baja.. pero baja!!
-            ret = [True,escala,f'scalping_parte_muy_baja{cvelas_rango}_{porcentaje_bajo}']
+        if filtro_parte_baja_rango(self.ind,self.log,escala,cvelas_rango,porcentaje_bajo):                              #estoy en la parte baja del rango
+            if filtro_velas_de_impulso(ind,self.log,escala,periodos=7,max_pos_ultimo_impulso=7,min_cant_impulsos=3):    #hay varias velas de impulso que provocan la bajada
+                if filtro_dos_emas_positivas(ind,self.log,escala,ema1_per=4,ema2_per=7):                                #giro en el precio
+                    ret = [True,escala,f'scalping_parte_muy_baja{cvelas_rango}_{porcentaje_bajo}']
         return ret        
 
 
@@ -3774,19 +3777,24 @@ class Par:
         '''
         if self.stoploss_habilitado == 0 and self.precio > self.precio_salir_derecho:
             self.log.log(f'iniciar_stop_loss_en_caso_de_ser_posible para {self.senial_entrada}')
-            if 'scalping_parte_muy_baja' in self.senial_entrada:
-                gan = self.calculo_ganancias(self.precio_compra,self.precio-self.tickSize_proteccion)
-                if gan > 0.20:
-                    self.iniciar_stoploss()
+            
+            if self.ind.ema_rapida_mayor_lenta2('1d',10,55,1): 
+                velas_maximo=80       #++++++80++++++#_____35_____#
+                velas_maximo_ini=35
+                velas_minimo=20        #-----20----#1# 
+                velas_minimo_ini=1     
+                velas_recorrido=200
             else:
-                velas_maximo=200
-                velas_minimo=25
+                velas_maximo=100       #+++++++++100++++++++#___30___#
+                velas_maximo_ini=30
+                velas_minimo=30        #-----30----#1# 
+                velas_minimo_ini=1     
                 velas_recorrido=120
 
-                if filtro_precio_mayor_maximo(self.ind,self.log,self.escala_de_analisis,velas_maximo,10):
-                    if filtro_precio_mayor_minimo(self.ind,self.log,self.escala_de_analisis,velas_minimo,1):
-                        if self.precio >= self.precio_salir_derecho + self.ind.recorrido_promedio(self.escala_de_analisis,velas_recorrido):
-                            self.iniciar_stoploss()
+            if filtro_precio_mayor_minimo(self.ind,self.log,self.escala_de_analisis,velas_minimo,velas_minimo_ini):
+                if filtro_precio_mayor_maximo(self.ind,self.log,self.escala_de_analisis,velas_maximo,velas_maximo_ini):
+                    if self.precio >= self.precio_salir_derecho + self.ind.recorrido_promedio(self.escala_de_analisis,velas_recorrido):
+                        self.iniciar_stoploss()
 
 
     def controlar_stop_loss(self): 
@@ -3800,8 +3808,9 @@ class Par:
             
 
     def controlar_orden_stop_loss(self):
-        self.log.log(  "controlar_orden_stop_loss" ,self.par )
+        
         orden=self.oe.consultar_estado_orden(self.ultima_orden)
+        self.log.log(  f"controlar_orden_stop_loss {self.par} {orden['estado']}" )
         
         if orden['estado']=='FILLED':
             self.log.log(  "FILLED" )
@@ -3833,6 +3842,10 @@ class Par:
                 self.enviar_correo_error('Orden cancelada, controlar que pasó')
                 self.estado_0_inicio()
                 return
+            else:
+                self.ultima_orden={'orderId':0}
+                self.stoploss_habilitado=0
+                self.stoploss_actual=0
 
         elif orden['estado']=='NEW':
             if self.precio < self.stoploss_actual:
@@ -3841,6 +3854,9 @@ class Par:
                     order_cancelada=self.oe.consultar_estado_orden(ultima)
                     todo_mal=False
                     if order_cancelada['estado']=='CANCELED':
+                        self.ultima_orden={'orderId':0}
+                        self.stoploss_habilitado=0
+                        self.stoploss_actual=0
                         if order_cancelada['ejecutado'] > 0:
                             todo_mal=True
                     else:
@@ -3872,11 +3888,12 @@ class Par:
  
     def momento_de_recomprar(self,escala,gan,duracion_trade):
         #gan_atr = round ( atr/self.precio * 100 * self.g.x_neg_patr,2 ) #multiplicador de atr negativo para recomprar cuando se pasa cierta perdida
-        self.log.log( f'momento_de_recomprar?  gan {gan}' )
+        gan_limite = self.g.escala_ganancia[escala] * -1.5
+        self.log.log( f'momento_de_recomprar?  gan {gan}, gan_limite {gan_limite} duracion {duracion_trade}' )
         #if self.moneda=='BTC' < 0.5 and duracion_trade > 60:    #experimental, esto podría comprar demasiado
         #    recomprar = True
         #else:    
-        recomprar =  gan < self.g.escala_ganancia[escala] * -1.2 and duracion_trade > 60
+        recomprar =  gan < gan_limite and duracion_trade > 60
         ret = False            
         if recomprar:
             self.log.log( 'Intento recomprar---> Sí')
@@ -4223,7 +4240,7 @@ class Par:
         if self.cancelar_ultima_orden():
             resultado = self.ajustar_stoploss(stoploss)
             if resultado =='OK':
-                self.enviar_correo_generico(f'SL.INI. {self.ultima_orden}')
+                self.enviar_correo_generico(f"SL.INI. {self.ultima_orden['orderId']}")
         else:
             self.intentar_recuperar_venta()        
 
@@ -4552,10 +4569,7 @@ class Par:
         if self.stoploss_negativo == 1 and self.precio < self.precio_salir_derecho:
             return self.calculo_stoploss_negativo()
      
-        if 'scalping' in self.senial_entrada:
-            st = self.calculo_stoploss_scalping()
-        else:
-            st = self.calculo_basico_stoploss(self.generar_liquidez) 
+        st = self.calculo_basico_stoploss(self.generar_liquidez) 
 
         st =  self.st_correccion_final(st)
         
@@ -4639,7 +4653,7 @@ class Par:
     def calculo_stoploss_scalping(self):
         sl = self.precio - self.ind.recorrido_minimo(self.escala_de_analisis,30)
         if sl < self.precio_salir_derecho:
-            sl = self.calculo_precio_de_venta(0.20)
+            sl = self.calculo_precio_de_venta(0.15)
         return sl    
             
 
@@ -4732,7 +4746,6 @@ class Par:
             escala = escala_actual
 
         return escala    
-
 
     def intentar_subir_stoploss(self):
         diff = self.precio -  self.stoploss_actual

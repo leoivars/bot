@@ -374,15 +374,13 @@ class Indicadores:
         df1 = df.iloc[ -inicio_rango: ]
 
         
-        des_min =df1['low'].describe()
-        des_max =df1['high'].describe()
         #print (des)
         #print(    (des['min']+des['25%']) /2   )
         #print(    des['mean'] - des['std'] * 2    )
        
-        minimo = des_min['25%']
-        maximo = des_max['75%']
-
+        minimo = df1['low'].quantile(.05)
+        maximo = df1['high'].quantile(.95)
+       
         return minimo,maximo       
 
 
@@ -439,13 +437,13 @@ class Indicadores:
                 
         return lista
 
-    def lista_picos_maximos(self,df,izquierda=5,derecha=2):
+    def lista_picos_maximos(self,df,izquierda=2,derecha=2):
         ''' entrega lista de picos maximos de un df 
         '''    
         lista=[]
         l=len(df)
         lneg = l * -1
-        i=-1
+        i= -1 
  
         while i > lneg:
             i -= 1
@@ -741,17 +739,18 @@ class Indicadores:
             if fin > 0:
                 ret=False
             
-        #print(p,ini,fin,primer_elemento)
+        #self.log.log(p,ini,fin,primer_elemento)
 
         if ret:
             for i in range(ini,p):
-            #  print (i,df.iloc[i])
+                #self.log.log (i,df.iloc[i])
                 if df.iloc[i] > df.iloc[p]:
                     ret = False
                     break
 
         if ret:
-            for i in range(p-1 , fin) :       
+            for i in range(p-1 , fin) : 
+                #self.log.log (i,df.iloc[i])      
                 if df.iloc[i] > df.iloc[p]:
                     ret = False
                     break
@@ -969,7 +968,7 @@ class Indicadores:
         ''' buaca un grupo de velas con volumen alto que indican una caía previa
         '''
         df=self.mercado.get_panda_df(self.par, escala)     #self.velas[escala].panda_df(cvelas + 60)
-        df_ema=ta.ma('ma',df['volume'],length=10)
+        df_ema=ta.ma('ma',df['volume'],length=15)
         
         lista=[]
               
@@ -1007,7 +1006,57 @@ class Indicadores:
 
         return pos_pico, r_vol_pico, r_vol, vol_ema
 
-    
+    def picos_de_alto_volumen(self,escala,vela_fin=-20):
+        ''' busca picos de alto volumen
+        '''
+        df=self.mercado.get_panda_df(self.par, escala)     #self.velas[escala].panda_df(cvelas + 60)
+        df_ema=ta.ma('ma',df['volume'],length=20)
+              
+        if vela_fin < -290:
+            vela_fin = -290      
+
+        df_zona = df['volume'].iloc[vela_fin:]
+        
+        lista_de_picos=self.lista_picos_maximos(df_zona,1,1)
+
+        # elimino los picos bajos
+        lista=[]
+        for  pico in lista_de_picos:
+            pos=pico[0]
+            vol=pico[1]
+            #self.log.log(pico,df_ema.iloc[-pos])
+            if vol > df_ema.iloc[-pos] * 3:
+                lista.append(pico)
+
+        return lista
+
+    def velas_de_impulso(self,escala,sentido=1,vela_fin=-20):
+        ''' busca velas de alto volumen que provocan impulso
+        '''
+        df=self.mercado.get_panda_df(self.par, escala)     
+        df_ma_vol=ta.ma('ma',df['volume'],length=20)
+
+        cant_velas=len(df)      
+        if vela_fin < -cant_velas+41:
+            vela_fin = -cant_velas+41      
+
+        lista=[]
+        i= -1
+
+        volumen_testigo = df_ma_vol.iloc[vela_fin -1]   #promedio del volumen anterior a la zona buscada
+        if (volumen_testigo) >0:
+ 
+            while i > vela_fin:
+                i -= 1
+                v:Vela = Vela(df.iloc[i])
+                if v.sentido() == sentido:
+                    x_vol = round( v.volume / volumen_testigo ,2)
+                    if  x_vol > 3:   
+                        lista.append([ i*-1, x_vol ])
+
+        return lista    
+
+
     def busca_pico_loma_hist(self,hist,high,low,psigno_loma,principio,velas_minimas_de_la_loma=5):
         ''' Busca la posición de la prime loma del histograma del macd que cumpla con el sigo + o - según psigno_loma y que tenga
             al menos la cantidad de velas especificadas en  velas_minimas_de_la_loma de al principio hacia la izquierda ( a cero)

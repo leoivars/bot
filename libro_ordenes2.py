@@ -51,6 +51,7 @@ class Libro_Ordenes_DF:
         
         self.precio_compra0 = df.iloc[0]['min']       #el minimo del primer bloque
         self.precio_compra1 = df1.iloc[idx1]['max']   #el maximo del bloque mayoritario
+        self.precio_compra2 = df1.iloc[idx1]['min']   #el minimo del bloque Mayoritario
 
 
 

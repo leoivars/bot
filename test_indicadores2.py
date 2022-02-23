@@ -382,6 +382,12 @@ def probar_minimo_maximo_por_rango_velas_imporantes(par,escala):
     minimo,maximo = ind.minimo_maximo_por_rango_velas_imporantes(escala,65 ) 
     print(minimo,maximo)
 
+def probar_velas_impulso(par,escala):
+    ind=Indicadores(par,log,globales,mercado)
+    print(ind.velas_de_impulso(escala,-1,-30))
+
+
+
 t = time.time()
 
 moneda='BTC'
@@ -389,7 +395,7 @@ par = moneda+'USDT'
 
 ind=Indicadores(par,log,globales,mercado)
 while time.time() -t < 1200:
-    probar_minimo_maximo_por_rango_velas_imporantes(par,'1m')
+    probar_velas_impulso(par,'1m')
     time.sleep(15)
 
 mercado.detener_sockets()
