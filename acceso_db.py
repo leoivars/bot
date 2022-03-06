@@ -740,7 +740,11 @@ class Acceso_DB:
             self.cursor_obtener()
             try:
                 self.cursor.execute(sql,paramentros)
-                ret = self.cursor.fetchone()[0]    
+                row = self.cursor.fetchone()
+                if row is None:
+                    ret = None
+                else:    
+                    ret = row[0]
                 break
             except Exception as e:
                 self.log.err(  'error: ejecutar_sql_ret_1_valor',e,sql,paramentros)

@@ -138,10 +138,12 @@ if __name__=='__main__':
     #deltas = {'15m':15,'30m':30,'1h':60,'2h':120,'4h':240,'1d':1440,'1w':10080,'1M':43200}
     
     #UTC	2021-06-13T07:02:34Z
-    fini='2022-01-22 00:00:00' 
-    ffin='2022-01-23 23:59:59' 
+    fini='2022-02-01 00:00:00' 
+    ffin='2022-03-05 23:59:59' 
+    
     #pares=['BTCUSDT','BNBUSDT','XRPUSDT']
-    pares=['BTCUSDT','BNBUSDT']
+    #pares=['BTCUSDT','BNBUSDT']
+    pares=['CELRUSDT']
     # fini='202-01-01 00:00:00' 
     # ffin='2021-07-01 00:00:00' 
     obj_fini=strtime_a_obj_fecha(fini)

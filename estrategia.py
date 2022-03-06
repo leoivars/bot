@@ -3,18 +3,21 @@ from datetime import timedelta
 import time
 
 from pymysql.constants.ER import NO
+from acceso_db_conexion import Conexion_DB
 from funciones_utiles import strtime_a_obj_fecha
 from mercado_back_testing import Mercado_Back_Testing
+
 from acceso_db_conexion_mysqldb import Conexion_DB
 from acceso_db_mysqldb import Acceso_DB
+
+
 from variables_globales import VariablesEstado
 from logger import Logger
 from indicadores2 import Indicadores
 from calc_px_compra import Calculador_Precio_Compra
 from binance.client import Client #para el cliente
-from gestor_de_posicion import Gestor_de_Posicion
+from fpar.filtros import filtro_parte_baja_rango, filtro_xvolumen_de_impulso,filtro_dos_emas_positivas
 from pws import Pws
-
 
 class Estrategia():
     ''' la idea de esta clase es de ser la base de cualquier estrategia 
@@ -40,15 +43,15 @@ class Estrategia():
         comprar= False
         
         if not comprar:
-            for esc in ['1m']:
-                ret = self.buscar_rsi_bajo(esc)
+            for esc in ['2h']:
+                ret = self.scalping_parte_muy_baja(esc,250,0.3)
                 if ret[0]:
                     #if ind.control_de_inconsistemcias(esc) == -1: #no hay inconsitencias
                     self.escala_de_analisis = ret[1]
                     self.sub_escala_de_analisis = ret[1]
-                    self.analisis_provocador_entrada='buscar_rsi_bajo'
+                    self.analisis_provocador_entrada=ret[2]
                     comprar = True
-                    break                
+                    break                     
 
         return comprar 
 
@@ -62,7 +65,6 @@ class Estrategia():
         elif gan> 0 and self.ind.sar(escala) > px:
             ret = True
         else:
-
             ret = False
 
         return ret        
@@ -86,77 +88,21 @@ class Estrategia():
         sl = pmin - atr * 2 
         return sl
 
-    def buscar_rsi_bajo(self,escala):   
+    def scalping_parte_muy_baja(self,escala,cvelas_rango=90,porcentaje_bajo=.2):
+        self.log.log('====== scalping_parte_muy_baja ======')
         ret=[False,'xx']
-        #self.log.log('0. buscar_rsi_bajo',escala)
-        ind = self.ind
-        rsi = ind.rsi(escala)
-        #self.log.log(f'_.rsi {escala} {rsi}')
-        if rsi < 36:
-            #defino patron
-            if ind.la_ultima_vela_es_positiva(escala):
-                patrones = self.determinar_patron_rsi()
-                for p in patrones:
-                    if p['escala']==escala:
-                        ok, salida_log = ind.detectar_patron_rsi(p)
-                        self.log.log(m.fecha_fin.strftime('%Y-%m-%d %H:%M:%S') ,  salida_log)
-                        if ok:
-                            #self.log.log('1.rsi_sar_OK')
-                            ret = [True,escala,'buscar_rsi_bajo']
+        ind: Indicadores = self.ind
+        if filtro_parte_baja_rango(self.ind,self.log,escala,cvelas_rango,porcentaje_bajo):                              #estoy en la parte baja del rango
+            if filtro_xvolumen_de_impulso(ind,self.log,escala,periodos=14,xmin_impulso=50):                             #hay volumen 50x mayor hacia abajo
+                if filtro_dos_emas_positivas(ind,self.log,escala,ema1_per=4,ema2_per=7):                                #giro en el precio
+                    ret = [True,escala,f'scalping_parte_muy_baja{cvelas_rango}_{porcentaje_bajo}']
         return ret    
 
-    def determinar_patron_rsi(self):
-        ind= self.ind
-        #p= {45: 20, 35: 1, 30: 1, 25: 1, 20: 0, 'rsi': 34}
-        #p= {45: 17, 35: 9, 30: 7, 25: 5,  20: 3, 'rsi': 34}    
-        #p= {45: 30, 35: 21, 30: 12, 25: 5,  20: 2, 'rsi': 34}
-        ##  una entrada ne 4 horas muy linda   ###p= {45: 30, 35: 21, 30: 12, 25: 5, 20: 2, 'rsi': 36}
-        #p= {45: 40, 35: 20, 30: 10, 25: 5, 20: 2, 'rsi': 35}
-        #p= { 45: 18, 35: 11, 30: 10, 25: 8, 20: 3, 'escala': '15m' ,'cvelas': 20,'rsi': 20}
-        
-        
-        p=[{ 'patron': { 75: 40, 65: 35, 55: 27, 45: 7,  35: 4,  30:  3, 25: 1, 20: 0}, 'escala': '1m' ,'cvelas': 40, 'rsi': 21 },
-           { 'patron': { 75: 40, 65: 40, 55: 40, 45: 40, 35: 23, 30: 15, 25: 7, 20: 2}, 'escala': '1m' ,'cvelas': 40, 'rsi': 21},
-           { 'patron': { 75: 38, 65: 31, 55: 22, 45: 9,  35: 2,  30: 2, 25: 1, 20: 1},  'escala': '1m' ,'cvelas': 40, 'rsi': 20},
-           { 'patron': { 75: 40, 65: 40, 55: 40, 45: 38, 35: 11, 30: 5, 25: 4, 20: 1},  'escala': '1m' ,'cvelas': 40, 'rsi': 20},
-           { 'patron': { 75: 40, 65: 40, 55: 40, 45: 38, 35: 9, 30: 3, 25: 2, 20: 0},   'escala': '1m' ,'cvelas': 40, 'rsi': 20}
-         ]
-
-            
-
-        
-        
-        
-        
-        
-        
-        # p=[ {45: 38, 35: 21, 30: 12, 25: 9,  20: 2, 'escala': '15m' ,'cvelas': 55, 'rsi': 20},
-        #     {45: 37, 35: 16, 30: 9,  25: 2,  20: 0, 'escala': '1h', 'cvelas': 50, 'rsi': 26}, 
-        #     {45: 24, 35: 20, 30: 18, 25: 10, 20: 1, 'escala': '1h', 'cvelas': 30,'rsi': 23},
-        #     {45: 26, 35: 20, 30: 13, 25: 9,  20: 5, 'escala': '1m' ,'cvelas': 30,'rsi': 26}
-        #   ] 
-        
-
-        #[{85: 40, 75: 40, 65: 40, 55: 38, 45: 22, 35: 14, 30: 12, 25: 11, 20: 10, 'rsi': 9.593634842864624}, 2.05]
-        #[{85: 40, 75: 40, 65: 26, 55: 15, 45: 2, 35: 1, 30: 1, 25: 1, 20: 1, 'rsi': 3.262915765288424}, 2.47]
-        #[{85: 40, 75: 40, 65: 30, 55: 11, 45: 10, 35: 5, 30: 2, 25: 2, 20: 2, 'rsi': 8.511210183546819}, 4.11]
-        #p=[{45: 26, 35: 20, 30: 13, 25: 9, 20: 5, 'escala': '1m' ,'cvelas': 30,'rsi': 26}]  
-          #{45: 26, 35: 20, 30: 13, 25: 9, 20: 5, 'rsi': 25.72818080486207}
-        # casi ok #  p= {45: 24, 35: 20, 30: 18, 25: 10, 20: 1, 'escala': '1h', 'cvelas': 30,'rsi': 23}
-        if ind.ema_rapida_mayor_lenta('1d',9,55):
-            if ind.ema_rapida_mayor_lenta('4h',9,55):
-                if ind.ema_rapida_mayor_lenta('1h',9,55):
-                    p=[{ 45: 20, 35: 12, 30: 6  ,25: 2, 20: 0, 'escala': '15m' ,'cvelas': 40,'rsi': 35}]
-                    
-                    
-        return p    
-
+    
 
 if __name__=='__main__':
     log=Logger(f'estrategia_{time.time()}.log')
     pws=Pws()
-
-   
     
     #apertura del pull de conexiones
     conn=Conexion_DB(log)
@@ -164,17 +110,16 @@ if __name__=='__main__':
     db=Acceso_DB(log,conn)
 
     client = Client(pws.api_key, pws.api_secret)
-    g = Gestor_de_Posicion(log,client,conn)
-    e = VariablesEstado(g)
-   
+    
+    g = VariablesEstado()
 
     #fini='2021-06-16 00:00:00' 
     #ffin='2021-07-01 23:59:59' 
     
-    fecha_fin =  strtime_a_obj_fecha('2021-07-01 04:00:00')
-    fin_test  =  strtime_a_obj_fecha('2021-07-01 15:00:00')
+    fecha_fin =  strtime_a_obj_fecha('2022-02-01 00:00:00')
+    fin_test  =  strtime_a_obj_fecha('2022-03-06 23:00:00')
     pares=['BTCUSDT']
-    escalas = ['1m','5m','15m','30m','1h','2h','4h','1d','1w']
+    escalas = ['1m','3m','5m','15m','30m','1h','2h','4h','1d','1w']
 
     m=Mercado_Back_Testing(log,g,db)
     m.inicar_mercados(fecha_fin,200,pares,escalas)
