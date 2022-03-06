@@ -28,6 +28,7 @@ from mercado import Mercado
 from fpar.filtros import filtro_parte_baja_rango, filtro_zona_volumen, filtro_pendientes_emas_positivas,filtro_parte_alta_rango
 from fpar.filtros import filtro_precio_mayor_maximo,filtro_precio_mayor_minimo
 from fpar.filtros import filtro_pico_minimo_ema_low,filtro_velas_de_impulso,filtro_dos_emas_positivas
+from fpar.filtros import filtro_xvolumen_de_impulso
 import fauto_compra_vende.habilitar_pares
 
 
@@ -1147,7 +1148,7 @@ class Par:
         if not listo:
             for ana in ['parte_muy_baja']:
                 if ana in self.analisis_provocador_entrada: # esto es viejo --> in "buscar_ema_positiva buscar_rebote_rsi":
-                    metodo="libro_grupo_mayor"
+                    metodo="market" #metodo="libro_grupo_mayor"
                     listo=True 
                     break     
 
@@ -1934,8 +1935,6 @@ class Par:
         if self.no_se_cumple_objetivo_compra():
             return False
 
-
-         
         
         comprar= False
         escalas_a_probar = self.entradas_a_escalas(self.temporalidades,entradas)
@@ -1950,7 +1949,7 @@ class Par:
             #         comprar = True
             #         break
             if not comprar: #and self.moneda=='BTC':
-                ret = self.scalping_parte_muy_baja('1m',250,0.3)
+                ret = self.scalping_parte_muy_baja('2h',250,0.3)
                 if ret[0]:
                     self.escala_de_analisis = ret[1]
                     self.sub_escala_de_analisis = ret[1]
@@ -1958,42 +1957,7 @@ class Par:
                     comprar = True
                     break      
 
-            # if not comprar:
-            #     ret = self.buscar_minimo_ema9('5m',cvelas_rango,porcentaje_bajo) 
-            #     if ret[0]:
-            #         self.escala_de_analisis = ret[1]
-            #         self.sub_escala_de_analisis = ret[1]
-            #         self.analisis_provocador_entrada=ret[2]
-            #         comprar = True
-            #         break
-
-            # if not comprar:
-            #     ret = self.buscar_minimo_ema_pendiente_positiva('5m',cvelas_rango,porcentaje_bajo) 
-            #     if ret[0]:
-            #         self.escala_de_analisis = ret[1]
-            #         self.sub_escala_de_analisis = ret[1]
-            #         self.analisis_provocador_entrada=ret[2]
-            #         comprar = True
-            #         break    
             
-            # if not comprar:
-            #     ret = self.buscar_vela_martillo_importante('5m',cvelas_rango,cvelas_rango_importantes=90)
-            #     if ret[0]:
-            #         self.escala_de_analisis = ret[1]
-            #         self.sub_escala_de_analisis = ret[1]
-            #         self.analisis_provocador_entrada=ret[2]
-            #         comprar = True
-            #         break
-
-            # if not comprar:
-            #     ret = self.buscar_patrones_en_parte_baja('5m',cvelas_rango,porcentaje_bajo)
-            #     if ret[0]:
-            #         self.escala_de_analisis = ret[1]
-            #         self.sub_escala_de_analisis = ret[1]
-            #         self.analisis_provocador_entrada=ret[2]
-            #         comprar = True
-            #         break
-
             
     
    
@@ -2234,7 +2198,7 @@ class Par:
         ret=[False,'xx']
         ind: Indicadores = self.ind
         if filtro_parte_baja_rango(self.ind,self.log,escala,cvelas_rango,porcentaje_bajo):                              #estoy en la parte baja del rango
-            if filtro_velas_de_impulso(ind,self.log,escala,periodos=7,max_pos_ultimo_impulso=7,min_cant_impulsos=3):    #hay varias velas de impulso que provocan la bajada
+            if filtro_xvolumen_de_impulso(ind,self.log,escala,periodos=14,xmin_impulso=50):                             #hay volumen 50x mayor hacia abajo
                 if filtro_dos_emas_positivas(ind,self.log,escala,ema1_per=4,ema2_per=7):                                #giro en el precio
                     ret = [True,escala,f'scalping_parte_muy_baja{cvelas_rango}_{porcentaje_bajo}']
         return ret        
@@ -3793,7 +3757,7 @@ class Par:
 
             if filtro_precio_mayor_minimo(self.ind,self.log,self.escala_de_analisis,velas_minimo,velas_minimo_ini):
                 if filtro_precio_mayor_maximo(self.ind,self.log,self.escala_de_analisis,velas_maximo,velas_maximo_ini):
-                    if self.precio >= self.precio_salir_derecho + self.ind.recorrido_promedio(self.escala_de_analisis,velas_recorrido):
+                    if self.precio >= self.precio_salir_derecho + self.ind.recorrido_maximo(self.escala_de_analisis,velas_recorrido):
                         self.iniciar_stoploss()
 
 
@@ -4636,7 +4600,7 @@ class Par:
         if generar_liquidez:
             sl_nuevo = self.precio - self.ind.recorrido_minimo(self.escala_de_analisis,100)
         else:
-            sl_nuevo = self.precio - self.ind.recorrido_promedio(self.escala_de_analisis,120)
+            sl_nuevo = self.precio - self.ind.recorrido_maximo(self.escala_de_analisis,200)
       
         if  sl_nuevo > sl:
             sl = sl_nuevo

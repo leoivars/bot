@@ -33,6 +33,7 @@ def filtro_precio_mayor_minimo(ind:Indicadores,log:Logger,escala,cvelas,vela_ini
     minimo = ind.minimo_x_vol(escala,cvelas,3,vela_ini)
     if minimo is None:
         ret = False
+        precio = None
     else:    
         precio = ind.precio_mas_actualizado()
         ret = precio > minimo
@@ -75,12 +76,37 @@ def filtro_velas_de_impulso(ind:Indicadores,log:Logger,escala,periodos,max_pos_u
     if len(maximos)>0:
        fin = -maximos[0][0]
        lista_velas_impulso = ind.velas_de_impulso(escala,sentido=-1,vela_fin=fin) 
+       xvol_impulso = ind.xvolumen_de_impulso(escala,sentido=-1,vela_fin=fin) 
+       log.log(f'lista_velas_impulso {lista_velas_impulso}')
+       log.log(f'xvol_impulso {xvol_impulso}')
        cantidad_velas = len(lista_velas_impulso)
        if cantidad_velas >0:
            pos_ultimo=lista_velas_impulso[0][0]
-           log.log(f'velas_de_impulso {cantidad_velas} parametro_fin {fin}  pos {pos_ultimo} {lista_velas_impulso}')
-           ret = pos_ultimo < max_pos_ultimo_impulso and cantidad_velas >=min_cant_impulsos
+           cvelas_x_10 = 0                          #contador de velas de impulso > a 10x
+           for vi in lista_velas_impulso:
+               if vi[1]>10:
+                   cvelas_x_10 += 1
+           ret =cvelas_x_10 > 0 and pos_ultimo < max_pos_ultimo_impulso and cantidad_velas >=min_cant_impulsos
+           log.log(f'velas_de_impulso {ret} {cantidad_velas} parametro_fin {fin}  pos {pos_ultimo}')
     
+    return ret
+
+def filtro_xvolumen_de_impulso(ind:Indicadores,log:Logger,escala,periodos, xmin_impulso=50):
+    '''  desde que empezó a bajar, suma todo el volumen de las velas bajistas y lo compara con el volumen promedio
+         convirtiendolo en x veces mas. 
+         Si ese volumen comparado es mayor al parametrizado(xmin_impulso): retorna True
+    '''
+    ret = False
+    maximos=ind.lista_picos_maximos_ema(escala,periodos,300,'close',6,6) 
+    if len(maximos)>0:
+       fin = -maximos[0][0]
+       lista_velas_impulso = ind.velas_de_impulso(escala,sentido=-1,vela_fin=fin) 
+       xvol_impulso = ind.xvolumen_de_impulso(escala,sentido=-1,vela_fin=fin) 
+       log.log(f'velas {-fin} lista_velas_impulso {lista_velas_impulso} ')
+       log.log(f'xvol_impulso {xvol_impulso}')
+       ret = xvol_impulso >= xmin_impulso
+       log.log(f'filtro_xvolumen_de_impulso {ret}')
+
     return ret
 
 

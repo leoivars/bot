@@ -1054,7 +1054,33 @@ class Indicadores:
                     if  x_vol > 3:   
                         lista.append([ i*-1, x_vol ])
 
-        return lista    
+        return lista  
+
+    def xvolumen_de_impulso(self,escala,sentido=1,vela_fin=-20):
+        ''' suma todo el volumen de impulso a la baja y lo devuelve comparado con 
+            el volumen promedio
+        '''
+        df=self.mercado.get_panda_df(self.par, escala)     
+        df_ma_vol=ta.ma('ma',df['volume'],length=20)
+
+        cant_velas=len(df)      
+        if vela_fin < -cant_velas+41:
+            vela_fin = -cant_velas+41      
+
+        i= -1
+        xvol_impulso=0
+        
+        volumen_testigo = df_ma_vol.iloc[vela_fin -1]   #promedio del volumen anterior a la zona buscada
+        sum_vol_impulso = 0
+        if (volumen_testigo) >0:
+            while i > vela_fin:
+                i -= 1
+                v:Vela = Vela(df.iloc[i])
+                if v.sentido() == sentido:
+                    sum_vol_impulso += v.volume 
+            xvol_impulso =  round( sum_vol_impulso / volumen_testigo ,2)       
+                    
+        return xvol_impulso        
 
 
     def busca_pico_loma_hist(self,hist,high,low,psigno_loma,principio,velas_minimas_de_la_loma=5):

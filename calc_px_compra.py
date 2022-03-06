@@ -25,6 +25,18 @@ class Calculador_Precio_Compra:
         self.metodo_compra_venta=metodo
         self.log.log('metodo_compra--->',metodo)
 
+
+        if metodo=="libro_grupo_mayor":
+            self.libro.actualizar()
+            if self.ind_par.ema_rapida_mayor_lenta2('4h',9,21,.1):
+                metodo == 'market'
+            else:    
+                px = self.libro.precio_compra1
+            
+            self.calculo_precio_compra='libro_grupo_mayor'
+            self.log.log('calc.libro_grupo_mayor',px)
+            #self.log.log(self.libro.dump_libro())
+
         if metodo=="mercado":
             px= ind.precio_mas_actualizado()
             self.calculo_precio_compra='mercado'
@@ -45,16 +57,7 @@ class Calculador_Precio_Compra:
             self.libro.actualizar()
             self.log.log(self.libro.dump_libro()) 
 
-        if metodo=="libro_grupo_mayor":
-            self.libro.actualizar()
-            if self.ind_par.ema_rapida_mayor_lenta2('4h',9,21,.1):
-                px = self.libro.precio_compra0
-            else:    
-                px = self.libro.precio_compra1
-            
-            self.calculo_precio_compra='libro_grupo_mayor'
-            self.log.log('calc.libro_grupo_mayor',px)
-            #self.log.log(self.libro.dump_libro())
+        
 
         elif metodo=="scalping":
             px,_ =self.ind_par.minimo_maximo_por_rango_velas_imporantes(escala,100)
