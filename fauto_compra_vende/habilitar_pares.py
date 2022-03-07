@@ -3,8 +3,9 @@ from mercado import Mercado
 from logger import Logger
 from time import time
 from variables_globales import VariablesEstado
-from acceso_db_modelo import Acceso_DB
+from acceso_db_conexion import Conexion_DB
 from acceso_db_funciones import Acceso_DB_Funciones
+from acceso_db_modelo import Acceso_DB
 import time
 from fpar.filtros import filtro_parte_baja_rango
 
@@ -22,10 +23,10 @@ def habilitar_deshabilitar_pares(g:VariablesEstado,db:Acceso_DB,mercado,log):
     #else:
     #    db.deshabilitar_pares_sin_trades()
 
-def habilitar_deshabilitar_pares_periodicamente(g:VariablesEstado,db:Acceso_DB,mercado):
+def habilitar_deshabilitar_pares_periodicamente(g:VariablesEstado,conn:Conexion_DB,mercado):
     log = Logger('habilitar_deshabilitar.log')
-    #fxdb=Acceso_DB_Funciones(log,conn.pool)        
-    #db = Acceso_DB(log,fxdb)   
+    fxdb=Acceso_DB_Funciones(log,conn.pool)        
+    db = Acceso_DB(log,fxdb)   
     while g.trabajando:
         habilitar_deshabilitar_pares(g,db,mercado,log)
         time.sleep(300)     

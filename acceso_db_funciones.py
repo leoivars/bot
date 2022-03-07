@@ -89,8 +89,10 @@ class Acceso_DB_Funciones:
             self.conexion.close()
         except Exception as e:
             self.log.err(  'error: cursor_liberar',e)
+
         self.conexion=None
         self.cursor=None
+        print('cursor_liberar conexion',self.conexion)
 
     def ejecutar_sql(self,sql,paramentros=None):
         ret=None
@@ -110,6 +112,7 @@ class Acceso_DB_Funciones:
         
         self.cursor_liberar()  
         return ret
+    
     def ejecutar_sql_sin_cursor(self,sql,paramentros=None):
         ret=None
         
@@ -172,23 +175,24 @@ class Acceso_DB_Funciones:
 
 
     def ejecutar_sql_ret_1_valor(self,sql,paramentros=None):
-        while True:
-            self.cursor_obtener()
-            try:
-                self.cursor.execute(sql,paramentros)
-                row = self.cursor.fetchone()
-                if row is None:
-                    ret = None
-                else:    
-                    ret = row[0]
-                break
-            except Exception as e:
-                self.log.err(  'error: ejecutar_sql_ret_1_valor',e,sql,paramentros)
-                #tb = traceback.format_exc()
-                #self.log.err( tb )
+        self.cursor_obtener()
+
+        try:
+            self.cursor.execute(sql,paramentros)
+            row = self.cursor.fetchone()
+            if row is None:
                 ret = None
-                time.sleep(1)
-            self.cursor_liberar()  
+            else:    
+                ret = row[0]
+        except Exception as e:
+            self.log.err(  'error: ejecutar_sql_ret_1_valor',e,sql,paramentros)
+            #tb = traceback.format_exc()
+            #self.log.err( tb )
+            ret = None
+            time.sleep(1)
+
+        self.cursor_liberar()        
+        
         
         return ret
 

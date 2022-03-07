@@ -35,7 +35,7 @@ def materializar_pares_desde_db(inico,log:Logger,db:Acceso_DB,e:VariablesEstado,
         
             log.log(par,'lanzado',par,'Balance=',r['balance'])
             
-            nuevo_par=Par(client,r['moneda'].upper(),r['moneda_contra'].upper(),db,e,mercado)
+            nuevo_par=Par(client,r['moneda'].upper(),r['moneda_contra'].upper(),db.fxdb.pool,e,mercado)
             nuevo_par.set_log_level(e.log_level)
             
             # e.pares[par][0] es el obj par
