@@ -2132,21 +2132,21 @@ if __name__=='__main__':
     from pws import Pws
     #from acceso_db_conexion_mysqldb import Conexion_DB
     from acceso_db_conexion import Conexion_DB
+    from acceso_db_funciones import Acceso_DB_Funciones
+    from acceso_db_modelo import Acceso_DB
     
     from logger import Logger
-    from acceso_db import Acceso_DB
+    from no_se_usa.acceso_db import Acceso_DB
     
     log=Logger(f'test_indicadores.log')
     pws=Pws()
  
-    #apertura del pull de conexiones
-    conn=Conexion_DB(log)
-    #objeto de acceso a datos
-    db=Acceso_DB(log,conn.pool)
+    conn=Conexion_DB(log)                          
+    fxdb=Acceso_DB_Funciones(log,conn.pool)        
+    db = Acceso_DB(log,fxdb)                       
 
     client = Client(pws.api_key, pws.api_secret)
-    p = Gestor_de_Posicion(log,client,conn)
-    g = VariablesEstado(p)
+    g = VariablesEstado()
     
     un_minuto = timedelta(minutes=1)
     #fini='2021-06-16 00:00:00' 

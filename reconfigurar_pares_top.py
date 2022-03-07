@@ -1,9 +1,9 @@
 from variables_globales import VariablesEstado
 from logger import Logger
 import time
-from acceso_db import Acceso_DB
+from no_se_usa.acceso_db import Acceso_DB
 
-from acceso_db import Acceso_DB
+from no_se_usa.acceso_db import Acceso_DB
 
 from funciones_utiles import cpu_utilizada
 

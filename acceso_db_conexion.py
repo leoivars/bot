@@ -8,8 +8,6 @@ class Conexion_DB:
         
         self.log=log
         self.conectar(Pws())
-        
-
     
     def conectar(self,pws):#Conectar a la base de datos
         try:
@@ -35,18 +33,15 @@ class Conexion_DB:
                             # 4 = when a query is executed,
                             # 7 = always
                             ping=2
-                            
-                            
                             ) 
-                            
-                                     
+
         except Exception as e:
             self.log.log( "Error al conectar:",e)
 
 
     def desconectar(self):
-    	Conexion_DB.pool.close()
-    	Conexion_DB.pool=None
+        self.pool.close()
+        self.pool = None
 
 
 

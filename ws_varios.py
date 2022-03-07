@@ -191,20 +191,21 @@ class WS_stream(Thread):
         # 
         # 
 if __name__=='__main__':
-    from acceso_db import Acceso_DB
     from acceso_db_conexion import Conexion_DB
-    from gestor_de_posicion import Gestor_de_Posicion
+    from acceso_db_funciones import Acceso_DB_Funciones
+    from acceso_db_modelo import Acceso_DB
     from binance.client import Client
     from pws import Pws
 
-
     pws=Pws()
     client = Client(pws.api_key, pws.api_secret)
-    log=Logger('Test_WS_stream.log') 
-    conn=Conexion_DB(log)
-    db=Acceso_DB(log,conn.pool)
-    gestor_de_posicion = Gestor_de_Posicion(log,client,conn)
-    globales = VariablesEstado(gestor_de_posicion)
+    log=Logger('Test_WS_stream.log')
+    
+    conn=Conexion_DB(log)                          
+    fxdb=Acceso_DB_Funciones(log,conn.pool)        
+    db = Acceso_DB(log,fxdb)   
+    
+    globales = VariablesEstado()
 
     ws = WS_stream(log,globales)
     ws.start()

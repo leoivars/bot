@@ -1,6 +1,6 @@
 #from gestor_de_posicion import Gestor_de_Posicion
 from ordenes_binance import OrdenesExchange
-from acceso_db import Acceso_DB
+from acceso_db_modelo import Acceso_DB
 from funciones_utiles import strtime_a_time,strtime_a_fecha
 import datetime
 from logger import Logger 
@@ -60,21 +60,22 @@ if __name__=='__main__':
     from ordenes_binance import OrdenesExchange
     from pws import Pws
     from variables_globales import VariablesEstado
-    from acceso_db import Acceso_DB
+   
     from acceso_db_conexion import Conexion_DB
+    from acceso_db_funciones import Acceso_DB_Funciones
+    from acceso_db_modelo import Acceso_DB
     
     pws=Pws()
     log=Logger('test_ordenes_binance.log') 
     conn=Conexion_DB(log)
 
     client = Client(pws.api_key, pws.api_secret,{ "timeout": 20})
-    p = Gestor_de_Posicion(log,client,conn)
-    e = VariablesEstado(p)
+    
+    e = VariablesEstado()
 
-    #apertura del pull de conexiones
-    conn=Conexion_DB(log)
-    #objeto de acceso a datos
-    db=Acceso_DB(log,conn.pool)
+    conn=Conexion_DB(log)                          
+    fxdb=Acceso_DB_Funciones(log,conn.pool)        
+    db = Acceso_DB(log,fxdb)  
     
     moneda='EOS'
     moneda_contra='USDT'

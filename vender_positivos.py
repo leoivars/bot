@@ -6,7 +6,7 @@ import sys
 
 import pws
 import traceback
-from acceso_db import *
+from no_se_usa.acceso_db import *
 from logger import *
 
 log=Logger('vender_positivos_mercados.log') 

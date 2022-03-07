@@ -10,7 +10,7 @@ import time
 import random
 import traceback
 from datetime import datetime,timedelta
-from acceso_db import Acceso_DB
+from no_se_usa.acceso_db import Acceso_DB
 from funciones_utiles import str_fecha_hora_a_timestamp, strtime_a_fecha, strtime_a_obj_fecha
 
 

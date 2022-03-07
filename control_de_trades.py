@@ -1,6 +1,7 @@
 import sqlite3
-from acceso_db import Acceso_DB
 from acceso_db_conexion import Conexion_DB
+from acceso_db_funciones import Acceso_DB_Funciones
+from acceso_db_modelo import Acceso_DB
 from logger import *
 from datetime import *
 from indicadores2 import Indicadores
@@ -21,13 +22,9 @@ pws=Pws()
 client = Client(pws.api_key, pws.api_secret)
 
 
-
-
-
-#apertura del pull de conexiones
-conn=Conexion_DB(log)
-#objeto de acceso a datos
-db=Acceso_DB(log,conn.pool)
+conn=Conexion_DB(log)                          
+fxdb=Acceso_DB_Funciones(log,conn.pool)        
+db = Acceso_DB(log,fxdb)     
 
 estado_general=VariablesEstado()
 

@@ -1,6 +1,6 @@
 from reporte_estado import ReporteEstado
 
-from acceso_db import *
+from no_se_usa.acceso_db import *
 from acceso_db_conexion import *
 from logger import *
 from datetime import *

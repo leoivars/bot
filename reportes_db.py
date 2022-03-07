@@ -1,4 +1,4 @@
-from acceso_db import Acceso_DB #acceso a la base de datos
+from acceso_db_modelo import Acceso_DB #acceso a la base de datos
 #from Monitor_precios_ws import MonitorPreciosWs
 from variables_globales import VariablesEstado
 class ReportesDB():

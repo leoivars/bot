@@ -9,8 +9,9 @@ import _thread
 import json
 #import sqlite3
 from logger import *
-from acceso_db import *
-from acceso_db_conexion import *
+from acceso_db_conexion import Conexion_DB
+from acceso_db_funciones import Acceso_DB_Funciones
+from acceso_db_modelo import Acceso_DB
 from pws import Pws
 from variables_globales import  VariablesEstado
 from pool_indicadores import Pool_Indicadores
@@ -34,13 +35,9 @@ client = Client(pws.api_key, pws.api_secret,{ "timeout": 20})
 mo_pre=MonitorPreciosWs(log)
 mo_pre.empezar() 
 
-
-
-
-#apertura del pull de conexiones
-conn=Conexion_DB(log)
-#objeto de acceso a datos
-db=Acceso_DB(log,conn.pool)
+conn=Conexion_DB(log)                          
+fxdb=Acceso_DB_Funciones(log,conn.pool)        
+db = Acceso_DB(log,fxdb) 
 
 e=VariablesEstado()
 

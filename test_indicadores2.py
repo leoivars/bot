@@ -9,8 +9,9 @@ from numpy import isnan
 from par_propiedades import Par_Propiedades
 from variables_globales import VariablesEstado
 from  formateadores import format_valor_truncando
-from acceso_db import Acceso_DB
 from acceso_db_conexion import Conexion_DB
+from acceso_db_funciones import Acceso_DB_Funciones
+from acceso_db_modelo import Acceso_DB
 from vela import Vela
 #from gestor_de_posicion import Gestor_de_Posicion
 
@@ -20,11 +21,10 @@ client = Client(pws.api_key, pws.api_secret)
 
 log=Logger('Test_indicadores.log') 
 
-#apertura del pull de conexiones
-conn=Conexion_DB(log)
-#objeto de acceso a datos
-db=Acceso_DB(log,conn.pool)
-#gestor_de_posicion = Gestor_de_Posicion(log,client,conn)
+conn=Conexion_DB(log)                          
+fxdb=Acceso_DB_Funciones(log,conn.pool)        
+db = Acceso_DB(log,fxdb) 
+        
 globales = VariablesEstado()
 mercado = Mercado(log,globales,client)
 

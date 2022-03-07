@@ -3,7 +3,7 @@ from logger import Logger
 import time
 from acceso_db_conexion import Conexion_DB
 from pool_indicadores import Pool_Indicadores
-from acceso_db import Acceso_DB
+from acceso_db_modelo import Acceso_DB
 from actualizador_info_par import ActualizadorInfoPar
 from binance.client import Client
 from funciones_utiles import cpu_utilizada

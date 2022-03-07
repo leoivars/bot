@@ -30,13 +30,14 @@ from fpar.filtros import filtro_precio_mayor_maximo,filtro_precio_mayor_minimo
 from fpar.filtros import filtro_pico_minimo_ema_low,filtro_velas_de_impulso,filtro_dos_emas_positivas
 from fpar.filtros import filtro_xvolumen_de_impulso
 import fauto_compra_vende.habilitar_pares
+from acceso_db_modelo import Acceso_DB
 
 
 from numpy import isnan
 import random
 
 #from termcolor import colored #para el libro de ordenes
-from acceso_db import Acceso_DB #acceso a la base de datos 
+from acceso_db_modelo import Acceso_DB
 import sys
 import time
 #from rsi0 import *
@@ -55,7 +56,7 @@ class Par:
     escalas=('1h','2h','4h','1d','1w','1M')
     txt_llamada_de_accion='accion---->'
 
-    def __init__(self, client,moneda,moneda_contra,conn,obj_global,mercado): 
+    def __init__(self, client,moneda,moneda_contra,db:Acceso_DB,obj_global,mercado): 
         #variables de instancia
         self.par=moneda+moneda_contra
         
@@ -158,7 +159,7 @@ class Par:
         
         self.hora_ultima_senial=0
         
-        self.db:Acceso_DB = Acceso_DB(self.log,conn.pool)
+        self.db:Acceso_DB = db
         
         if Par.lector_precios == None:
             Par.lector_precios=LectorPrecios(self.client)
@@ -259,7 +260,7 @@ class Par:
         #self.actualizador = ActualizadorInfoPar(conn, self.oe ,self.log) #13/9/2021 no actualizamo  mas por ahora 
 
 
-        self.comandos=ComandosPar(self.log,conn,self) #self: le paso la instancia mima del para para que lo pueda manipular
+        self.comandos=ComandosPar(self.log,db,self) #self: le paso la instancia mima del para para que lo pueda manipular
 
         
         #par,g: VariablesEstado,log:Logger,ind_par

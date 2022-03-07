@@ -9,7 +9,7 @@ import _thread
 import json
 #import sqlite3
 from logger import *
-from acceso_db import *
+from no_se_usa.acceso_db import *
 from ordenes_binance import OrdenesExchange
 from pws import Pws
 from variables_globales import VariablesEstado

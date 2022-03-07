@@ -1,7 +1,6 @@
 
 from par import Par
-from acceso_db import Acceso_DB
-from acceso_db_conexion import Conexion_DB
+from acceso_db_modelo import Acceso_DB
 from variables_globales import  VariablesEstado
 from logger import Logger
 import _thread
@@ -9,9 +8,8 @@ import time
 
 import gc
 
-def materializar_pares_desde_db(inico,log:Logger,conn,e:VariablesEstado,mercado,client):
+def materializar_pares_desde_db(inico,log:Logger,db:Acceso_DB,e:VariablesEstado,mercado,client):
 
-    db = Acceso_DB(log,conn.pool)
     log.log('materializar_pares_desde_db.ini',inico)
     #poner_pares_control_en_falso, luego si está query pasa a verdadero
     for k in e.pares_control.keys():
@@ -37,7 +35,7 @@ def materializar_pares_desde_db(inico,log:Logger,conn,e:VariablesEstado,mercado,
         
             log.log(par,'lanzado',par,'Balance=',r['balance'])
             
-            nuevo_par=Par(client,r['moneda'].upper(),r['moneda_contra'].upper(),conn,e,mercado)
+            nuevo_par=Par(client,r['moneda'].upper(),r['moneda_contra'].upper(),db,e,mercado)
             nuevo_par.set_log_level(e.log_level)
             
             # e.pares[par][0] es el obj par

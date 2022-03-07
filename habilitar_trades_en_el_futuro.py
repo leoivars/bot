@@ -1,5 +1,5 @@
 import sqlite3
-from acceso_db import Acceso_DB
+from no_se_usa.acceso_db import Acceso_DB
 from acceso_db_conexion import Conexion_DB
 from logger import *
 from datetime import *

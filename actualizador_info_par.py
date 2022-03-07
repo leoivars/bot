@@ -1,6 +1,6 @@
 # # -*- coding: UTF-8 -*-
 from indicadores2 import Indicadores
-from acceso_db import Acceso_DB
+from acceso_db_modelo import Acceso_DB
 from ordenes_binance import OrdenesExchange
 #from funciones_utiles import *
 from datetime import datetime,timedelta

@@ -1,7 +1,7 @@
-from gestor_de_posicion import Gestor_de_Posicion
 import sqlite3
-from acceso_db import Acceso_DB
 from acceso_db_conexion import Conexion_DB
+from acceso_db_funciones import Acceso_DB_Funciones
+from acceso_db_modelo import Acceso_DB
 from indicadores2 import Indicadores
 from logger import *
 import time
@@ -21,11 +21,10 @@ pws=Pws()
 client = Client(pws.api_key, pws.api_secret)
 
 
-#apertura del pull de conexiones
-conn=Conexion_DB(log)
-#objeto de acceso a datos
-db=Acceso_DB(log,conn.pool)
-p = Gestor_de_Posicion(log,client,conn)
+conn=Conexion_DB(log)                          
+fxdb=Acceso_DB_Funciones(log,conn.pool)        
+db = Acceso_DB(log,fxdb)                       
+
 estado_general=VariablesEstado(p)
 
 oe=OrdenesExchange(client,'BTCUSDT',log,estado_general)

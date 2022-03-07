@@ -1,5 +1,5 @@
 from coinpaprika import client as Coinpaprika
-from acceso_db import *
+from no_se_usa.acceso_db import *
 from acceso_db_conexion import *
 from logger import *
 

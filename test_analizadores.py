@@ -8,7 +8,7 @@ from par_propiedades import Par_Propiedades
 from variables_globales import VariablesEstado
 import matplotlib.pyplot as plt
 from  formateadores import format_valor_truncando
-from acceso_db import Acceso_DB
+from no_se_usa.acceso_db import Acceso_DB
 from acceso_db_conexion import Conexion_DB
 from indicadores2 import Indicadores
 from analizador import Analizador_Patrones

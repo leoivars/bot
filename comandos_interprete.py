@@ -1,5 +1,5 @@
 # # -*- coding: UTF-8 -*-
-from acceso_db import Acceso_DB
+from acceso_db_modelo import Acceso_DB
 from datetime import datetime,timedelta
 from funciones_utiles import calcular_fecha_futura
 import time
@@ -8,8 +8,8 @@ import time
 
 class ComandosPar:       
 
-    def __init__(self,log,conn,par): #ind...>indicadores previamente instanciado y funcionando
-        self.db= Acceso_DB(log,conn.pool)
+    def __init__(self,log,db:Acceso_DB,par): #ind...>indicadores previamente instanciado y funcionando
+        self.db= db
         self.par=par
         self.log=log
         self.ultima_interpretacion=time.time() - 10

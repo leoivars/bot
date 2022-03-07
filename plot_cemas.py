@@ -4,7 +4,7 @@ import time
 from LibroOrdenes import *
 import matplotlib.pyplot as plt
 from pws import Pws
-from acceso_db import *
+from no_se_usa.acceso_db import *
 from acceso_db_conexion import *
 pws=Pws()
 client = Client(pws.api_key, pws.api_secret)
