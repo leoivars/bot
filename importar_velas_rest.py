@@ -2,7 +2,6 @@
 # pragma pylint: disable=no-member
 
 from logger import Logger
-from acceso_db_conexion import Conexion_DB
 from velaset import VelaSet
 from vela import Vela
 from binance.client import Client
@@ -10,9 +9,8 @@ import time
 import random
 import traceback
 from datetime import datetime,timedelta
-from no_se_usa.acceso_db import Acceso_DB
 from funciones_utiles import str_fecha_hora_a_timestamp, strtime_a_fecha, strtime_a_obj_fecha
-
+from acceso_db_modelo import Acceso_DB
 
 class Actualizador_Rest:
         
@@ -88,10 +86,11 @@ class Actualizador_Rest:
 
     def actualizar_db(self,par,escala,set_velas_web):
         id_par_escala = self.db.get_id_par_escala(par,escala)
-        self.db.cursor_obtener()
+        
         for vela_web in (set_velas_web):
             self.ingresar_vela(id_par_escala,vela_web)
-        self.db.cursor_liberar()   
+
+        self.db.fxdb.commit()    
 
         print('cantidad de velas obtenidas:',len(set_velas_web))
     
@@ -104,26 +103,31 @@ class Actualizador_Rest:
         volume=float(vela_web[5])
         close_time=int(vela_web[6])
         #print(open_time,open,high,low,close,volume,close_time)
-        self.imprimir_vela(open_time,open,high,low,close,volume,close_time)
+        self.imprimir_vela(id_par_escala,open_time,open,high,low,close,volume,close_time)
         self.db.crear_actualizar_vela(id_par_escala,open_time,open,high,low,close,volume,close_time)
             
 
-    def imprimir_vela(self,open_time,open,high,low,close,volume,close_time):
-        print(open_time,strtime_a_fecha(open_time))
+    def imprimir_vela(self,id_par_escala,open_time,open,high,low,close,volume,close_time):
+        print(id_par_escala,open_time,strtime_a_fecha(open_time),open,high,low,close,volume,close_time)
 
 
 
 if __name__=='__main__':
     from variables_globales import VariablesEstado
-    #from gestor_de_posicion import Gestor_de_Posicion
     from pws import Pws
+    from pymysql.constants.ER import NO
+    from acceso_db_sin_pool_conexion import Conexion_DB_Directa
+    from acceso_db_sin_pool_funciones import Acceso_DB_Funciones
+    from acceso_db_modelo import Acceso_DB
+
     client = Client()
-    log=Logger('Test_indicadores.log') 
-    #apertura del pull de conexiones
-    conn=Conexion_DB(log)
-    #objeto de acceso a datos
-    db=Acceso_DB(log,conn.pool)
-    act=Actualizador_Rest(client,db,log)
+    log=Logger('Importar_velas.log') 
+    
+    conn=Conexion_DB_Directa(log)                          
+    fxdb=Acceso_DB_Funciones(log,conn)        
+    db = Acceso_DB(log,fxdb)   
+    
+    act = Actualizador_Rest(client,db,log)
 
     # fini=str_fecha_hora_a_timestamp('2021-06-07 00:00:00') * 1000 
     # ffin=str_fecha_hora_a_timestamp('2021-06-07 00:59:00') * 1000
@@ -134,16 +138,16 @@ if __name__=='__main__':
     # print(fini,ffin)
     
     #pedido máximo en días por escala
-    deltas = {'1m':1,'3m':3,'5m':5,'15m':15,'30m':30,'1h':60,'2h':120,'4h':240,'1d':1440,'1w':10080,'1M':43200}
-    #deltas = {'15m':15,'30m':30,'1h':60,'2h':120,'4h':240,'1d':1440,'1w':10080,'1M':43200}
+    #deltas = {'2h':120}
+    deltas = {'15m':15,'30m':30,'1h':60,'2h':120,'4h':240,'1d':1440,'1w':10080,'1M':43200}
     
     #UTC	2021-06-13T07:02:34Z
-    fini='2022-02-01 00:00:00' 
-    ffin='2022-03-05 23:59:59' 
+    fini='2022-03-01 00:00:00' 
+    ffin='2022-03-08 23:59:59' 
     
     #pares=['BTCUSDT','BNBUSDT','XRPUSDT']
     #pares=['BTCUSDT','BNBUSDT']
-    pares=['CELRUSDT']
+    pares=['BTCUSDT']
     # fini='202-01-01 00:00:00' 
     # ffin='2021-07-01 00:00:00' 
     obj_fini=strtime_a_obj_fecha(fini)

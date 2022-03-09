@@ -7,7 +7,7 @@ from numpy import isnan
 
 
 class Calculador_Precio_Compra:
-    def __init__(self,par,g: VariablesEstado,log:Logger,ind_par:Indicadores,libro:Libro_Ordenes_DF):
+    def __init__(self,par,g: VariablesEstado,log:Logger,ind_par:Indicadores,libro:Libro_Ordenes_DF=None):
         self.par = par 
         self.ind_par :Indicadores = ind_par
         self.log:Logger = log

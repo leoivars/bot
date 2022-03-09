@@ -3,8 +3,8 @@ from datetime import timedelta
 import time
 from funciones_utiles import strtime_a_obj_fecha, timestampk_to_strtime
 from mercado_back_testing import Mercado_Back_Testing
-from acceso_db_conexion_mysqldb import Conexion_DB
-from acceso_db_mysqldb import Acceso_DB
+from acceso_db_sin_pool_conexion import Conexion_DB
+from acceso_db_sin_pool_funciones import Acceso_DB
 from variables_globales import VariablesEstado
 from logger import Logger
 from indicadores2 import Indicadores

@@ -19,7 +19,6 @@ class Acceso_DB_Funciones:
         self.log=log
         self.conexion=None
         self.cursor=None
-
         
     def acceso_pedir(self,referencia='xx'):
         ticket_acceso = referencia + ' ' + str(time.time())
@@ -112,52 +111,31 @@ class Acceso_DB_Funciones:
         
         self.cursor_liberar()  
         return ret
-    
-    def ejecutar_sql_sin_cursor(self,sql,paramentros=None):
-        ret=None
-        
-        try:
-            if paramentros ==None:
-                ret=self.cursor.execute(sql)
-            else:    
-                ret=self.cursor.execute(sql,paramentros)
-        except Exception as e:
-            if 'uplicate entry' in str(e):
-                ret=-1 
-            else:
-                self.log.err(  'error: ejecutar_sql',e,sql,paramentros)
-            time.sleep(1)
-         
-        return ret    
 
     def ejecutar_sql_ret_dict(self,sql,paramentros=None):
-        while True:
-            self.cursor_obtener()
-            try:
-                if paramentros == None:
-                    self.cursor.execute(sql)
-                else:
-                    self.cursor.execute(sql,paramentros)
-                ret=self.cursor2dict(self.cursor)
-
-                break
-                
-            except Exception as e:
-                self.log.err(  'error: ejecutar_sql_ret_dict',str(e),sql,paramentros)
-                #tb = traceback.format_exc()
-                #self.log.err( tb )
-                time.sleep(1)
-                ret={}
-            self.cursor_liberar()     
-        
+        self.cursor_obtener()
+        try:
+            if paramentros == None:
+                self.cursor.execute(sql)
+            else:
+                self.cursor.execute(sql,paramentros)
+            ret=self.cursor2dict(self.cursor)
+            
+        except Exception as e:
+            self.log.err(  'error: ejecutar_sql_ret_dict',str(e),sql,paramentros)
+            #tb = traceback.format_exc()
+            #self.log.err( tb )
+            time.sleep(1)
+            ret={}
+        self.cursor_liberar()
         return ret
 
     def ejecutar_sql_ret_cursor(self,sql,paramentros=None): #renombrar en el futuro como ret_all
         '''
         Retorna una lista con todos los registros recuperados, no es un cursor.
         '''
-        self.cursor_obtener()
         ret=[]
+        self.cursor_obtener()
         try:
             if paramentros == None:
                
@@ -170,13 +148,12 @@ class Acceso_DB_Funciones:
             #tb = traceback.format_exc()
             #self.log.err( tb )
             time.sleep(1)
-        self.cursor_liberar()     
+        self.cursor_liberar()    
         return ret
 
 
     def ejecutar_sql_ret_1_valor(self,sql,paramentros=None):
         self.cursor_obtener()
-
         try:
             self.cursor.execute(sql,paramentros)
             row = self.cursor.fetchone()
@@ -190,10 +167,7 @@ class Acceso_DB_Funciones:
             #self.log.err( tb )
             ret = None
             time.sleep(1)
-
-        self.cursor_liberar()        
-        
-        
+        self.cursor_liberar()
         return ret
 
     

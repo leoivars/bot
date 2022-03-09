@@ -2084,9 +2084,11 @@ class Indicadores:
         try:
 
             for esc in self.mercado.par_escala_ws_v[self.par].keys():
+                
                 actualizado[esc]=self.mercado.par_escala_ws_v[self.par][esc][1].actualizado
 
             mas_actualizado = sorted(actualizado.items(), key=lambda x: x[1] ,reverse=True   )[0]
+            print(f'Escala_precio_mas_actualizado-->{mas_actualizado}')
 
             ret = self.precio(mas_actualizado[0]) #retorno el precio del mas actualizado
 

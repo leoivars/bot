@@ -1,7 +1,6 @@
 # # -*- coding: UTF-8 -*-
 import time
 from datetime import datetime
-from acceso_db_funciones import Acceso_DB_Funciones
 
 class Acceso_DB:
     '''
@@ -113,7 +112,7 @@ class Acceso_DB:
     precio_par = 'select precio from pares where moneda=%s and moneda_contra=%s'
 
 
-    def __init__(self,log,fxdb:Acceso_DB_Funciones):
+    def __init__(self,log,fxdb):
         self.log=log
         self.fxdb = fxdb
         
@@ -448,7 +447,7 @@ class Acceso_DB:
 
     # par_escala fin
 
-    # velas
+    ###### velas
 
     def crear_actualizar_vela(self,id_par_escala,open_time,open,high,low,close,volume,close_time):
         velas_crea_actualiza=f''' INSERT into velas (id_par_escala,open_time,open,high,low,close,volume,close_time)
@@ -457,7 +456,7 @@ class Acceso_DB:
                               open={open},high={high},low={low},close={close},volume={volume},close_time={close_time} 
                          
                           '''
-        ret = self.fxdb.ejecutar_sql_sin_cursor(velas_crea_actualiza)
+        ret = self.fxdb.ejecutar_sql(velas_crea_actualiza)
         #if ret == -1: #error de entrada dupliadas, actualizamos
         #    ret = self.fxdb.ejecutar_sql_sin_cursor(self.velas_actualizar,(open,high,low,close,volume,close_time,id_par_escala,open_time,))
         return ret    
@@ -479,7 +478,7 @@ class Acceso_DB:
         return r    
 
 
-    # velas fin
+    ##### velas fin
 
 
 

@@ -1,9 +1,9 @@
 # # -*- coding: UTF-8 -*-
 # pragma pylint: disable=no-member
 
-from acceso_db_conexion_mysqldb import Conexion_DB
+
 from logger import Logger
-from acceso_db_mysqldb import Acceso_DB
+from acceso_db_modelo import Acceso_DB
 from os import register_at_fork
 from velaset import VelaSet
 from vela import Vela
@@ -76,6 +76,7 @@ class Mercado_Back_Testing:
                 #print('FECHA_INI',  timestampk_to_strtime(fecha_ini),fecha_ini,self.fecha_fin.timestamp()*1000 )
                 cursor = self.db.get_velas_rango(par,esc,fecha_ini.timestamp()*1000,self.fecha_fin.timestamp()*1000 )
                 vs.poner_velas_db_en_df(cursor)
+            vs.get_vela_desde_ultima(1).imprimir()    
                 
 
     def actualizar_mercados_a_vela(self,open_time):
@@ -84,6 +85,7 @@ class Mercado_Back_Testing:
     
     def avanzar_tiempo(self,delta_t):
         self.fecha_fin = self.fecha_fin + delta_t
+        self.log.log(f'{self.fecha_fin}')
 
     def avanzar_vela(self,par,escala,id_par_escala):
         '''
@@ -162,10 +164,11 @@ class Mercado_Back_Testing:
 
 if __name__ == '__main__':
     from variables_globales import VariablesEstado
-    from gestor_de_posicion import Gestor_de_Posicion
     from binance.client import Client #para el cliente
     from pws import Pws
-    
+    from acceso_db_sin_pool_conexion import Conexion_DB_Directa
+    from acceso_db_sin_pool_funciones import Acceso_DB_Funciones
+    from acceso_db_modelo import Acceso_DB
     
 
     log=Logger('Test_mercado.log')
@@ -173,17 +176,15 @@ if __name__ == '__main__':
     
     client = Client(pws.api_key, pws.api_secret)
     
-    #apertura del pull de conexiones
-    conn=Conexion_DB(log)
-    #objeto de acceso a datos
-    db=Acceso_DB(log,conn)
+    conn=Conexion_DB_Directa(log)                          
+    fxdb=Acceso_DB_Funciones(log,conn)        
+    db = Acceso_DB(log,fxdb) 
 
-    p = Gestor_de_Posicion(log,client,conn)
-    globales = VariablesEstado(p)
+    globales = VariablesEstado()
 
     m=Mercado_Back_Testing(log,globales,db)
 
-    fecha_fin =  strtime_a_obj_fecha('2021-07-18 20:00:00')
+    fecha_fin =  strtime_a_obj_fecha('2022-02-01 20:00:00')
     un_minuto = timedelta(minutes=1)
     
     m.inicar_mercados(fecha_fin,200,['BTCUSDT'],['1m'])

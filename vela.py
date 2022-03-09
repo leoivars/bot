@@ -111,13 +111,14 @@ class Vela:
         return self.__str__()    
         
     def imprimir(self):
-        #print( 'open_time' , datetime.datetime.fromtimestamp(self.open_time/1000 ).strftime('%Y-%m-%d %H:%M:%S.%f'))
+        print( '------------------------------------' )
+        print( 'open_time' , datetime.datetime.fromtimestamp(self.open_time/1000 ).strftime('%Y-%m-%d %H:%M:%S'))
         print( 'open' , self.open )
         print( 'high', self.high )
         print( 'low' , self.low )
         print( 'close' , self.close )
         print( 'volume' , self.volume )
-        #print( 'close_time' ,datetime.datetime.fromtimestamp(self.close_time/1000 ).strftime('%Y-%m-%d %H:%M:%S.%f')    )
+        print( 'close_time' ,datetime.datetime.fromtimestamp(self.close_time/1000 ).strftime('%Y-%m-%d %H:%M:%S')    )
         print( '------------------------------------' )
 
 

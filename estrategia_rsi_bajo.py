@@ -5,8 +5,8 @@ import time
 from pymysql.constants.ER import NO
 from funciones_utiles import strtime_a_obj_fecha,variacion_absoluta
 from mercado_back_testing import Mercado_Back_Testing
-from acceso_db_conexion_mysqldb import Conexion_DB
-from acceso_db_mysqldb import Acceso_DB
+from acceso_db_sin_pool_conexion import Conexion_DB
+from acceso_db_sin_pool_funciones import Acceso_DB
 
 from logger import Logger
 from indicadores2 import Indicadores

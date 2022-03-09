@@ -2,13 +2,9 @@
 from datetime import timedelta
 import time
 
-from pymysql.constants.ER import NO
-from acceso_db_conexion import Conexion_DB
+
 from funciones_utiles import strtime_a_obj_fecha
 from mercado_back_testing import Mercado_Back_Testing
-
-from acceso_db_conexion_mysqldb import Conexion_DB
-from acceso_db_mysqldb import Acceso_DB
 
 
 from variables_globales import VariablesEstado
@@ -104,31 +100,39 @@ if __name__=='__main__':
     log=Logger(f'estrategia_{time.time()}.log')
     pws=Pws()
     
-    #apertura del pull de conexiones
-    conn=Conexion_DB(log)
-    #objeto de acceso a datos
-    db=Acceso_DB(log,conn)
+    from pymysql.constants.ER import NO
+   
+    from acceso_db_sin_pool_conexion import Conexion_DB_Directa
+    from acceso_db_sin_pool_funciones import Acceso_DB_Funciones
+    from acceso_db_modelo import Acceso_DB
 
     client = Client(pws.api_key, pws.api_secret)
-    
+
+    conn=Conexion_DB_Directa(log)                          
+    fxdb=Acceso_DB_Funciones(log,conn)        
+    db = Acceso_DB(log,fxdb)   
+
     g = VariablesEstado()
 
     #fini='2021-06-16 00:00:00' 
     #ffin='2021-07-01 23:59:59' 
     
-    fecha_fin =  strtime_a_obj_fecha('2022-02-01 00:00:00')
-    fin_test  =  strtime_a_obj_fecha('2022-03-06 23:00:00')
+    fecha_fin =  strtime_a_obj_fecha('2022-03-08 18:00:00')
+    fin_test  =  strtime_a_obj_fecha('2022-03-08 23:59:00')
     pares=['BTCUSDT']
-    escalas = ['1m','3m','5m','15m','30m','1h','2h','4h','1d','1w']
+    #escalas = ['1m','5m','15m','30m','1h','2h','4h','1d','1w']
+    escalas = ['2h']
 
     m=Mercado_Back_Testing(log,g,db)
-    m.inicar_mercados(fecha_fin,200,pares,escalas)
+    m.inicar_mercados(fecha_fin,300,pares,escalas)
     estrategia = Estrategia('BTCUSDT',log,g,m)
 
     un_minuto = timedelta(minutes=1)
     tres_minutos = timedelta(minutes=3)
     cinco_minutos = timedelta(minutes=5)
     diez_minutos = timedelta(minutes=10)
+    una_hora = timedelta(hours=1)
+    dos_horas = timedelta(hours=2)
     
     comprado=False
     comp_px = 0
@@ -167,7 +171,8 @@ if __name__=='__main__':
                 comprado = False
 
 
-        m.avanzar_tiempo(tres_minutos)
-        m.actualizar_mercados()    
+        m.avanzar_tiempo(dos_horas)
+        m.actualizar_mercados()  
+          
 
     log.log (f'----->Fin Simulación ganancia= {gananciap} entradas {entradas} ganadas {ganadas} perdidas {perdidas}')    
