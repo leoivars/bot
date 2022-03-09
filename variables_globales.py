@@ -109,7 +109,7 @@ class VariablesEstado:
                             '1M' :['1w' ,'1d' ]}                        
     
     #ganancia_minima en la que se comienza a considerar poner stoploss
-    ganancia_minima ={'1m':0.1,'3m':0.15,'5m': 0.2 ,'15m':0.3 ,'30m':0.4 ,'1h':0.5 ,'2h':0.6,'4h':1.2,'1d':3,'1w':10,'1M':20}
+    ganancia_minima ={'1m':0.5,'3m':0.7,'5m': 0.9 ,'15m':1 ,'30m':1.25 ,'1h':1.5 ,'2h':2,'4h':4,'1d':5,'1w':10,'1M':20}
     
     velas_hora  = {'1m':60 ,'3m':20 , '5m': 12 ,'15m':4,'30m':2,'1h':1,'2h':0.5,'4h':0.25,'1d':0.041666667,'1w':0.005952381,'1M':0.001388889}
 

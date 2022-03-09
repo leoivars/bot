@@ -2436,7 +2436,7 @@ class Par:
         if not filtro_parte_alta_rango(ind,self.log,self.escala_de_salida,90):
             return False   
 
-        gan_min = calc_ganancia_minima(self.g,0.5,self.escala_de_salida,duracion_trade)
+        gan_min = calc_ganancia_minima(self.g,self.g.ganancia_minima[escala],self.escala_de_salida,duracion_trade)
         precio_bajista = self.el_precio_es_bajista('4h') and self.el_precio_es_bajista(self.escala_de_salida)
         precio_no_sube = ind.no_sube(self.escala_de_salida)
         tiempo_trade_superado = duracion_trade > self.g.tiempo_maximo_trade[self.escala_de_salida]
@@ -4606,6 +4606,11 @@ class Par:
             sl_nuevo = self.precio - self.ind.recorrido_minimo(self.escala_de_analisis,100)
         else:
             sl_nuevo = self.precio - self.ind.recorrido_maximo(self.escala_de_analisis,200)
+
+        if sl_nuevo < self.precio_salir_derecho:
+            ex_sl_nuevo = sl_nuevo
+            sl_nuevo = (self.precio-self.precio_salir_derecho) / 2  
+            self.log.log(f'sl_nuevo={ex_sl_nuevo} < precio_salir recalculo={sl_nuevo}')
       
         if  sl_nuevo > sl:
             sl = sl_nuevo
@@ -4615,7 +4620,7 @@ class Par:
 
         sl = self.st_correccion_final(sl)    
 
-        self.log.log( f'calculo_basico_stoploss {sl} ')    
+        self.log.log( f'calculo_basico_stoploss(generar_liquidez={generar_liquidez}) ret={sl} ')    
 
         return sl    
 
