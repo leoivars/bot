@@ -155,7 +155,7 @@ class Indicadores:
         
         vmax= self.mercado.get_vector_np_high(self.par,escala)
         vmin= self.mercado.get_vector_np_low(self.par,escala)
-        precio=self.precio_mas_actualizado()
+        precio=self.precio(escala)
         l=vmax.size
 
 
@@ -262,7 +262,7 @@ class Indicadores:
                 vol = df.iloc[i-2]['volume'] + df.iloc[i-1]['volume'] + df.iloc[i]['volume']  # volumen de al vela + volumen de las dos anteriores
                 lista.insert(0,[ pos , df.iloc[i]['low'],  df.iloc[i]['low'] /(vol*pos)  ])
                 
-        return lista 
+        return lista
 
     def lista_picos_maximos_x_vol(self,escala,cvelas,vela_ini=1):
         ''' entrega lista de picos minimos desde el final por cvelas
@@ -292,7 +292,7 @@ class Indicadores:
     def minimo_x_vol(self,escala,cvelas=100,cminimos=3,vela_ini=1):    
         lista=self.lista_picos_minimos_x_vol(escala,cvelas,vela_ini)
         minimos = sorted(lista, key=lambda x: x[2]  ) # ordno por la ponderacion
-        return self.calc_top(minimos,cminimos)
+        return self.calc_top(minimos,cminimos)  
 
     def maximo_x_vol(self,escala,cvelas=100,cant_maximos=3,vela_ini=1):    
         lista=self.lista_picos_maximos_x_vol(escala,cvelas)
@@ -657,7 +657,7 @@ class Indicadores:
         ''' retorna el porcentaje del recorrido del rango'''
         minimo,maximo = self.minimo_maximo_por_rango_velas_imporantes(escala,cvelas)
         #print(minimo,maximo)
-        recorrido = round( (self.precio_mas_actualizado() - minimo) / (maximo - minimo) * 100  ,2)
+        recorrido = round( (self.precio(escala) - minimo) / (maximo - minimo) * 100  ,2)
         return recorrido
     
 
@@ -693,6 +693,10 @@ class Indicadores:
         df=self.mercado.get_panda_df(self.par, escala, cvelas + 1)
         df['recorrido'] = df.high - df.low
         return df["recorrido"].min()
+
+    def minimo(self,escala,cvelas):
+        df=self.mercado.get_panda_df(self.par, escala, cvelas + 1)
+        return df["low"].min()    
 
     def rsi_contar_picos_maximos(self,escala,cvelas,mayor_de):
         ''' cuanta la cantidad de picos maximo desde el final por cvelas 
@@ -868,8 +872,8 @@ class Indicadores:
             df=self.mercado.get_panda_df(self.par, escala, velas_df) #self.velas[escala].panda_df(cvelas + 60)
             self.quitar_ultima_vela_abierta(df)
             rsi = df.ta.rsi()
-            self.set_cache('mercado.get_panda_df'    ,(self.par, escala, velas_df), df   )
-            self.set_cache('mercado.get_panda_df.rsi',(self.par, escala, velas_df), rsi  )
+            #self.set_cache('mercado.get_panda_df'    ,(self.par, escala, velas_df), df   )
+            #self.set_cache('mercado.get_panda_df.rsi',(self.par, escala, velas_df), rsi  )
 
         l=len(rsi) 
         
@@ -1057,7 +1061,7 @@ class Indicadores:
         return lista  
 
     def xvolumen_de_impulso(self,escala,sentido=1,vela_fin=-20):
-        ''' suma todo el volumen de impulso a la baja y lo devuelve comparado con 
+        ''' suma todo el volumen de impulso a la baja(sentido=-1) al alza(sentido=1) o todo(sentido=0) y lo devuelve comparado con 
             el volumen promedio
         '''
         df=self.mercado.get_panda_df(self.par, escala)     
@@ -1076,8 +1080,11 @@ class Indicadores:
             while i > vela_fin:
                 i -= 1
                 v:Vela = Vela(df.iloc[i])
-                if v.sentido() == sentido:
+                if sentido == 0:
                     sum_vol_impulso += v.volume 
+                elif v.sentido() == sentido:
+                    sum_vol_impulso += v.volume 
+                     
             xvol_impulso =  round( sum_vol_impulso / volumen_testigo ,2)       
                     
         return xvol_impulso        
@@ -1506,7 +1513,7 @@ class Indicadores:
         
         low=self.mercado.get_vector_np_low ( self.par,escala,periodos)
         low.sort()
-        precio = self.precio_mas_actualizado()
+        precio = self.precio(escala)
         
         return variacion_absoluta(low[0],precio)
     
@@ -2125,7 +2132,41 @@ class Indicadores:
 
     #     return {'alcista':r_pos,'bajista':r_neg,'patrones':patrones}         
     
-    
+    def el_precio_es_bajista(self,escala):
+        ''' trato de definir si el precio es bajista cuando el precio es mayor que la ema de 50. 
+        Tratando de evitar la que el resultado sea dudoso ante la compresión de emas (ema 20 muy cerca de ema50) para lo cual uso emas_ok.
+        '''
+        bajista = True
+        if self.precio(escala) > self.ema(escala,50):
+            emas_ok, _,_,pend_l = self.ema_rapida_mayor_lenta2(escala,20,50,0.5,True)
+            if emas_ok and pend_l >0: 
+                bajista = False
+        
+        return bajista
+
+    # def precio_bajo_ema_importante(self,escala):
+    #     ret = False
+    #     emas_importantes=[('1d',20),('1d',50),('4h',20),('4h',50)]    
+    #     for em in emas_importantes:
+    #         escala=em[0]
+    #         periodos=em[1]
+    #         if self.precio_cerca_por_debajo(self.ema(escala,periodos)):
+    #             self.log.log(f'precio bajo de ema{em}')
+    #             ret = True
+    #     return ret
+    def precio_bajo_ema_importante(self,escala):
+        ret = False
+        periodos=[20,50]    
+        for per in periodos:
+            if self.precio_cerca_por_debajo_ema(escala,per):
+                self.log.log(f'precio bajo de ema({per})')
+                ret = True
+        return ret
+
+    def precio_cerca_por_debajo_ema(self,escala,per,porcentaje=0.30):
+        ema=self.ema(escala,per)
+        px = self.precio(escala)
+        return ema < px and (px - ema) / ema *100 < porcentaje           
  
 
 if __name__=='__main__':

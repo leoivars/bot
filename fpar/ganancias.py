@@ -9,3 +9,13 @@ def calc_ganancia_minima(g:VariablesEstado,ganancia_inicial,escala,tiempo_trade)
     
     return ganancia 
 
+def calculo_ganancias(g,pxcompra,pxventa):  #esta es la funcion definitiva a la que se tienen que remitir el resto.
+    comision  = pxcompra * g.fee
+    comision += pxventa * g.fee
+    gan=pxventa - pxcompra - comision #- self.tickSize
+    return round(gan/pxcompra*100,3)   
+
+def precio_de_venta_minimo(g,pganancia,pxcompra):
+        coef=(1+g.fee)/(1-g.fee)
+        ret=pxcompra*coef*(1+pganancia/100) 
+        return  ret

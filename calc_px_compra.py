@@ -17,7 +17,7 @@ class Calculador_Precio_Compra:
 
     def calcular_precio_de_compra(self,metodo,escala):
         ind: Indicadores = self.ind_par
-        self.precio = ind.precio_mas_actualizado()
+        self.precio = ind.precio(escala)
         self.escala_de_analisis = escala
  
         px=0
@@ -38,12 +38,12 @@ class Calculador_Precio_Compra:
             #self.log.log(self.libro.dump_libro())
 
         if metodo=="mercado":
-            px= ind.precio_mas_actualizado()
+            px= ind.precio(escala)
             self.calculo_precio_compra='mercado'
             self.log.log('calc. mercado',px) 
 
         if metodo=="market":
-            px= ind.precio_mas_actualizado()
+            px= ind.precio(escala)
             self.calculo_precio_compra='market'
             self.log.log('calc.market',px)
 
@@ -62,7 +62,7 @@ class Calculador_Precio_Compra:
         elif metodo=="scalping":
             px,_ =self.ind_par.minimo_maximo_por_rango_velas_imporantes(escala,100)
             self.calculo_precio_compra='scalping_pxminimo'
-            if px > self.ind_par.precio_mas_actualizado:
+            if px > self.ind_par.precio(escala):
                 self.libro.actualizar()
                 px = self.libro.precio_compra2
                 self.calculo_precio_compra='scalping_min_libro_grp_mayor'
@@ -169,7 +169,7 @@ class Calculador_Precio_Compra:
 
         #px= self.restar_cuando_son_malas_condiciones(self.escala_de_analisis,px)
 
-        precio = ind.precio_mas_actualizado()
+        precio = ind.precio(escala)
         if px > precio:
             self.log.log('ERRORCALCULO, ind.promedio_de_bajos',px,precio)
             px = self.precio / 1.01
@@ -186,7 +186,7 @@ class Calculador_Precio_Compra:
     
     def calc_pefil_volumen(self):
         vp = self.ind_par.vp(self.escala_de_analisis,24)
-        precio_actual = self.ind_par.precio_mas_actualizado()
+        precio_actual = self.ind_par.precio(self.escala_de_analisis)
         close =vp.sort_values(by ='total_volume' ,ascending=False)  # precios ordenados por volumen en orden inverso, lo de mas volumenprimero
         px = 0
         

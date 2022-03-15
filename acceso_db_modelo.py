@@ -18,7 +18,15 @@ class Acceso_DB:
 
     actualiza_volpx_='UPDATE pares set volumen= %s, precio=%s,  fecha_estadisticas = NOW() WHERE moneda= %s AND moneda_contra= %s'
 
-    obt_datos_moneda='SELECT idpar,habilitado,pstoploss,metodo_compra_venta,cantidad,precio_compra,estado,funcion,ganancia_segura,ganancia_infima,escala_analisis_entrada,rsi_analisis_entrada,tendencia_minima_entrada,solo_vender,solo_seniales,veces_tendencia_minima,xvela_corpulenta,cantidad_de_reserva,analisis_e7,e8_precio_inferior,e8_precio_superior,e3_ganancia_recompra,incremento_volumen_bueno,xobjetivo,shitcoin,min_notional,stoploss_habilitado,stoploss_cazaliq,uso_de_reserva,temporalidades,observaciones,objetivo_compra,objetivo_venta,max_entradas from pares where moneda= %s and moneda_contra= %s'
+    obt_datos_moneda='''SELECT idpar,habilitado,pstoploss,metodo_compra_venta,cantidad,precio_compra,estado,funcion,
+                        ganancia_segura,ganancia_infima,escala_analisis_entrada,rsi_analisis_entrada,tendencia_minima_entrada,
+                        solo_vender,solo_seniales,veces_tendencia_minima,xvela_corpulenta,cantidad_de_reserva,analisis_e7,
+                        e8_precio_inferior,e8_precio_superior,e3_ganancia_recompra,incremento_volumen_bueno,xobjetivo,
+                        shitcoin,min_notional,stoploss_habilitado,stoploss_cazaliq,uso_de_reserva,
+                        temporalidades,observaciones,objetivo_compra,objetivo_venta,max_entradas,
+                        xmin_impulso,param_filtro_dos_emas_positivas_rapida,param_filtro_dos_emas_positivas_lenta 
+                        from pares where moneda= %s and moneda_contra= %s'''
+    
     mon_habilita_lin='SELECT moneda,moneda_contra from pares where habilitable=1 and habilitado=0 and no_habilitar_hasta < NOW() and coeficiente_ema_rapida_lenta  > 0 order by volumen desc'
     mon_habilita_feo='SELECT moneda,moneda_contra from pares where habilitable=1 and habilitado=0 and no_habilitar_hasta < NOW() and coeficiente_ema_rapida_lenta <= 0 order by volumen desc'
     mon_habilitables='SELECT moneda,moneda_contra from pares where habilitable=1 and habilitado=0 and no_habilitar_hasta < NOW() order by volumen desc'
@@ -554,6 +562,31 @@ class Acceso_DB:
 
 
 ###---------------------FIN-REPORTES-------------------------------###
+
+###-----backtesting -----###
+# CREATE TABLE bot.resultados_backtesting (
+# 	id BIGINT auto_increment,
+#     ganancia DOUBLE NULL,
+# 	ganadas INT NULL,
+# 	perdidas INT NULL,
+# 	datos_backtesting varchar(1024) NULL,
+# 	primary key (id)
+# )
+
+
+
+    def backtesting_agregar_resultado(self,par,datos_backtesting,ganadas,perdidas,ganancia):
+        sql=f"""insert into resultados_backtesting 
+                (par,datos_backtesting,ganadas,perdidas,ganancia) 
+               values 
+                ('{par}','{datos_backtesting}',{ganadas},{perdidas},{ganancia}) 
+            """
+        ret =  self.fxdb.ejecutar_sql( sql )      
+        self.fxdb.conexion.commit() 
+        return ret
+
+###-----Fin-Backteting---###
+
 
 
 ##############################################################################################################

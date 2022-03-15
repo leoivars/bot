@@ -160,6 +160,14 @@ class Mercado_Back_Testing:
         vs = self.par_escala_ws_v[par][escala][1]
 
         return vs       
+    
+    def vela(self,par,escala,posicion):
+        try:
+            vs: VelaSet = self.get_velaset(par,escala)
+            ret:Vela = vs.get_vela(posicion)
+        except:
+            ret = None
+        return ret    
 
 
 if __name__ == '__main__':
@@ -194,6 +202,7 @@ if __name__ == '__main__':
         print(m.get_vector_np_close('BTCUSDT','1m',5))
         m.avanzar_tiempo(un_minuto)
         m.actualizar_mercados()
+    
     
 
 

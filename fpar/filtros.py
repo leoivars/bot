@@ -5,7 +5,7 @@ from logger import Logger
 def filtro_parte_baja_rango(ind:Indicadores,log:Logger,escala,cvelas,porcentaje_bajo=.3):
     minimo,maximo = ind.minimo_maximo_por_rango_velas_imporantes(escala,cvelas)
     maximo_compra =  minimo + (maximo - minimo) *  porcentaje_bajo 
-    precio = ind.precio_mas_actualizado()
+    precio = ind.precio(escala)
     ret = precio < maximo_compra
     log.log( f'parte_baja_rango {escala} min {minimo} px {precio} [max_compra {maximo_compra}] maximo {maximo} {ret}'  )
     return ret 
@@ -13,7 +13,7 @@ def filtro_parte_baja_rango(ind:Indicadores,log:Logger,escala,cvelas,porcentaje_
 def filtro_parte_alta_rango(ind:Indicadores,log:Logger,escala,cvelas,porcentaje_bajo=.75):
     minimo,maximo = ind.minimo_maximo_por_rango_velas_imporantes(escala,cvelas)
     maximo_compra =  minimo + (maximo - minimo) *  porcentaje_bajo 
-    precio = ind.precio_mas_actualizado()
+    precio = ind.precio(escala)
     ret = precio > maximo_compra
     log.log( f'filtro_parte_alta_rango {escala} min {minimo} px {precio} [max_compra {maximo_compra}] maximo {maximo} {ret}'  )
     return ret 
@@ -24,7 +24,7 @@ def filtro_precio_mayor_maximo(ind:Indicadores,log:Logger,escala,cvelas,vela_ini
         ret = False
         precio = None
     else:
-        precio = ind.precio_mas_actualizado()
+        precio = ind.precio(escala)
         ret = precio > maximo
     log.log( f'filtro_precio_mayor_maximo {escala} cvel {cvelas} ini {vela_ini} maximo {maximo} px {precio} {ret}' )
     return ret
@@ -35,7 +35,7 @@ def filtro_precio_mayor_minimo(ind:Indicadores,log:Logger,escala,cvelas,vela_ini
         ret = False
         precio = None
     else:    
-        precio = ind.precio_mas_actualizado()
+        precio = ind.precio(escala)
         ret = precio > minimo
     log.log( f'filtro_precio_mayor_minimo {escala} cvel {cvelas} ini {vela_ini} minimo {minimo} px {precio} {ret}' )
     return ret
@@ -91,8 +91,26 @@ def filtro_velas_de_impulso(ind:Indicadores,log:Logger,escala,periodos,max_pos_u
     
     return ret
 
-def filtro_xvolumen_de_impulso(ind:Indicadores,log:Logger,escala,periodos, xmin_impulso=50):
-    '''  desde que empezó a bajar, suma todo el volumen de las velas bajistas y lo compara con el volumen promedio
+def filtro_xvolumen_de_impulso(ind:Indicadores,log:Logger,escala,periodos,sentido=-1,xmin_impulso=50):
+    '''  desde que empezó a bajar, suma todo el volumen de las velas segun el sentido( -1 bajista, 1 alcista, 0 todo) y lo compara con el volumen promedio
+         convirtiendolo en x veces mas. 
+         Si ese volumen comparado es mayor al parametrizado(xmin_impulso): retorna True
+    '''
+    ret = False
+    maximos=ind.lista_picos_maximos_ema(escala,periodos,300,'close',6,6) 
+    if len(maximos)>0:
+       fin = -maximos[0][0]
+       lista_velas_impulso = ind.velas_de_impulso(escala,sentido=-1,vela_fin=fin) 
+       xvol_impulso = ind.xvolumen_de_impulso(escala,sentido,vela_fin=fin) 
+       log.log(f'velas {-fin} lista_velas_impulso {lista_velas_impulso} ')
+       log.log(f'xvol_impulso {xvol_impulso}')
+       ret = xvol_impulso >= xmin_impulso
+       log.log(f'filtro_xvolumen_de_impulso {ret}')
+
+    return ret
+
+def filtro_xvolumen_total(ind:Indicadores,log:Logger,escala,periodos, xmin_impulso=50):
+    '''  desde que empezó a bajar, suma todo el volumen todas las velas y lo compara con el volumen promedio
          convirtiendolo en x veces mas. 
          Si ese volumen comparado es mayor al parametrizado(xmin_impulso): retorna True
     '''
@@ -146,5 +164,34 @@ def filtro_dos_emas_positivas(ind:Indicadores,log:Logger,escala,ema1_per,ema2_pe
         
     log.log(f'filtro_dos_emas_positivas {ret}')
 
-    return ret    
+    return ret 
+
+def filtro_tres_emas_positivas(ind:Indicadores,log:Logger,escala,ema1_per,ema2_per,ema3_per):
+    ret = False
+    if ind.pendiente_positiva_ema(escala,ema1_per):
+        log.log(f'filtro_tres_emas_positivas ema {ema1_per} ok')
+        if ind.pendiente_positiva_ema(escala,ema2_per):
+            log.log(f'filtro_tres_emas_positivas ema {ema2_per} ok')
+            ret = ind.pendiente_positiva_ema(escala,ema3_per)
+        
+    log.log(f'filtro_tres_emas_positivas {ret}')
+
+    return ret 
+
+
+def filtro_de_rsi_minimo_cercano(ind:Indicadores,log:Logger,escala,rsi_inferior,pos_rsi_inferior=(2,15),max_rsi=55):
+    rsi_min,rsi_min_pos,_,rsi= ind.rsi_minimo_y_pos(escala,  pos_rsi_inferior[1]    )
+    resultado_filtro=  rsi_min < rsi_inferior and pos_rsi_inferior[0] <= rsi_min_pos <= pos_rsi_inferior[1]  and rsi<max_rsi
+    log.log(f'{resultado_filtro} <-- filtro_de_rsi_minimo_cercano: ')
+    log.log(f'    busco {rsi_inferior}, actual {rsi_min}')
+    log.log(f'    rango de cercanía {pos_rsi_inferior}, actual {rsi_min_pos}')
+    log.log(f'    rsi maximo {max_rsi}, actual {rsi}')
+    return resultado_filtro
+
+
+def filtro_ema_rapida_lenta(ind:Indicadores,log:Logger,escala,rapida,lenta,diferencia):
+    filtro_ok,dif,pl,pr = ind.ema_rapida_mayor_lenta2( escala, rapida,lenta,diferencia_porcentual_minima=0.09 ) 
+    log.log(f'    {escala} diferencia% {dif}, pend rapida {pr} pend lenta {pl}')
+    log.log(f'{filtro_ok} <--ok_filtro_ema_rapida_lenta: {filtro_ok}')
+    return filtro_ok    
 

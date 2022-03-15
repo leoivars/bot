@@ -16,19 +16,19 @@ from comandos_interprete import ComandosPar
 
 from ordenes_binance import OrdenesExchange
 from actualizador_info_par import ActualizadorInfoPar
-from funciones_utiles import cpu_utilizada,calc_tiempo_segundos,strtime_a_fecha,strtime_a_time,variacion,variacion_absoluta
+from funciones_utiles import calcular_fecha_futura, cpu_utilizada,calc_tiempo_segundos,strtime_a_fecha,strtime_a_time,variacion,variacion_absoluta
 from controlador_de_tiempo import *
 from variables_globales import  VariablesEstado
 from pool_indicadores import Pool_Indicadores
 from calc_px_compra import Calculador_Precio_Compra
 from intentar_recuperar_venta_perdida import intentar_recuperar_venta_perdida
-from fpar.ganancias import calc_ganancia_minima
+from fpar.ganancias import calc_ganancia_minima, calculo_ganancias
 from mercado import Mercado
 
 from fpar.filtros import filtro_parte_baja_rango, filtro_zona_volumen, filtro_pendientes_emas_positivas,filtro_parte_alta_rango
 from fpar.filtros import filtro_precio_mayor_maximo,filtro_precio_mayor_minimo
 from fpar.filtros import filtro_pico_minimo_ema_low,filtro_velas_de_impulso,filtro_dos_emas_positivas
-from fpar.filtros import filtro_xvolumen_de_impulso
+from fpar.filtros import filtro_xvolumen_de_impulso,filtro_de_rsi_minimo_cercano
 import fauto_compra_vende.habilitar_pares
 from acceso_db_funciones import Acceso_DB_Funciones
 from acceso_db_modelo import Acceso_DB
@@ -481,6 +481,10 @@ class Par:
 
         self.objetivo_compra  = p['objetivo_compra']
         self.objetivo_venta   = p['objetivo_venta']
+        
+        self.xmin_impulso   = p['xmin_impulso']
+        self.param_filtro_dos_emas_positivas   = ( p['param_filtro_dos_emas_positivas_rapida'], p['param_filtro_dos_emas_positivas_lenta'])
+
 
 
         if self.estado==3 or self.estado==1: 
@@ -1954,7 +1958,7 @@ class Par:
             #         comprar = True
             #         break
             if not comprar: #and self.moneda=='BTC':
-                ret = self.scalping_parte_muy_baja('2h',250,0.3)
+                ret = self.scalping_parte_muy_baja('1h',250,0.3,p_xmin_impulso=self.xmin_impulso,em12=self.param_filtro_dos_emas_positivas)
                 if ret[0]:
                     self.escala_de_analisis = ret[1]
                     self.sub_escala_de_analisis = ret[1]
@@ -2198,13 +2202,13 @@ class Par:
             ret = [True,escala,f'buscar_minimo_parte_muy_baja{cvelas_rango}_{porcentaje_bajo}']
         return ret    
 
-    def scalping_parte_muy_baja(self,escala,cvelas_rango=90,porcentaje_bajo=.2):
+    def scalping_parte_muy_baja(self,escala,cvelas_rango=90,porcentaje_bajo=.2,p_xmin_impulso=50,em12=(4,7)):
         self.log.log('====== scalping_parte_muy_baja ======')
         ret=[False,'xx']
         ind: Indicadores = self.ind
         if filtro_parte_baja_rango(self.ind,self.log,escala,cvelas_rango,porcentaje_bajo):                              #estoy en la parte baja del rango
-            if filtro_xvolumen_de_impulso(ind,self.log,escala,periodos=14,xmin_impulso=50):                             #hay volumen 50x mayor hacia abajo
-                if filtro_dos_emas_positivas(ind,self.log,escala,ema1_per=4,ema2_per=7):                                #giro en el precio
+            if filtro_xvolumen_de_impulso(ind,self.log,escala,periodos=14,sentido=0,xmin_impulso=p_xmin_impulso):                   #hay volumen 27x mayor en total durante la bajada
+                if filtro_dos_emas_positivas(ind,self.log,escala,ema1_per=em12[0],ema2_per=em12[1]):                                #giro en el precio
                     ret = [True,escala,f'scalping_parte_muy_baja{cvelas_rango}_{porcentaje_bajo}']
         return ret        
 
@@ -2424,16 +2428,11 @@ class Par:
         self.log.log(f'senial de entrada {self.senial_entrada}')
         ind: Indicadores =self.ind
 
-        if 'scalping_parte_muy_baja' in self.senial_entrada:
-            self.escala_de_salida = escala
-        elif ind.ema_rapida_mayor_lenta('1h',9,20,0.3):
-           self.escala_de_salida ='1h'
-        else:        
-           self.escala_de_salida ='15m' 
+        self.escala_de_salida = escala
 
         self.log.log(f'escala_de_salida {self.escala_de_salida}' )    
 
-        if not filtro_parte_alta_rango(ind,self.log,self.escala_de_salida,90):
+        if not filtro_parte_alta_rango(ind,self.log,self.escala_de_salida,45):
             return False   
 
         gan_min = calc_ganancia_minima(self.g,self.g.ganancia_minima[escala],self.escala_de_salida,duracion_trade)
@@ -3739,31 +3738,47 @@ class Par:
         self.log.log("FIN E3. Acciones")
 
     def iniciar_stop_loss_en_caso_de_ser_posible(self):
-        ''' si estoy en positivo y alcista, calculo un precio_seguro para poner el stoploss y si el precio está por encima 
-            del precio_seguro, inicio el stoploss
-            precio_seguro es aquel menos probable a ser alcanzadoen caso de que el precio baje.
-            sino no estoy alcista, apensa puesa salir derecho clavo stoploss
-        '''
-        if self.stoploss_habilitado == 0 and self.precio > self.precio_salir_derecho:
-            self.log.log(f'iniciar_stop_loss_en_caso_de_ser_posible para {self.senial_entrada}')
-            
-            if self.ind.ema_rapida_mayor_lenta2('1d',10,55,1): 
-                velas_maximo=80       #++++++80++++++#_____35_____#
-                velas_maximo_ini=35
-                velas_minimo=20        #-----20----#1# 
-                velas_minimo_ini=1     
-                velas_recorrido=200
-            else:
-                velas_maximo=100       #+++++++++100++++++++#___30___#
-                velas_maximo_ini=30
-                velas_minimo=30        #-----30----#1# 
-                velas_minimo_ini=1     
-                velas_recorrido=120
+        if self.stoploss_habilitado == 0:
+            precio_minimo_sl_positivo = self.precio_salir_derecho * (1+self.g.ganancia_minima[self.escala_de_analisis]/100)
+            self.log.log(f'precio {self.precio}  precio_minimo_sl_positivo {precio_minimo_sl_positivo}')
+            if self.precio < precio_minimo_sl_positivo:    #caso stoploss negativo
+                sl_negativo = self.calculo_stoploss_negativo()
+                gan_sl_negativo = calculo_ganancias(self.g,self.precio_compra,sl_negativo)
+                self.log.log(f'sl_negativo {sl_negativo}  gan_sl_negativo {gan_sl_negativo}')
+                if  gan_sl_negativo > -10:
+                    self.stoploss_negativo = 1
+                    self.iniciar_stoploss()
+            else:                              #caso stoploss positivo
+                self.iniciar_stoploss()    
 
-            if filtro_precio_mayor_minimo(self.ind,self.log,self.escala_de_analisis,velas_minimo,velas_minimo_ini):
-                if filtro_precio_mayor_maximo(self.ind,self.log,self.escala_de_analisis,velas_maximo,velas_maximo_ini):
-                    if self.precio >= self.precio_salir_derecho + self.ind.recorrido_maximo(self.escala_de_analisis,velas_recorrido):
-                        self.iniciar_stoploss()
+
+
+    # def iniciar_stop_loss_en_caso_de_ser_posible(self):
+    #     ''' si estoy en positivo y alcista, calculo un precio_seguro para poner el stoploss y si el precio está por encima 
+    #         del precio_seguro, inicio el stoploss
+    #         precio_seguro es aquel menos probable a ser alcanzadoen caso de que el precio baje.
+    #         sino no estoy alcista, apensa puesa salir derecho clavo stoploss
+    #     '''
+    #     if self.stoploss_habilitado == 0 and self.precio > self.precio_salir_derecho:
+    #         self.log.log(f'iniciar_stop_loss_en_caso_de_ser_posible para {self.senial_entrada}')
+            
+    #         if self.ind.ema_rapida_mayor_lenta2('1d',10,55,1): 
+    #             velas_maximo=80       #++++++80++++++#_____35_____#
+    #             velas_maximo_ini=35
+    #             velas_minimo=20        #-----20----#1# 
+    #             velas_minimo_ini=1     
+    #             velas_recorrido=200
+    #         else:
+    #             velas_maximo=100       #+++++++++100++++++++#___30___#
+    #             velas_maximo_ini=30
+    #             velas_minimo=30        #-----30----#1# 
+    #             velas_minimo_ini=1     
+    #             velas_recorrido=120
+
+    #         if filtro_precio_mayor_minimo(self.ind,self.log,self.escala_de_analisis,velas_minimo,velas_minimo_ini):
+    #             if filtro_precio_mayor_maximo(self.ind,self.log,self.escala_de_analisis,velas_maximo,velas_maximo_ini):
+    #                 if self.precio >= self.precio_salir_derecho + self.ind.recorrido_maximo(self.escala_de_analisis,velas_recorrido):
+    #                     self.iniciar_stoploss()
 
 
     def controlar_stop_loss(self): 
@@ -4201,9 +4216,10 @@ class Par:
 
         stoploss=self.calcular_stoploss() 
 
-        if self.stoploss_negativo == 0 and  stoploss < self.precio_salir_derecho: # abortamos, hemos calculado no es válido
+        derecho_gan_min = self.precio_salir_derecho * (1+self.g.ganancia_minima[self.escala_de_analisis]/100)
+        if self.stoploss_negativo == 0 and  stoploss < derecho_gan_min: # abortamos, hemos calculado no es válido
             #este stoploss calculado es inválido, pero si hay un stoploss puesto de antes válido, lo deja
-            self.log.log('No se pude poner stoploss ',stoploss,' < ',self.precio_salir_derecho,'precio_salir_derecho'  )
+            self.log.log('No se pude poner stoploss ',stoploss,' < ',derecho_gan_min,'derecho_gan_min'  )
             return
                 
         if self.cancelar_ultima_orden():
@@ -4523,19 +4539,17 @@ class Par:
 
 
     def calculo_stoploss_negativo(self):
-        ind=self.ind
-        #tomo la banda inferior de bollinger con una desviancion standar de 2.5, la desviacion por defecto es 2 lo que me asegura que 
-        #la volatilidad en el precio no me afecte
-        _,_,banda_inferior = ind.bollinger(self.escala_de_analisis,periodos=20,desviacion_standard=2.5,velas_desde_fin=40)
-
-        return banda_inferior
+        sl = self.ind.minimo(self.escala_de_analisis,cvelas=50)  / 1.01
+        if sl > self.precio:
+            sl = self.precio - self.ind.recorrido_promedio(self.escala_de_analisis,50)
+        return sl
 
 
     def calcular_stoploss(self):
         self.actualizar_precio_ws()
         self.ultimo_calculo_stoploss = time.time()
      
-        if self.stoploss_negativo == 1 and self.precio < self.precio_salir_derecho:
+        if self.stoploss_negativo == 1 and self.precio < self.precio_salir_derecho * (1+self.g.ganancia_minima[self.escala_de_analisis]/100) :
             return self.calculo_stoploss_negativo()
      
         st = self.calculo_basico_stoploss(self.generar_liquidez) 
@@ -4607,9 +4621,9 @@ class Par:
         else:
             sl_nuevo = self.precio - self.ind.recorrido_maximo(self.escala_de_analisis,200)
 
-        if sl_nuevo < self.precio_salir_derecho:
+        if sl_nuevo < self.precio_salir_derecho and self.precio > self.precio_salir_derecho and self.stoploss_negativo==0:
             ex_sl_nuevo = sl_nuevo
-            sl_nuevo = (self.precio-self.precio_salir_derecho) / 2  
+            sl_nuevo =self.precio_salir_derecho + (self.precio-self.precio_salir_derecho) / 2  
             self.log.log(f'sl_nuevo={ex_sl_nuevo} < precio_salir recalculo={sl_nuevo}')
       
         if  sl_nuevo > sl:
@@ -4647,7 +4661,7 @@ class Par:
         if st >= self.precio:
             st=self.precio - self.tickSize
 
-        if st < self.precio_salir_derecho:
+        if st < self.precio_salir_derecho and self.stoploss_negativo==0:
             st = self.precio_salir_derecho
             self.log.log('corrección final st < self.precio_salir_derecho',st)
         
