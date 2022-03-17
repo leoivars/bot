@@ -1,14 +1,15 @@
 from indicadores2 import Indicadores
 from logger import Logger
 
+#class Filtro(): 
 
-def filtro_parte_baja_rango(ind:Indicadores,log:Logger,escala,cvelas,porcentaje_bajo=.3):
-    minimo,maximo = ind.minimo_maximo_por_rango_velas_imporantes(escala,cvelas)
+def filtro_parte_baja_rango(ind:Indicadores,log:Logger,escala,cvelas,porcentaje_bajo=.382):
+    minimo,maximo = ind.minimo_maximo(escala,cvelas)
     maximo_compra =  minimo + (maximo - minimo) *  porcentaje_bajo 
     precio = ind.precio(escala)
     ret = precio < maximo_compra
-    log.log( f'parte_baja_rango {escala} min {minimo} px {precio} [max_compra {maximo_compra}] maximo {maximo} {ret}'  )
-    return ret 
+    log.log( f'parte_baja_rango {porcentaje_bajo} {escala} min {minimo} px {precio} [max_compra {maximo_compra}] maximo {maximo} {ret}'  )
+    return ret    
 
 def filtro_parte_alta_rango(ind:Indicadores,log:Logger,escala,cvelas,porcentaje_bajo=.75):
     minimo,maximo = ind.minimo_maximo_por_rango_velas_imporantes(escala,cvelas)
@@ -109,6 +110,23 @@ def filtro_xvolumen_de_impulso(ind:Indicadores,log:Logger,escala,periodos,sentid
 
     return ret
 
+def filtro_xvolumen_de_impulso(ind:Indicadores,log:Logger,escala,periodos,sentido=-1,xmin_impulso=50):
+    '''  desde que empezó a bajar, suma todo el volumen de las velas segun el sentido( -1 bajista, 1 alcista, 0 todo) y lo compara con el volumen promedio
+         convirtiendolo en x veces mas. 
+         Si ese volumen comparado es mayor al parametrizado(xmin_impulso): retorna True
+    '''
+    ret = False
+    maximos=ind.lista_picos_maximos_ema(escala,periodos,300,'close',6,6)
+    if len(maximos)>0:
+        if maximos[0][1] > ind.precio(escala):
+            fin = -maximos[0][0]
+            xvol_impulso = ind.xvolumen_de_impulso(escala,sentido,vela_fin=fin) 
+            log.log(f'velas {-fin} xvol_impulso {xvol_impulso}')
+            ret = xvol_impulso >= xmin_impulso
+            log.log(f'filtro_xvolumen_de_impulso {ret}')
+    
+    return ret    
+
 def filtro_xvolumen_total(ind:Indicadores,log:Logger,escala,periodos, xmin_impulso=50):
     '''  desde que empezó a bajar, suma todo el volumen todas las velas y lo compara con el volumen promedio
          convirtiendolo en x veces mas. 
@@ -195,3 +213,12 @@ def filtro_ema_rapida_lenta(ind:Indicadores,log:Logger,escala,rapida,lenta,difer
     log.log(f'{filtro_ok} <--ok_filtro_ema_rapida_lenta: {filtro_ok}')
     return filtro_ok    
 
+def filtro_rsi(ind:Indicadores,log:Logger,escala='1h',valor_maximo=60): # en estado 7 para decidir comprar # 
+        
+        rsi =  ind.rsi(escala)
+       
+        filtro_ok = rsi < valor_maximo 
+        
+        log.log(f'rsi {escala} max {valor_maximo} rsi {rsi} {filtro_ok}')  
+
+        return filtro_ok

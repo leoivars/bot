@@ -144,8 +144,8 @@ if __name__=='__main__':
     #UTC	2021-06-13T07:02:34Z
     ####  fini='2021-11-01 00:00:00' desde acá tengo  pares=['XMRUSDT','BTCUSDT','CELRUSDT']
     #fini='2021-11-01 00:00:00' pares=[ 'ADAUSDT','AVAXUSDT','BNBUSDT','DOTUSDT','XRPUSDT','XMRUSDT','BTCUSDT','CELRUSDT']
-    fini='2022-03-13 00:00:00'
-    ffin='2022-03-13 23:59:59' 
+    fini='2022-03-14 00:00:00'
+    ffin='2022-03-16 00:00:00' 
     
     #pares=['BTCUSDT','BNBUSDT','XRPUSDT']
     #pares=['BTCUSDT','BNBUSDT']

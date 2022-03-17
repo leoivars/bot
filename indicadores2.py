@@ -696,8 +696,18 @@ class Indicadores:
 
     def minimo(self,escala,cvelas):
         df=self.mercado.get_panda_df(self.par, escala, cvelas + 1)
-        return df["low"].min()    
+        return df["low"].min()
+    
+    def minimo_maximo(self,escala,cvelas):
+        ''' retorna el mínimo y el máximo de *escala* para 
+        las ultimas *cvelas*  '''
+        df=self.mercado.get_panda_df(self.par, escala, cvelas + 1)
+        return df["low"].min(), df["high"].max() 
 
+
+
+
+        
     def rsi_contar_picos_maximos(self,escala,cvelas,mayor_de):
         ''' cuanta la cantidad de picos maximo desde el final por cvelas 
         para rsi mayor que el param mayor_de'''    

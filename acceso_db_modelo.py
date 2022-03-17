@@ -585,6 +585,12 @@ class Acceso_DB:
         self.fxdb.conexion.commit() 
         return ret
 
+    def backtesting_borrar_todos_los_resultados(self):
+        ret = self.fxdb.ejecutar_sql( "DELETE from resultados_backtesting" ) 
+        self.fxdb.conexion.commit() 
+        return ret
+
+
 ###-----Fin-Backteting---###
 
 

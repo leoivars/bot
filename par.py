@@ -26,9 +26,8 @@ from fpar.ganancias import calc_ganancia_minima, calculo_ganancias
 from mercado import Mercado
 
 from fpar.filtros import filtro_parte_baja_rango, filtro_zona_volumen, filtro_pendientes_emas_positivas,filtro_parte_alta_rango
-from fpar.filtros import filtro_precio_mayor_maximo,filtro_precio_mayor_minimo
 from fpar.filtros import filtro_pico_minimo_ema_low,filtro_velas_de_impulso,filtro_dos_emas_positivas
-from fpar.filtros import filtro_xvolumen_de_impulso,filtro_de_rsi_minimo_cercano
+from fpar.filtros import filtro_xvolumen_de_impulso,filtro_de_rsi_minimo_cercano,filtro_ema_rapida_lenta,filtro_rsi
 import fauto_compra_vende.habilitar_pares
 from acceso_db_funciones import Acceso_DB_Funciones
 from acceso_db_modelo import Acceso_DB
@@ -1148,7 +1147,7 @@ class Par:
         listo=False   #self.filtro_BTC_pendiente_negativa('1h',20) # si btc comienza a bajar en una hora, nos quedamos con mp_slice_cazaliq
  
         if not listo:
-            for ana in ["minimo_ema","vela_martillo_importante","patron_"]:
+            for ana in ["ema_rapida_lenta_xvolumen","minimo_ema","vela_martillo_importante","patron_"]:
                 if ana in self.analisis_provocador_entrada: # esto es viejo --> in "buscar_ema_positiva buscar_rebote_rsi":
                     metodo="market"
                     listo=True 
@@ -1958,17 +1957,13 @@ class Par:
             #         comprar = True
             #         break
             if not comprar: #and self.moneda=='BTC':
-                ret = self.scalping_parte_muy_baja('1h',250,0.3,p_xmin_impulso=self.xmin_impulso,em12=self.param_filtro_dos_emas_positivas)
+                ret = self.ema_rapida_lenta_xvolumen('1h',p_xmin_impulso=self.xmin_impulso,em12=self.param_filtro_dos_emas_positivas)
                 if ret[0]:
                     self.escala_de_analisis = ret[1]
                     self.sub_escala_de_analisis = ret[1]
                     self.analisis_provocador_entrada=ret[2]
                     comprar = True
                     break      
-
-            
-            
-    
    
         if not comprar and entradas==0 and time.time() - self.tiempo_inicio_estado > 7200: # no está comprando, detengo el para para probar otro
             self.db.set_no_habilitar_hasta(self.calcular_fecha_futura(7200),self.moneda,self.moneda_contra)
@@ -2210,7 +2205,20 @@ class Par:
             if filtro_xvolumen_de_impulso(ind,self.log,escala,periodos=14,sentido=0,xmin_impulso=p_xmin_impulso):                   #hay volumen 27x mayor en total durante la bajada
                 if filtro_dos_emas_positivas(ind,self.log,escala,ema1_per=em12[0],ema2_per=em12[1]):                                #giro en el precio
                     ret = [True,escala,f'scalping_parte_muy_baja{cvelas_rango}_{porcentaje_bajo}']
-        return ret        
+        return ret      
+
+    def ema_rapida_lenta_xvolumen(self,escala,p_xmin_impulso=50,em12=(4,7)):
+        self.log.log('====== scalping_parte_muy_baja ======')
+        ret=[False,'xx']
+        ind: Indicadores = self.ind
+        if filtro_parte_baja_rango(self.ind,self.log,escala,50,.618):
+            if filtro_ema_rapida_lenta(ind,self.log,escala,rapida=em12[0],lenta=em12[1],diferencia=0.1):  
+                if filtro_xvolumen_de_impulso(ind,self.log,escala,periodos=14,sentido=0,xmin_impulso=p_xmin_impulso):
+                    ret = [True,escala,f'ema_rapida_lenta_xvolumen'] 
+
+        return ret
+
+            
 
 
     def buscar_rsi_minimo_super_volumen(self,escala): 
@@ -3739,6 +3747,12 @@ class Par:
 
     def iniciar_stop_loss_en_caso_de_ser_posible(self):
         if self.stoploss_habilitado == 0:
+
+            if self.precio > self.precio_salir_derecho and self.ind.rsi(self.escala_de_analisis) > 69:
+                self.log.log(f'hay precio para stoploss y rsi alto')
+                self.iniciar_stoploss()   
+                return
+
             precio_minimo_sl_positivo = self.precio_salir_derecho * (1+self.g.ganancia_minima[self.escala_de_analisis]/100)
             self.log.log(f'precio {self.precio}  precio_minimo_sl_positivo {precio_minimo_sl_positivo}')
             if self.precio < precio_minimo_sl_positivo:    #caso stoploss negativo
@@ -3748,9 +3762,9 @@ class Par:
                 if  gan_sl_negativo > -10:
                     self.stoploss_negativo = 1
                     self.iniciar_stoploss()
+                    
             else:                              #caso stoploss positivo
                 self.iniciar_stoploss()    
-
 
 
     # def iniciar_stop_loss_en_caso_de_ser_posible(self):
@@ -4211,10 +4225,11 @@ class Par:
             self.intentar_recuperar_venta()    
            
 
-    def iniciar_stoploss(self):
+    def iniciar_stoploss(self,stoploss=None):
         self.log.log(self.par,'iniciar_stoploss....')
 
-        stoploss=self.calcular_stoploss() 
+        if stoploss is None:
+            stoploss=self.calcular_stoploss() 
 
         derecho_gan_min = self.precio_salir_derecho * (1+self.g.ganancia_minima[self.escala_de_analisis]/100)
         if self.stoploss_negativo == 0 and  stoploss < derecho_gan_min: # abortamos, hemos calculado no es válido
@@ -4230,10 +4245,25 @@ class Par:
             self.intentar_recuperar_venta()        
 
 
+    def stoploss_subir(self):
+        #minimo = self.ind.minimo(self.escala_de_analisis,cvelas=3)  
+        px_salir_derecho = self.precio_salir_derecho
+        precio = self.precio
+        sl = 0
+        if precio > px_salir_derecho :
+            sl = px_salir_derecho + (  (precio - px_salir_derecho) /2 )
+
+        if sl > self.stoploss_actual:
+            self.log.log(f'sl de {self.stoploss_actual} --> {sl}')
+        else:    
+            sl = self.stoploss_actual    
+
+        return sl 
+
     def subir_stoploss(self,forzado=False):
         if not forzado and not self.ct_subir_stoploss.tiempo_cumplido():         #para evitar subir el stoploss por este método, muy seguido
             return
-        nuevo_stoploss = self.calcular_stoploss()
+        nuevo_stoploss = self.stoploss_subir()
         if nuevo_stoploss + self.tickSize * 2 < self.precio:
             if self.stoploss_habilitado==1 and nuevo_stoploss > self.stoploss_actual:
                 if self.cancelar_ultima_orden():
@@ -4328,9 +4358,9 @@ class Par:
             self.tiempo_inicio_stoploss = time.time()
             self.tiempo_inicio_precio_bajo_stoploss = 0
             self.ultimo_calculo_stoploss = time.time()
-            self.ct_subir_stoploss = Controlador_De_Tiempo(600)
-            self.ct_controlar_stoploss = Controlador_De_Tiempo(600)
-            self.ct_subir_stoploss_uno = Controlador_De_Tiempo(600)
+            self.ct_subir_stoploss = Controlador_De_Tiempo(60)
+            self.ct_controlar_stoploss = Controlador_De_Tiempo(60)
+            self.ct_subir_stoploss_uno = Controlador_De_Tiempo(60)
             self.bucles_partial_filled = 0
         else:
             self.stoploss_habilitado=0
