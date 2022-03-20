@@ -3748,10 +3748,11 @@ class Par:
     def iniciar_stop_loss_en_caso_de_ser_posible(self):
         if self.stoploss_habilitado == 0:
 
-            if self.precio > self.precio_salir_derecho and self.ind.rsi(self.escala_de_analisis) > 69:
-                self.log.log(f'hay precio para stoploss y rsi alto')
-                self.iniciar_stoploss()   
-                return
+            if not self.ind.ema_rapida_mayor_lenta('4h',10,55,.5):     #esta bajista en 4h
+                if self.precio > self.precio_salir_derecho and self.ind.rsi(self.escala_de_analisis) > 69:
+                    self.log.log(f'hay precio para stoploss y rsi alto')
+                    self.iniciar_stoploss()   
+                    return
 
             precio_minimo_sl_positivo = self.precio_salir_derecho * (1+self.g.ganancia_minima[self.escala_de_analisis]/100)
             self.log.log(f'precio {self.precio}  precio_minimo_sl_positivo {precio_minimo_sl_positivo}')
@@ -4569,11 +4570,14 @@ class Par:
 
 
     def calculo_stoploss_negativo(self):
-        sl = self.ind.minimo(self.escala_de_analisis,cvelas=50)  / 1.01
+        for cvelas in range(50,300,50):
+            sl = self.ind.minimo(self.escala_de_analisis,cvelas)  / 1.01
+            if sl < self.precio:
+                break
+        
         if sl > self.precio:
-            sl = self.precio - self.ind.recorrido_promedio(self.escala_de_analisis,50)
+            sl = self.precio - self.ind.recorrido_maximo(self.escala_de_analisis,50)
         return sl
-
 
     def calcular_stoploss(self):
         self.actualizar_precio_ws()
@@ -4650,17 +4654,16 @@ class Par:
             sl_nuevo = self.precio - self.ind.recorrido_minimo(self.escala_de_analisis,100)
         else:
             sl_nuevo = self.precio - self.ind.recorrido_maximo(self.escala_de_analisis,200)
+        
+        self.log.log(f'sl_nuevo={sl_nuevo}')
 
         if sl_nuevo < self.precio_salir_derecho and self.precio > self.precio_salir_derecho and self.stoploss_negativo==0:
             ex_sl_nuevo = sl_nuevo
             sl_nuevo =self.precio_salir_derecho + (self.precio-self.precio_salir_derecho) / 2  
-            self.log.log(f'sl_nuevo={ex_sl_nuevo} < precio_salir recalculo={sl_nuevo}')
+            self.log.log(f'sl_nuevo={ex_sl_nuevo} < precio_salir_derecho, recalculo={sl_nuevo}')
       
         if  sl_nuevo > sl:
             sl = sl_nuevo
-
-        if sl == 0:
-            self.precio_salir_derecho
 
         sl = self.st_correccion_final(sl)    
 
@@ -4687,9 +4690,6 @@ class Par:
 
     def st_correccion_final(self,st): 
         st =  round( st , self.moneda_precision)
-
-        if st >= self.precio:
-            st=self.precio - self.tickSize
 
         if st < self.precio_salir_derecho and self.stoploss_negativo==0:
             st = self.precio_salir_derecho
