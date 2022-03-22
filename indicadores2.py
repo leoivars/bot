@@ -1280,6 +1280,34 @@ class Indicadores:
 
         return ret
     
+    def stoploss_ema(self,escala,precio_salir_derecho,periodos_iniciales_ema,cvelas):
+        ''' trata de encontrar el precio por encima de precio_salir_derecho
+            para una determinada ema. Dicha ema debe ser siempre menor al precio
+            minimo durante cvelas
+        '''
+        max_periodos = 200
+        df = self.mercado.get_panda_df(self.par,escala,max_periodos+cvelas)
+        periodos = min(200,periodos_iniciales_ema)
+        
+        ema_ok = False
+        while periodos <= max_periodos  and not ema_ok:
+            periodos +=1
+            ema = ta.ema(df['close'],length=periodos)
+            ema_ok = True
+            for i in range(-cvelas,0):
+                #print(f"periodos {periodos}, i {i} ema.iloc[i] {ema.iloc[i]}   df['low'].iloc[i] {df['low'].iloc[i]} ")
+                if ema.iloc[i] < precio_salir_derecho or df['low'].iloc[i] <= ema.iloc[i]:
+                    ema_ok = False
+                    break
+
+        if ema_ok and ema.iloc[-1] > precio_salir_derecho:
+            ret =  ema.iloc[-1]
+        else:
+            ret = -1 
+
+        return ret
+
+
 
     def get_df(self,par,escala):
         df =self.get_cache('get_panda_df',(par,escala))

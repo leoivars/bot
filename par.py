@@ -4246,13 +4246,12 @@ class Par:
             self.intentar_recuperar_venta()        
 
 
-    def stoploss_subir(self):
-        #minimo = self.ind.minimo(self.escala_de_analisis,cvelas=3)  
-        px_salir_derecho = self.precio_salir_derecho
-        precio = self.precio
-        sl = 0
-        if precio > px_salir_derecho :
-            sl = px_salir_derecho + (  (precio - px_salir_derecho) /2 )
+    def px_stoploss_positivo(self):
+        ''' calcular un precio entre self.precio y self.precio_salir_derecho
+            que tenga la probabilidad mas baja (especulada) de que self.precio
+            retroceda y se ejecute el stoploss
+        '''
+        sl = self.ind.stoploss_ema(self.escala_de_analisis,self.precio_salir_derecho,10,5)
 
         if sl > self.stoploss_actual:
             self.log.log(f'sl de {self.stoploss_actual} --> {sl}')
@@ -4264,7 +4263,7 @@ class Par:
     def subir_stoploss(self,forzado=False):
         if not forzado and not self.ct_subir_stoploss.tiempo_cumplido():         #para evitar subir el stoploss por este método, muy seguido
             return
-        nuevo_stoploss = self.stoploss_subir()
+        nuevo_stoploss = self.px_stoploss_positivo()
         if nuevo_stoploss + self.tickSize * 2 < self.precio:
             if self.stoploss_habilitado==1 and nuevo_stoploss > self.stoploss_actual:
                 if self.cancelar_ultima_orden():
