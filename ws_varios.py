@@ -8,7 +8,7 @@ from websocket import create_connection
 from threading import Thread
 import json
 from mercado_actualizador_rest import Actualizador_rest
-from variables_globales import VariablesEstado
+from variables_globales import Global_State
 import traceback
 
 
@@ -26,7 +26,7 @@ class WS_stream(Thread):
         self.time_ultima_recepcion=0
         self.activo = False
         
-        self.g:VariablesEstado = estado_general
+        self.g:Global_State = estado_general
         self.log=log
         
         self.buy=[]
@@ -205,7 +205,7 @@ if __name__=='__main__':
     fxdb=Acceso_DB_Funciones(log,conn.pool)        
     db = Acceso_DB(log,fxdb)   
     
-    globales = VariablesEstado()
+    globales = Global_State()
 
     ws = WS_stream(log,globales)
     ws.start()

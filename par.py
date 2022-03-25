@@ -1,7 +1,6 @@
 # # -*- coding: UTF-8 -*-
 #from binance.enums import * #para  create_order
 
-from pandas_ta import momentum, trend
 from mercado_actualizador_socket import Mercado_Actualizador_Socket
 from vela import Vela
 from binance.client import Client # Cliente python para acceso al exchangue
@@ -18,8 +17,7 @@ from ordenes_binance import OrdenesExchange
 from actualizador_info_par import ActualizadorInfoPar
 from funciones_utiles import calcular_fecha_futura, cpu_utilizada,calc_tiempo_segundos,strtime_a_fecha,strtime_a_time,variacion,variacion_absoluta
 from controlador_de_tiempo import *
-from variables_globales import  VariablesEstado
-from pool_indicadores import Pool_Indicadores
+from variables_globales import Global_State
 from calc_px_compra import Calculador_Precio_Compra
 from intentar_recuperar_venta_perdida import intentar_recuperar_venta_perdida
 from fpar.ganancias import calc_ganancia_minima, calculo_ganancias
@@ -60,7 +58,7 @@ class Par:
         #variables de instancia
         self.par=moneda+moneda_contra
         
-        self.g: VariablesEstado = obj_global
+        self.g: Global_State = obj_global
         self.estoy_vivo=True # Se usa para detectar cuando la instancia no tiene nada mas que hacer, se elimina de la memoria.
         self.shitcoin=0 # 0 no es shitcoin > 1 si lo es, una shitcoin es una moneda que muy probablemente suba poco y baje rápido por lo que hay que tener las maximas precauciones del caso
         self.libro=''
@@ -93,7 +91,7 @@ class Par:
         self.precio_ganancia_infima=0
         self.precio_ganancia_segura=0
         self.tomar_perdidas=0 # si el numero es >=0 no hace nada, caso contrario si nuestras perdidas son inferiores a este numero vendemos asumiendo perdidas
-        self.riesgo_tomar_perdidas =-10 # utilizado para el filtro de riesgo beneficio 19/04/2020
+        
         self.tendencia_minima_entrada=4 #tendencia que se usa en estado 7 para determinar que la moneda está subiendo y por lo tanto se puede entrar.
 
         self.solo_vender=0 #cuando este valor está en no se permite comprar, solo se vende.
@@ -245,9 +243,6 @@ class Par:
         #con esto me aseguro que to estblezcan los valores iniciales del par
         #self.cargar_parametros_iniales()
     
-        #minimo volumen expresado en moneda_contra que debe tener el para que entremos al mercado
-        # se configura en par.json a razon de un mes
-        self.volumen_minimo=0
 
         self.volumen=0 # el volumen del par, calculado en calcular valores que cambian poco y guardado en los datos del par
 
@@ -266,7 +261,7 @@ class Par:
         
 
         
-        #par,g: VariablesEstado,log:Logger,ind_par
+        #par,g: Global_State,log:Logger,ind_par
         self.libro2=Libro_Ordenes_DF(client,moneda,moneda_contra,25) #cleación del libro
         self.calculador_precio = Calculador_Precio_Compra(self.par,self.g,self.log,self.ind,self.libro2)
 
@@ -311,15 +306,9 @@ class Par:
 
         self.reserva_btc_en_usd= self.g.reserva_btc_en_usd
         self.x_min_notional=self.g.x_min_notional
-        self.riesgo_tomar_perdidas=self.g.riesgo_tomar_perdidas
-
-        if self.moneda_contra=='BTC':
-            self.volumen_minimo= self.g.volumen_minimo_btc
-        elif self.moneda_contra=='USDT':
-            self.volumen_minimo=self.g.volumen_minimo_usd
+        
+        if self.moneda_contra=='USDT':
             self.reserva_usdt=self.g.reserva_usdt
-
-
 
     def cargar_parametros_iniales(self):
         #self.log.log('cargar_parametros_iniales')
@@ -327,7 +316,6 @@ class Par:
         p=self.db.get_valores(self.moneda,self.moneda_contra)  #necesito que esté primero 
         #antes usaba cant_monesa_compra directamete ahora dejo el parametro cargado y establezco el valor despues, en el futuro hay que mejorarlo pero por ahora lo dejo así por compatibilidad
         Par.lector_precios.leerprecios()
-
         
         self.pmin_notional = p['min_notional']
         
@@ -3886,7 +3874,7 @@ class Par:
             self.bucles_partial_filled+=1    
  
     def momento_de_recomprar(self,escala,gan,duracion_trade):
-        #gan_atr = round ( atr/self.precio * 100 * self.g.x_neg_patr,2 ) #multiplicador de atr negativo para recomprar cuando se pasa cierta perdida
+        
         gan_limite = self.g.escala_ganancia[escala] * -1.5
         self.log.log( f'momento_de_recomprar?  gan {gan}, gan_limite {gan_limite} duracion {duracion_trade}' )
         #if self.moneda=='BTC' < 0.5 and duracion_trade > 60:    #experimental, esto podría comprar demasiado

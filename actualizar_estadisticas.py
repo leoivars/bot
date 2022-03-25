@@ -7,13 +7,13 @@ from binance.client import Client
 from datetime import datetime
 #from Monitor_precios_ws import MonitorPreciosWs
 from pool_indicadores import Pool_Indicadores
-from variables_globales import  VariablesEstado
+from variables_globales import  Global_State
 from actualizador_info_par import ActualizadorInfoPar
 from ordenes_binance import OrdenesExchange
 
 
 log=Logger('actualizar_estadisticas.log') 
-e=VariablesEstado()
+e=Global_State()
 
 #web soket de monitor de precios
 mo_pre=MonitorPreciosWs(log)

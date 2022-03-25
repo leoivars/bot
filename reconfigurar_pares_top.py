@@ -1,4 +1,4 @@
-from variables_globales import VariablesEstado
+from variables_globales import Global_State
 from logger import Logger
 import time
 from no_se_usa.acceso_db import Acceso_DB
@@ -11,7 +11,7 @@ from acceso_db_conexion import Conexion_DB
 
     
 
-def reconfigurar_pares_top(top,temporalidades,moneda_contra,db:Acceso_DB,g:VariablesEstado):
+def reconfigurar_pares_top(top,temporalidades,moneda_contra,db:Acceso_DB,g:Global_State):
 
     loglocal=Logger('reconfigurar_pares_top.log')
     loglocal.set_log_level(g.log_level)
@@ -48,7 +48,7 @@ if __name__ == "__main__":
     conn=Conexion_DB(log)
     db=Acceso_DB(log,conn.pool)
 
-    g = VariablesEstado()
+    g = Global_State()
 
     #pool de indicadores para pares lindos.
     logpool=Logger('pool_indicadores.log') 

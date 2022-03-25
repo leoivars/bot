@@ -8,7 +8,7 @@ from ordenes_binance import OrdenesExchange
 
 from funciones_utiles import memoria_consumida,cpu_utilizada,calc_tiempo_segundos,strtime_a_fecha,strtime_a_time,variacion,variacion_absoluta
 from controlador_de_tiempo import *
-from par_arbitraje import  VariablesEstado
+from no_se_usa.par_arbitraje import  Global_State
 from pool_indicadores import Pool_Indicadores
 from error_recuperable import Error_recuperable
 import random
@@ -25,7 +25,7 @@ class Par_arbitraje:
     def __init__(self, client,moneda,moneda_contra, obj_global,cantidad,porcentaje_compra,porcentaje_pventa):
         #variables de instancia
  
-        self.g: VariablesEstado = obj_global
+        self.g: Global_State = obj_global
         
         self.estoy_vivo=True # Se usa para detectar cuando la instancia no tiene nada mas que hacer, se elimina de la memoria.
         self.ultima_orden={'orderId':0}

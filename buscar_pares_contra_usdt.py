@@ -2,14 +2,14 @@
 from logger import Logger
 from binance.client import Client
 from mercado import Mercado
-from variables_globales import VariablesEstado
+from variables_globales import Global_State
 from indicadores2 import Indicadores
 
 
 def main():
     log=Logger('buscar_pares_contra_usdt.log') 
     client = Client()
-    e = VariablesEstado
+    e = Global_State
     mercado =Mercado(log,e,client)
     prices = client.get_orderbook_tickers()
     monedas_contra=['USDT']

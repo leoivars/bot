@@ -2,7 +2,7 @@
 
 import time
 from threading import Thread
-from variables_globales import VariablesEstado
+from variables_globales import Global_State
 import traceback
 from mercado_actualizador_socket import Mercado_Actualizador_Socket
 

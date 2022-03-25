@@ -21,7 +21,7 @@ class Estrategia():
     '''
     def __init__(self,par,log,estado_general, mercado):
         self.log: Logger = log
-        self.g: VariablesEstado = estado_general
+        self.g: Global_State = estado_general
         self.mercado = mercado
         self.par = par
         self.ind = Indicadores(self.par,self.log,self.g,self.mercado)
@@ -150,7 +150,7 @@ class Estrategia():
 
 
 if __name__=='__main__':
-    from variables_globales import VariablesEstado
+    from variables_globales import Global_State
     from gestor_de_posicion import Gestor_de_Posicion
     from binance.client import Client #para el cliente
     from pws import Pws
@@ -165,7 +165,7 @@ if __name__=='__main__':
 
     client = Client(pws.api_key, pws.api_secret)
     p = Gestor_de_Posicion(log,client,conn)
-    g = VariablesEstado(p)
+    g = Global_State(p)
     
 
     #fini='2021-06-16 00:00:00' 

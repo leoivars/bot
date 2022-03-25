@@ -7,7 +7,7 @@ from funciones_utiles import strtime_a_obj_fecha
 from mercado_back_testing import Mercado_Back_Testing
 
 
-from variables_globales import VariablesEstado
+from variables_globales import Global_State
 from logger import Logger
 from indicadores2 import Indicadores
 from calc_px_compra import Calculador_Precio_Compra
@@ -25,7 +25,7 @@ class Estrategia():
     '''
     def __init__(self,par,log,estado_general, mercado):
         self.log: Logger = log
-        self.g: VariablesEstado = estado_general
+        self.g: Global_State = estado_general
         self.mercado = mercado
         self.par = par
         self.ind = Indicadores(self.par,self.log,self.g,self.mercado)
@@ -204,7 +204,7 @@ if __name__=='__main__':
     fxdb=Acceso_DB_Funciones(log,conn)        
     db = Acceso_DB(log,fxdb)   
 
-    g = VariablesEstado()
+    g = Global_State()
 
     #fini='2021-06-16 00:00:00' 
     #ffin='2021-07-01 23:59:59' 

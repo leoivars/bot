@@ -17,7 +17,7 @@ def cargar_config_json():
 
 def cargar_trabajando_de_config_json():
     config = cargar_config_json()
-    return  bool(config[0]['trabajando'])
+    return  bool(config['trabajando'])
 
 
 inicio_funcionamiento = datetime.datetime.now()

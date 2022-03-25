@@ -2,14 +2,14 @@ from indicadores2 import Indicadores
 from mercado import Mercado
 from logger import Logger
 from time import time
-from variables_globales import VariablesEstado
+from variables_globales import Global_State
 from acceso_db_conexion import Conexion_DB
 from acceso_db_funciones import Acceso_DB_Funciones
 from acceso_db_modelo import Acceso_DB
 import time
 from fpar.filtros import filtro_parte_baja_rango
 
-def habilitar_deshabilitar_pares(g:VariablesEstado,db:Acceso_DB,mercado,log):
+def habilitar_deshabilitar_pares(g:Global_State,db:Acceso_DB,mercado,log):
     ''' Controla la cantidad de pares que tienen trades en este momento y lo compara con 
         g.maxima_cantidad_de_pares_con_trades que establece la cantidad máxima de pares con trades. 
         Si la cantidad es menor, habilita todos pares que sean habilitable (habilitable=1 en la tabla pares).
@@ -23,7 +23,7 @@ def habilitar_deshabilitar_pares(g:VariablesEstado,db:Acceso_DB,mercado,log):
     #else:
     #    db.deshabilitar_pares_sin_trades()
 
-def habilitar_deshabilitar_pares_periodicamente(g:VariablesEstado,conn:Conexion_DB,mercado):
+def habilitar_deshabilitar_pares_periodicamente(g:Global_State,conn:Conexion_DB,mercado):
     log = Logger('habilitar_deshabilitar.log')
     fxdb=Acceso_DB_Funciones(log,conn.pool)        
     db = Acceso_DB(log,fxdb)   
@@ -31,7 +31,7 @@ def habilitar_deshabilitar_pares_periodicamente(g:VariablesEstado,conn:Conexion_
         habilitar_deshabilitar_pares(g,db,mercado,log)
         time.sleep(300)     
 
-def habilitar_pares(g:VariablesEstado,db:Acceso_DB,mercado:Mercado,log,pares_con_trades):
+def habilitar_pares(g:Global_State,db:Acceso_DB,mercado:Mercado,log,pares_con_trades):
     pares=db.get_habilitables()
     c_habilitados=pares_con_trades
     for p in pares:
@@ -59,7 +59,7 @@ def actualizar_volumen_precio(moneda,moneda_contra,ind:Indicadores,db:Acceso_DB)
     vol = ind.volumen_suma('1d',15)
     db.par_persistir_volumen_precio(moneda,moneda_contra,vol,px)
 
-def hay_precios_minimos_como_para_habilitar(ind:Indicadores,g:VariablesEstado,log):
+def hay_precios_minimos_como_para_habilitar(ind:Indicadores,g:Global_State,log):
         ret = True
         escalas=['1d','4h'] 
         for e in escalas:

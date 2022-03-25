@@ -1,4 +1,4 @@
-from variables_globales import VariablesEstado
+from variables_globales import Global_State
 from logger import *
 
 def log_pares_estado(e,estado,maximo_a_mostrar=999):
@@ -50,22 +50,6 @@ def log_pares_estado_ordenado_por_ganancia(e,estado,cant=15):
     return lin        
     #log.log(lin)
 
-def log_pares_senial_compra(e):
-    e.cant_pares_con_senial_compra=0
-    e.pares_con_senial_compra=[]
-    #lin='Con Señal de Compra \n'
-    try:    
-        for k in e.pares_control.keys():
-            p=e.pares[k]
-            if p.senial_compra:
-                e.cant_pares_con_senial_compra+=1
-                e.pares_con_senial_compra.append(k)
-        #log.log(lin)
-        
-        #27/08/19probando si esto pono lento a todo!#procesar_necesidades_de_liquidez()    
-    except Exception as ex:
-        log.log( "Error en log_pares_senial_compra:",ex )
-        
 
 def log_pares_estado7(e):
     estado=7
@@ -107,7 +91,7 @@ def log_trades_activos():
     log_trades_activo_contra('PAX')
 
 
-def mostrar_informacion(e:VariablesEstado,   log:Logger):
+def mostrar_informacion(e:Global_State,   log:Logger):
     
     #log_pares_senial_compra() #este debe ir primero porque establece las necesidadas de liquidez
     #log_cuenta_pares_estado(2)

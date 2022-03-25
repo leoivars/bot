@@ -7,7 +7,7 @@ from indicadores2 import *
 from funciones_utiles import *
 from par_propiedades import Par_Propiedades
 from formateadores import *
-from variables_globales import VariablesEstado
+from variables_globales import Global_State
 from pws import Pws
 import sys
 import time
@@ -25,7 +25,7 @@ if __name__== "__main__":
     client = Client(pws.api_key, pws.api_secret)
 
     log=Logger('config_moneda.log') 
-    e = VariablesEstado()
+    e = Global_State()
 
 
     

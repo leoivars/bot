@@ -17,7 +17,7 @@ from datetime import datetime
 import pandas as pd
 import pandas_ta as ta
 
-from  variables_globales import VariablesEstado
+from  variables_globales import Global_State
 
 from cola_de_uso import Cola_de_uso
 
@@ -34,7 +34,7 @@ class Actualizador_rest:
 
     def __init__(self,log,estado_general,cliente:Client):
         
-        self.g:VariablesEstado = estado_general
+        self.g:Global_State = estado_general
         
         self.log=log
         self.retardo=5

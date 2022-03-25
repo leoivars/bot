@@ -61,7 +61,7 @@ class Gestor_de_Posicion:
 
 if __name__=='__main__':
     from pws import Pws
-    from variables_globales import VariablesEstado
+    from variables_globales import Global_State
     pws=Pws()
     client = Client(pws.api_key, pws.api_secret)
     #base de datos
@@ -69,7 +69,7 @@ if __name__=='__main__':
     conn=Conexion_DB(log)
     db=Acceso_DB(log,conn.pool)
     gp = Gestor_de_Posicion(log,client,db)
-    g = VariablesEstado(gp)
+    g = Global_State(gp)
     #web soket de monitor de precios
     #mo_pre=MonitorPreciosWs(log)
 

@@ -1,14 +1,14 @@
 
 from par import Par
 from acceso_db_modelo import Acceso_DB
-from variables_globales import  VariablesEstado
+from variables_globales import  Global_State
 from logger import Logger
 import _thread
 import time
 
 import gc
 
-def materializar_pares_desde_db(inico,log:Logger,db:Acceso_DB,e:VariablesEstado,mercado,client):
+def materializar_pares_desde_db(inico,log:Logger,db:Acceso_DB,e:Global_State,mercado,client):
 
     log.log('materializar_pares_desde_db.ini',inico)
     #poner_pares_control_en_falso, luego si está query pasa a verdadero

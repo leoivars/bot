@@ -2,7 +2,7 @@
 
 import time
 from unicorn_binance_websocket_api.unicorn_binance_websocket_api_manager import BinanceWebSocketApiManager
-from variables_globales import VariablesEstado
+from variables_globales import Global_State
 import threading
 from mercado_actualizador_rest import Actualizador_rest
 from wsbinance import WS_binance
@@ -14,7 +14,7 @@ class Actualizador_socket:
     
     def __init__(self,log,estado_general,vpar,cliente,escala):
         
-        self.g:VariablesEstado = estado_general
+        self.g:Global_State = estado_general
         self.actualizador_rest= Actualizador_rest(log,estado_general,cliente)
         
         self.log=log

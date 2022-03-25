@@ -11,7 +11,7 @@ from binance.client import Client #para el cliente
 from ordenes_binance import OrdenesExchange
 import argparse
 import math
-from variables_globales import  VariablesEstado
+from variables_globales import  Global_State
 from funciones_utiles import  calcular_fecha_futura,  strtime_a_fecha
 
 
@@ -30,7 +30,7 @@ conn=Conexion_DB(log)
 #objeto de acceso a datos
 db=Acceso_DB(log,conn.pool)
 
-estado_general=VariablesEstado()
+estado_general=Global_State()
 
 oe=OrdenesExchange(client,'BTCUSDT',log,estado_general)
 

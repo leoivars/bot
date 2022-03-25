@@ -20,7 +20,7 @@ from datetime import datetime, timedelta
 import pandas as pd
 import pandas_ta as ta
 
-from  variables_globales import VariablesEstado
+from  variables_globales import Global_State
 
 from funciones_utiles import strtime_a_fecha, strtime_a_obj_fecha, variacion,compara,signo, variacion_absoluta
 from mercado import Mercado
@@ -61,7 +61,7 @@ class Indicadores:
         pd.set_option('mode.chained_assignment', None)
 
         self.actualizado={'1m':0,'3m':0,'5m':0,'15m':0,'30m':0,'1h':0,'2h':0,'4h':0,'1d':0,'1w':0,'1M':0}
-        self.g:VariablesEstado = estado_general
+        self.g:Global_State = estado_general
         self.velas={}
         for k in self.actualizado:
             self.velas[k]=None
@@ -2208,7 +2208,7 @@ class Indicadores:
  
 
 if __name__=='__main__':
-    from variables_globales import VariablesEstado
+    from variables_globales import Global_State
     from binance.client import Client #para el cliente
     from pws import Pws
     #from acceso_db_conexion_mysqldb import Conexion_DB
@@ -2227,7 +2227,7 @@ if __name__=='__main__':
     db = Acceso_DB(log,fxdb)                       
 
     client = Client(pws.api_key, pws.api_secret)
-    g = VariablesEstado()
+    g = Global_State()
     
     un_minuto = timedelta(minutes=1)
     #fini='2021-06-16 00:00:00' 

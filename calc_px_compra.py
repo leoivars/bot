@@ -1,17 +1,17 @@
 from indicadores2 import Indicadores
 from libro_ordenes2 import Libro_Ordenes_DF
 from logger import Logger
-from variables_globales import VariablesEstado
+from variables_globales import Global_State
 from funciones_utiles import format_valor_truncando
 from numpy import isnan
 
 
 class Calculador_Precio_Compra:
-    def __init__(self,par,g: VariablesEstado,log:Logger,ind_par:Indicadores,libro:Libro_Ordenes_DF=None):
+    def __init__(self,par,g: Global_State,log:Logger,ind_par:Indicadores,libro:Libro_Ordenes_DF=None):
         self.par = par 
         self.ind_par :Indicadores = ind_par
         self.log:Logger = log
-        self.g :VariablesEstado = g
+        self.g :Global_State = g
         self.escala_de_analisis = '1d'
         self.libro: Libro_Ordenes_DF = libro
 
@@ -148,11 +148,7 @@ class Calculador_Precio_Compra:
             self.calculo_precio_compra='mejor_de_4'
             self.log.log('calc.dinamico mejor_de_4')
 
-        elif metodo=="caza_rsi_bajo":  
-            px= self.px_de_rsi_mas_bajo(self.escala_de_analisis,self.g.resta_caza_rsi_bajo)
-            self.calculo_precio_compra='caza_rsi_bajo'  
-            self.log.log('calc.caza_rsi_bajo soporte',px) 
-        
+       
         elif metodo=="cazaliq": 
             px= self.px_de_rsi_mas_bajo(self.escala_de_analisis,15)
 

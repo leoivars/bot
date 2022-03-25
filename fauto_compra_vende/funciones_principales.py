@@ -1,6 +1,6 @@
 from os import error
 from binance.client import Client
-from variables_globales import VariablesEstado
+from variables_globales import Global_State
 from logger import Logger
 import time
 from fauto_compra_vende.materializar_pares import eliminar_pares_muertos
@@ -22,7 +22,7 @@ def crear_cliente(pws,log:Logger):
                 t=30
     return client
 
-def esperar_correcto_funcionamiento(client:Client,e:VariablesEstado,log:Logger):
+def esperar_correcto_funcionamiento(client:Client,e:Global_State,log:Logger):
     # esperamos el corremto funcionamiento del sistema
     errores=0
     while True:
@@ -50,13 +50,13 @@ def esperar_correcto_funcionamiento(client:Client,e:VariablesEstado,log:Logger):
                 break
         time.sleep(t)
 
-def controlar_estado0(e:VariablesEstado,log:Logger):
+def controlar_estado0(e:Global_State,log:Logger):
      # detener inactivos
     for k in e.pares_control.keys():
         if e.pares[k][0].estado==0:
             log.log('######---OJO---######',k,'E.0')        
 
-def esperar_a_que_todos_mueran(e:VariablesEstado,log:Logger):
+def esperar_a_que_todos_mueran(e:Global_State,log:Logger):
      # detener inactivos
     alguno_vivo = True 
     c=300 

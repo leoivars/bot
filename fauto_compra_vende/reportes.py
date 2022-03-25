@@ -1,7 +1,7 @@
 
 from fauto_compra_vende.reporte_resumen_errores import reporte_resumen_errores
 from mercado import Mercado
-from variables_globales import VariablesEstado
+from variables_globales import Global_State
 from acceso_db_modelo import Acceso_DB
 from logger import Logger
 from funciones_utiles import linea
@@ -35,7 +35,7 @@ def reporte_de_muerte(log):
     correo=Correo(log)
     correo.enviar_correo(titulo,texto)
 
-def reporte_correo(log:Logger,db:Acceso_DB,e:VariablesEstado,mercado:Mercado,inicio_funcionamiento,cuenta_de_reinicios):
+def reporte_correo(log:Logger,db:Acceso_DB,e:Global_State,mercado:Mercado,inicio_funcionamiento,cuenta_de_reinicios):
     
     reporte  = reporte_de_ciclo(e,mercado,inicio_funcionamiento,cuenta_de_reinicios) +'\n'
 
@@ -72,7 +72,7 @@ def reporte_correo(log:Logger,db:Acceso_DB,e:VariablesEstado,mercado:Mercado,ini
     correo=Correo(log)
     correo.enviar_correo(titulo,texto)
 
-def reporte_de_ciclo(e:VariablesEstado,mercado:Mercado,inicio_funcionamiento,cuenta_de_reinicios):
+def reporte_de_ciclo(e:Global_State,mercado:Mercado,inicio_funcionamiento,cuenta_de_reinicios):
     reporte= linea ('T.Func:', calc_tiempo(inicio_funcionamiento,datetime.now()),' Reinicios:',cuenta_de_reinicios,'\n')
     #cola = IndPool.estado_cola()
     #demora = IndPool.demora_cola()

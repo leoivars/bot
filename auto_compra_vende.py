@@ -14,7 +14,7 @@ from acceso_db_funciones import Acceso_DB_Funciones
 from acceso_db_modelo import Acceso_DB
 
 from controlador_de_tiempo import Controlador_De_Tiempo
-from variables_globales import  VariablesEstado
+from variables_globales import  Global_State
 from fauto_compra_vende.habilitar_pares import habilitar_deshabilitar_pares_periodicamente
 from fauto_compra_vende.funciones_principales import crear_cliente, esperar_correcto_funcionamiento,controlar_estado0,esperar_a_que_todos_mueran
 from fauto_compra_vende.materializar_pares import materializar_pares_desde_db
@@ -22,7 +22,7 @@ from fauto_compra_vende.reportes import reporte_correo,reporte_de_ciclo
 from fauto_compra_vende.funciones_logs import log_pares_estado, mostrar_informacion
 
 
-e = VariablesEstado()                            #Objeto con información global del bot
+e = Global_State()                            #Objeto con información global del bot
 log=Logger('auto_compra_vende.log')              #log para este modulo
 log.set_log_level(e.log_level)
 pws=Pws()

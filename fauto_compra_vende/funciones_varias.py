@@ -6,7 +6,7 @@
 def var_compra_venta(px_compra,px_venta):
     return ( px_venta/px_compra -1   ) * 100   
 
-def actualizar_info_pares_deshabilitados_periodicamente(e:VariablesEstado,IndPool:Pool_Indicadores,conn,client):
+def actualizar_info_pares_deshabilitados_periodicamente(e:Global_State,IndPool:Pool_Indicadores,conn,client):
     time.sleep(300)# espero 5 minutitos antes de empezar a hacer algo 
     db = Acceso_DB(log,conn.pool)
     while e.trabajando:
@@ -62,7 +62,7 @@ def reporte_peores(horas_hacia_atras):
 
     return 'Peores Monedas: ' +str(horas_hacia_atras)+' horas\n' + lin    
 
-def deshabiliar_pares_en_compra_temporalmente_periodicamente(e:VariablesEstado):
+def deshabiliar_pares_en_compra_temporalmente_periodicamente(e:Global_State):
     periodo = 600
     time.sleep( periodo )  # unos segundos para que levante todo
     loglocal=Logger('deshabiliar_pares_en_compra_temporalmente_periodicamente.log')

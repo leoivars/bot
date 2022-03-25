@@ -6,7 +6,7 @@ from velaset import VelaSet
 from binance.client import Client
 import time
 import pandas as pd
-from  variables_globales import VariablesEstado
+from  variables_globales import Global_State
 from funciones_utiles import variacion,compara,signo
 from mercado_actualizador_socket import Mercado_Actualizador_Socket
 
@@ -19,7 +19,7 @@ class Mercado:
     def __init__(self,log,estado_general,cliente):
         pd.set_option('mode.chained_assignment', None)
 
-        self.g:VariablesEstado = estado_general
+        self.g:Global_State = estado_general
         self.log=log
         self.cliente = cliente 
         

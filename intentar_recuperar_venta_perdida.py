@@ -59,7 +59,7 @@ if __name__=='__main__':
     from logger import *
     from ordenes_binance import OrdenesExchange
     from pws import Pws
-    from variables_globales import VariablesEstado
+    from variables_globales import Global_State
    
     from acceso_db_conexion import Conexion_DB
     from acceso_db_funciones import Acceso_DB_Funciones
@@ -71,7 +71,7 @@ if __name__=='__main__':
 
     client = Client(pws.api_key, pws.api_secret,{ "timeout": 20})
     
-    e = VariablesEstado()
+    e = Global_State()
 
     conn=Conexion_DB(log)                          
     fxdb=Acceso_DB_Funciones(log,conn.pool)        

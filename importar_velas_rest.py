@@ -113,7 +113,7 @@ class Actualizador_Rest:
 
 
 if __name__=='__main__':
-    from variables_globales import VariablesEstado
+    from variables_globales import Global_State
     from pws import Pws
     from pymysql.constants.ER import NO
     from acceso_db_sin_pool_conexion import Conexion_DB_Directa

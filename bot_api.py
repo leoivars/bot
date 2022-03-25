@@ -4,7 +4,7 @@ from flask_restful import Resource, Api
 from acceso_db import Acceso_DB
 from funciones_utiles import mes_anio_actuales
 
-from variables_globales import VariablesEstado 
+from variables_globales import Global_State 
 from multiprocessing import Process
 
 import time
@@ -18,7 +18,7 @@ class BotApi:
         self.api.add_resource(TradesEjecutados, '/trades_ejecutados')  # Route_1
         self.api.add_resource(Trades, '/trades')  # Route_1
         BotApi.db = pool_db
-        self.estado_general:VariablesEstado = estado_general
+        self.estado_general:Global_State = estado_general
 
     def run(self):
 

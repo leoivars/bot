@@ -1,0 +1,23 @@
+{
+    "trabajando"                 : 1,
+    "max_pares_activos"          : 15,
+    "min_pares_activos"          : 20,
+    "log_level"                  : 2,
+    "mostrar_cola"               : 0,
+    "tiempo_envio_reporte_correo": 3600,
+    "maxima_cantidad_de_pares_con_trades" : 8,
+  
+    "reserva_btc_en_usd"                  : 0,
+    "reserva_usdt"                        : 0,
+    "x_min_notional"                      : 1.25,
+    "horas_deshabilitar_par"              : 24,
+    
+    "max_compras_simultaneas"             : {"USDT" : 20,
+                                             "BTC"  : 7
+                                             },
+    "max_inversion_btc"       : 0.8,
+    "max_inversion_usdt"      : 0.99,                                             
+  
+    "hay_pump"                :  {"velas":5,"xatr":7,"xvol":30} 
+  
+  }

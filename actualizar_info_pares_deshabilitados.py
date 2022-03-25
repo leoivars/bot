@@ -1,4 +1,4 @@
-from variables_globales import VariablesEstado
+from variables_globales import Global_State
 from logger import Logger
 import time
 from acceso_db_conexion import Conexion_DB
@@ -13,7 +13,7 @@ from acceso_db_conexion import Conexion_DB
 from indicadores2 import Indicadores
 
 
-def actualizar_par(moneda,moneda_contra,g:VariablesEstado,IndPool:Pool_Indicadores,conn:Conexion_DB,client:Client,loglocal:Logger):
+def actualizar_par(moneda,moneda_contra,g:Global_State,IndPool:Pool_Indicadores,conn:Conexion_DB,client:Client,loglocal:Logger):
     par=moneda+moneda_contra
     oe=OrdenesExchange(client, par ,loglocal,g)
     actualizador = ActualizadorInfoPar(conn, oe ,loglocal)
@@ -22,7 +22,7 @@ def actualizar_par(moneda,moneda_contra,g:VariablesEstado,IndPool:Pool_Indicador
     actualizador.actualizar_info(ind,'1d',moneda,moneda_contra)
     
 
-def actualizar_info_pares_deshabilitados(g:VariablesEstado,IndPool:Pool_Indicadores,conn:Conexion_DB,client:Client):
+def actualizar_info_pares_deshabilitados(g:Global_State,IndPool:Pool_Indicadores,conn:Conexion_DB,client:Client):
     
     loglocal=Logger('actualizar_info_pares_deshabilitados.log')
     loglocal.set_log_level(g.log_level)
@@ -52,7 +52,7 @@ def actualizar_info_pares_deshabilitados(g:VariablesEstado,IndPool:Pool_Indicado
 
     return time.time() - inicio        # retorna el tiempo que se demoró
 
-def actualizar_ranking_por_volumen_global(g:VariablesEstado,IndPool:Pool_Indicadores,conn:Conexion_DB,client:Client):
+def actualizar_ranking_por_volumen_global(g:Global_State,IndPool:Pool_Indicadores,conn:Conexion_DB,client:Client):
     indbtc:Indicadores=IndPool.indicador('BTCUSDT')
     pxbtc = indbtc.precio_mas_actualizado()
     loglocal=Logger('actualizar_ranking_por_volumen.log')
@@ -77,7 +77,7 @@ if __name__  == '__main__':
     log = Logger('actualizar_info_pares_deshabilitados')
     conn=Conexion_DB(log)
     db=Acceso_DB(log,conn.pool)
-    g = VariablesEstado()
+    g = Global_State()
     #web soket de monitor de precios
     mo_pre=MonitorPreciosWs(log)
     mo_pre.empezar()

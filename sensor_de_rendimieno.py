@@ -1,9 +1,9 @@
 from pool_indicadores import Pool_Indicadores
-from variables_globales import  VariablesEstado
+from variables_globales import  Global_State
 from funciones_utiles import cpu_utilizada,memoria_consumida
 import time
 
-def sensor_de_rendimiento(g:VariablesEstado,ind_pool:Pool_Indicadores):
+def sensor_de_rendimiento(g:Global_State,ind_pool:Pool_Indicadores):
     ''' si el bot está tranquilo sube la cantidad de pares a monitorear
         caso contrario puede bajar la cantidad de pares
         el minimo de pares activos sera g.max_pares_activos_config
@@ -22,17 +22,17 @@ def sensor_de_rendimiento(g:VariablesEstado,ind_pool:Pool_Indicadores):
     elif cola >55 or cpu > 70:
         disminuir_max_pares( 1 , g )    
         
-def disminuir_max_pares(cantidad, g:VariablesEstado): 
+def disminuir_max_pares(cantidad, g:Global_State): 
     if g.max_pares_activos >= g.max_pares_activos_config + cantidad:
         g.max_pares_activos = len(g.pares) - cantidad
     else: 
         g.max_pares_activos = g.max_pares_activos_config
 
-def aumentar_max_pares(cantidad, g:VariablesEstado): 
+def aumentar_max_pares(cantidad, g:Global_State): 
     if len(g.pares) >=  g.max_pares_activos - cantidad: # estoy cerca del límite, aumento
         g.max_pares_activos += cantidad
 
-def sensar_rendimiento_periodicamente(g:VariablesEstado,ind_pool:Pool_Indicadores):
+def sensar_rendimiento_periodicamente(g:Global_State,ind_pool:Pool_Indicadores):
     while g.trabajando:
         sensor_de_rendimiento(g,ind_pool)
         time.sleep(30)             

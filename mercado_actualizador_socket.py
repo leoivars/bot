@@ -6,7 +6,7 @@ from websocket import create_connection,WebSocketTimeoutException,WebSocketConne
 from threading import Thread
 import json
 from mercado_actualizador_rest import Actualizador_rest
-from variables_globales import VariablesEstado
+from variables_globales import Global_State
 import traceback
 
 
@@ -26,7 +26,7 @@ class Mercado_Actualizador_Socket(Thread):
         self.vivo = True
 
         self.par_escala_ws_v=par_escala_ws_v
-        self.g:VariablesEstado = estado_general
+        self.g:Global_State = estado_general
         self.actualizador_rest= Actualizador_rest(log,estado_general,cliente)
         self.log=log
         self.ws = None

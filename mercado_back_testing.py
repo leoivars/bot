@@ -21,7 +21,7 @@ from datetime import datetime,timedelta
 import pandas as pd
 import pandas_ta as ta
 
-from  variables_globales import VariablesEstado
+from  variables_globales import Global_State
 
 from cola_de_uso import Cola_de_uso
 
@@ -42,7 +42,7 @@ class Mercado_Back_Testing:
         
     def __init__(self,log,estado_general,acceso_db):
 
-        self.g:VariablesEstado = estado_general
+        self.g:Global_State = estado_general
         self.log=log
         self.par_escala_ws_v={} # en que soket está el par escala self.par_escala_ws[par][escala]=[ws,Velaset]
         self.db:Acceso_DB = acceso_db
@@ -171,7 +171,7 @@ class Mercado_Back_Testing:
 
 
 if __name__ == '__main__':
-    from variables_globales import VariablesEstado
+    from variables_globales import Global_State
     from binance.client import Client #para el cliente
     from pws import Pws
     from acceso_db_sin_pool_conexion import Conexion_DB_Directa
@@ -188,7 +188,7 @@ if __name__ == '__main__':
     fxdb=Acceso_DB_Funciones(log,conn)        
     db = Acceso_DB(log,fxdb) 
 
-    globales = VariablesEstado()
+    globales = Global_State()
 
     m=Mercado_Back_Testing(log,globales,db)
 
