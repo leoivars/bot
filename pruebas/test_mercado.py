@@ -5,7 +5,7 @@ from logger import Logger
 import time
 from pws import Pws
 from binance.client import Client #para el cliente
-from variables_globales import VariablesEstado
+from variables_globales import Global_State
 from mercado import Mercado
 
 pws=Pws()
@@ -13,7 +13,7 @@ client = Client(pws.api_key, pws.api_secret)
 log=Logger('Test_mercado.log')
 
 
-globales = VariablesEstado()
+globales = Global_State()
 
 par = 'BTCUSDT'
 escala = '1m'

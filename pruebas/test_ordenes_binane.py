@@ -12,7 +12,7 @@ from logger import *
 from no_se_usa.acceso_db import *
 from ordenes_binance import OrdenesExchange
 from pws import Pws
-from variables_globales import VariablesEstado
+from variables_globales import Global_State
 #import tracemalloc
 import gc
 #import mem_top
@@ -26,7 +26,7 @@ pws=Pws()
 log=Logger('test_ordenes_binance.log') 
 
 client = Client(pws.api_key, pws.api_secret,{ "timeout": 20})
-e = VariablesEstado()
+e = Global_State()
 
 oe0=OrdenesExchange(client,'PNTBTC',log,e)
 

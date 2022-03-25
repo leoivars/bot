@@ -7,7 +7,7 @@ from pws import Pws
 from binance.client import Client #para el cliente
 from numpy import isnan
 from par_propiedades import Par_Propiedades
-from variables_globales import VariablesEstado
+from variables_globales import Global_State
 from  formateadores import format_valor_truncando
 from acceso_db_conexion import Conexion_DB
 from acceso_db_funciones import Acceso_DB_Funciones
@@ -25,7 +25,7 @@ conn=Conexion_DB(log)
 fxdb=Acceso_DB_Funciones(log,conn.pool)        
 db = Acceso_DB(log,fxdb) 
         
-globales = VariablesEstado()
+globales = Global_State()
 mercado = Mercado(log,globales,client)
 
 

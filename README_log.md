@@ -11,3 +11,7 @@ checking variables_globales.py
 First cleaning for variables_globales.py par.json and:
 - unified par.json and config.json into config.jons, now there are only one config file.
 - deleted ununsed varibles
+
+## 03/25/2022
+
+I renamed test files that are not exactly test and moved them to the prueba folder. The real tests will be placed in test folder.

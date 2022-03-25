@@ -3,7 +3,7 @@ from logger import *
 import time
 from pws import Pws
 from binance.client import Client #para el cliente
-from variables_globales import VariablesEstado
+from variables_globales import Global_State
 import psutil
 from Monitor_precios_ws import MonitorPreciosWs
 
@@ -19,7 +19,7 @@ client = Client(pws.api_key, pws.api_secret)
 log=Logger('Test_pooll_indicadores.log') 
 
 pares=['EDOBTC','ZECBTC','LTCBTC','BTCUSDT']
-e = VariablesEstado()
+e = Global_State()
 
 #web soket de monitor de precios
 mo_pre=MonitorPreciosWs('Test_pooll_indicadores.log')

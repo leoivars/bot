@@ -5,7 +5,7 @@ from pws import Pws
 from binance.client import Client #para el cliente
 from numpy import isnan
 from par_propiedades import Par_Propiedades
-from variables_globales import VariablesEstado
+from variables_globales import Global_State
 import matplotlib.pyplot as plt
 from  formateadores import format_valor_truncando
 from no_se_usa.acceso_db import Acceso_DB
@@ -18,7 +18,7 @@ pws=Pws()
 client = Client(pws.api_key, pws.api_secret)
 
 log=Logger('Test_analizadores.log') 
-e = VariablesEstado()
+e = Global_State()
     
 def probar_atr_bajos(par,escala): 
     ind=Indicadores(par,log,e,client)

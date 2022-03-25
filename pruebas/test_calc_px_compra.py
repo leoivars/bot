@@ -6,7 +6,7 @@ from pws import Pws
 from binance.client import Client #para el cliente
 from numpy import isnan
 from par_propiedades import Par_Propiedades
-from variables_globales import VariablesEstado
+from variables_globales import Global_State
 from libro_ordenes2 import Libro_Ordenes_DF
 from ordenes_binance import OrdenesExchange
 from  formateadores import format_valor_truncando
@@ -26,7 +26,7 @@ moneda_contra ='USDT'
 par=moneda+moneda_contra
 libro=Libro_Ordenes_DF(client,moneda,moneda_contra,25) #cleación del libro
 
-g = VariablesEstado()
+g = Global_State()
 
 oe = OrdenesExchange(client,par,log,g)
 info = oe.info_par()

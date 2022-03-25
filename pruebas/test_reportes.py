@@ -10,7 +10,7 @@ import time
 from pws import Pws
 from binance.client import Client #para el cliente
 from Monitor_precios_ws import MonitorPreciosWs
-from variables_globales import  VariablesEstado
+from variables_globales import  Global_State
 from twisted.internet import reactor
 
 
@@ -25,7 +25,7 @@ conn=Conexion_DB(log)
 db=Acceso_DB(log,conn.pool)
 mo_pre = MonitorPreciosWs(log)
 mo_pre.empezar()
-e=VariablesEstado()
+e=Global_State()
 
 time.sleep(60)
 

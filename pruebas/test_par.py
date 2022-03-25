@@ -13,7 +13,7 @@ from acceso_db_conexion import Conexion_DB
 from acceso_db_funciones import Acceso_DB_Funciones
 from acceso_db_modelo import Acceso_DB
 from pws import Pws
-from variables_globales import  VariablesEstado
+from variables_globales import  Global_State
 from pool_indicadores import Pool_Indicadores
 #import tracemalloc
 import gc
@@ -39,7 +39,7 @@ conn=Conexion_DB(log)
 fxdb=Acceso_DB_Funciones(log,conn.pool)        
 db = Acceso_DB(log,fxdb) 
 
-e=VariablesEstado()
+e=Global_State()
 
 IndPool=Pool_Indicadores(log,mo_pre,e)
 

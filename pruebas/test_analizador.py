@@ -6,7 +6,7 @@ from pws import Pws
 from binance.client import Client # Cliente python para acceso al exchangue
 #import matplotlib.pyplot as plt
 from analizador import Analizador
-from variables_globales import VariablesEstado
+from variables_globales import Global_State
 
 pws=Pws()
 client = Client(pws.api_key, pws.api_secret)
@@ -20,7 +20,7 @@ ganancia_segura=10
 
 pares=['SKYBTC','BTCUSDT','PNTBTC']
 periodos=[30,60]
-e = VariablesEstado
+e = Global_State
 
 
 for par in (pares):

@@ -1,11 +1,11 @@
 from cola_de_uso import *
-from variables_globales import VariablesEstado
+from variables_globales import Global_State
 from logger import *
 
 
 
 log=Logger('Test_indicadores.log') 
-e=VariablesEstado()
+e=Global_State()
 
 cola = Cola_de_uso(log,e)
 
