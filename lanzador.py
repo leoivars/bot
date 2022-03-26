@@ -29,7 +29,7 @@ trabajando = True
 while trabajando:
     print('Lanzador: Lanzando...')
 
-    os.system("python3 auto_compra_vende.py "+str(cuenta_de_reinicios)+' "'+str(inicio_funcionamiento)+'"') 
+    os.system("python3 bot_main.py "+str(cuenta_de_reinicios)+' "'+str(inicio_funcionamiento)+'"') 
     #test# os.system("python3 test_lanzado.py "+str(cuenta_de_reinicios)+' "'+str(inicio_funcionamiento)+'"') 
     print('Lanzador: fin.')
 

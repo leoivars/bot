@@ -2,14 +2,18 @@
 
 This file contains changes made over time in reverse order. 
 
-## Nowadays
+## Actual Goal
 
-checking variables_globales.py 
+Write documentation for run the bot.
+
+## 03/26/2022
+
+Rename auto_compra_vende.py to bot_main.py. The new name is more suitable for this script. 
 
 ## 03/25/2022
 
 First cleaning for variables_globales.py par.json and:
-- unified par.json and config.json into config.jons, now there are only one config file.
+- unified par.json and config.json into config.json, now there are only one config file.
 - deleted ununsed varibles
 
 ## 03/25/2022

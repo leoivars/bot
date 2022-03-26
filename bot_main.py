@@ -67,9 +67,8 @@ while e.trabajando:                              #bucle princpipal
         time.sleep(49)
         esperar_correcto_funcionamiento(client,e,log)
     
-        # si trabajando en config.json = 0, hace un shutdown
-        log.log('cargar_configuraciones_json')
-        e.cargar_configuraciones_json()
+        log.log('cargar_parametros_de_config_json')
+        e.cargar_parametros_de_config_json()
 
     except Exception as ex:
         log.log('Error', str(ex))   
