@@ -4322,14 +4322,14 @@ class Par:
 
     def calculo_basico_stoploss(self,generar_liquidez=False):
         '''
-        Trata de conseguir un sl basado en rangos
+        Trata de conseguir un sl teniendo en cuesta las emas
         '''
         sl = self.stoploss_actual
 
         if generar_liquidez:
-            sl_nuevo = self.precio - self.ind.recorrido_minimo(self.escala_de_analisis,100)
+            sl_nuevo = self.ind.stoploss_ema(self.g.zoom(self.escala_de_analisis,1),self.precio_salir_derecho,7,3)
         else:
-            sl_nuevo = self.precio - self.ind.recorrido_maximo(self.escala_de_analisis,200)
+            sl_nuevo = self.ind.stoploss_ema(self.escala_de_analisis,self.precio_salir_derecho,10,5)
         
         self.log.log(f'sl_nuevo={sl_nuevo}')
 
