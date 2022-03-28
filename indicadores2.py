@@ -1299,8 +1299,8 @@ class Indicadores:
                     ema_ok = False
                     break
 
-        if ema_ok and ema.iloc[-1] > precio_salir_derecho:
-            ret =  ema.iloc[-1]
+        if ema_ok and ema.iloc[-2] > precio_salir_derecho:
+            ret =  ema.iloc[-2]
         else:
             ret = -1 
 
