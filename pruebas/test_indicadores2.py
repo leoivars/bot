@@ -1,4 +1,6 @@
-import mailbox
+import sys
+sys.path.append('..')  
+
 from mercado import Mercado
 from indicadores2 import Indicadores
 from logger import *
@@ -395,12 +397,12 @@ def probar_stoploss_ema(escala,precio_salir_derecho,periodos_iniciales_ema,cvela
 
 t = time.time()
 
-moneda='ADA'
+moneda='BTC'
 par = moneda+'USDT'
 
 ind=Indicadores(par,log,globales,mercado)
 while time.time() -t < 1200:
-    probar_stoploss_ema('1m',0.898,10,25)
+    probar_stoploss_ema('4h',44099.82,10,5)
     time.sleep(15)
 
 mercado.detener_sockets()
