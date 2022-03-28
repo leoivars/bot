@@ -91,7 +91,6 @@ class Par:
         self.precio_ganancia_segura=0
         self.tomar_perdidas=0 # si el numero es >=0 no hace nada, caso contrario si nuestras perdidas son inferiores a este numero vendemos asumiendo perdidas
         
-        self.tendencia_minima_entrada=4 #tendencia que se usa en estado 7 para determinar que la moneda está subiendo y por lo tanto se puede entrar.
 
         self.solo_vender=0 #cuando este valor está en no se permite comprar, solo se vende.
         self.solo_seniales=0 #cuando está en 1 solo emite la señial sin comprar
@@ -132,7 +131,7 @@ class Par:
         self._fee= self.g.fee  #comision que cobra el exchangue en cada operacion
         self.pstoploss=5 #parametro de stop loss
         self.generar_liquidez=False # si está en True y el par está en ganancias, el stoploss se calcula al límite de la venta para vender y que haya liquidez
-        self.xobjetivo=3 #parametro multiplicador para precio objetivo.
+        
         self.moneda=moneda #moneda que se quiere comprar o vender
         self.moneda_contra=moneda_contra #moneda contra la que se quiere operar 
         
@@ -301,19 +300,14 @@ class Par:
         self.set_cantidad_moneda_compra(self.parametro_cantidad)
 
         self.set_cant_moneda_stoploss( float(p['cantidad']) )
-        #self.set_precio_compra(p['precio_compra']) el precio de compra se carga del trade ahora
-        #self.set_estado_inicial(p['estado_inicial'])
         self.funcion=p['funcion']
-        
         
          
         self.solo_vender = p['solo_vender']
         self.solo_seniales= p['solo_seniales']
-        self.set_tendencia_minima_entrada(p['tendencia_minima_entrada'])
         self.cantidad_de_reserva=p['cantidad_de_reserva'] #cantidad expresada en moneda del par. 
         self.veces_tendencia_minima=p['veces_tendencia_minima']
         
-        self.xobjetivo=p['xobjetivo']
         
         self.uso_de_reserva=p['uso_de_reserva']
         self.temporalidades=p['temporalidades'].split()
@@ -353,11 +347,8 @@ class Par:
         
         #self.set_metodo_compra_venta(p['metodo_compra_venta']) #comentado para permitir autoseteo según el caso de cada anális
         self.set_cant_moneda_stoploss( float(p['cantidad']) )
-        #self.set_precio_compra(p['precio_compra'])
-        #self.set_estado_inicial(p['estado_inicial'])
         
         
-        self.set_tendencia_minima_entrada(p['tendencia_minima_entrada'])
         
         self.solo_vender = p['solo_vender']
         self.solo_seniales= p['solo_seniales']
@@ -365,9 +356,7 @@ class Par:
         
         if self.moneda_contra!='BTC': #para btc este dato se autoactualiza 
             self.cantidad_de_reserva=p['cantidad_de_reserva']
-        self.xobjetivo=p['xobjetivo']
         
-
         self.e3_ganancia_recompra=p['e3_ganancia_recompra']  
         
         self.temporalidades=p['temporalidades'].split()
@@ -747,23 +736,12 @@ class Par:
 
         return ( info !=None )    
 
-        
-        
 
     #en algunas ocasiones se busca protejer menos cantidad del total
     # como en el caso de BNB que se deja algo para que las comisiones 
     # salgan mas baratas    
     def set_cant_moneda_stoploss(self,cantidad): 
             self.cant_moneda_stoploss=cantidad
-
-
-
-
-    def set_tendencia_minima_entrada(self,valor_int): 
-            self.tendencia_minima_entrada=valor_int        
-
-
-
             
 
     #deprecated ???

@@ -17,9 +17,9 @@ class Acceso_DB:
     actualiza_volpx_='UPDATE pares set volumen= %s, precio=%s,  fecha_estadisticas = NOW() WHERE moneda= %s AND moneda_contra= %s'
 
     obt_datos_moneda='''SELECT idpar,habilitado,metodo_compra_venta,cantidad,precio_compra,estado,funcion,
-                        ganancia_segura,ganancia_infima,tendencia_minima_entrada,
+                        ganancia_segura,ganancia_infima,
                         solo_vender,solo_seniales,veces_tendencia_minima,cantidad_de_reserva,
-                        e3_ganancia_recompra,xobjetivo,
+                        e3_ganancia_recompra,
                         min_notional,uso_de_reserva,
                         temporalidades,observaciones,objetivo_compra,objetivo_venta,max_entradas,
                         xmin_impulso,param_filtro_dos_emas_positivas_rapida,param_filtro_dos_emas_positivas_lenta 
@@ -306,13 +306,6 @@ class Acceso_DB:
         sql='UPDATE pares set no_habilitar_hasta=%s,habilitado=0 WHERE moneda= %s AND moneda_contra= %s'
         self.fxdb.ejecutar_sql( sql, (fecha_hasta,moneda,moneda_contra )  )
   
-    def persistir_ganancias(self,ganancias,moneda,moneda_contra):
-        #9/5/2019 no se para que sirve la variable balance, sa saco
-        #actua__ganancias='UPDATE pares set ganancias=ganancias + %s , balance= %s WHERE moneda= %s AND moneda_contra= %s'
-        sql='UPDATE pares set ganancias=ganancias + %s WHERE moneda= %s AND moneda_contra= %s'
-        self.fxdb.ejecutar_sql(sql,(ganancias,moneda,moneda_contra))
-
-
     def ind_historico_insert(self,idpar,idind,valor):
         self.fxdb.ejecutar_sql(self.ind_inserta_hist,(idpar,idind,valor))
 
