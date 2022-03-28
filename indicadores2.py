@@ -72,7 +72,6 @@ class Indicadores:
         self.retardo=5
         self.errores=0
         self.tiempo_actualizacion=25
-        self.incremento_volumen_bueno=1.5
         
         #self.client = cliente
         

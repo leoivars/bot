@@ -10,19 +10,17 @@ class Acceso_DB:
     
     actualiza_estado='UPDATE pares set precio_compra= %s,estado= %s, funcion= %s WHERE moneda= %s AND moneda_contra= %s'
     actualiza_func__='UPDATE pares set estado= %s, funcion= %s WHERE moneda= %s AND moneda_contra= %s'
-    actualiza_parms8='UPDATE pares set e8_precio_inferior= %s, e8_precio_superior= %s WHERE moneda= %s AND moneda_contra= %s'
-    actualiza_shitco='UPDATE pares set shitcoin= %s WHERE moneda= %s AND moneda_contra= %s'
     actualiza_bavopr='UPDATE pares set balance= %s, volumen= %s, precio=%s, coeficiente_ema_rapida_lenta=%s, fecha_estadisticas = NOW() WHERE moneda= %s AND moneda_contra= %s'
     actualiza_tem_1d="UPDATE pares set temporalidades='1d' WHERE habilitable=1 AND moneda_contra= %s"
     actualiza_temp__='UPDATE pares set temporalidades=%s WHERE moneda= %s AND moneda_contra= %s'
 
     actualiza_volpx_='UPDATE pares set volumen= %s, precio=%s,  fecha_estadisticas = NOW() WHERE moneda= %s AND moneda_contra= %s'
 
-    obt_datos_moneda='''SELECT idpar,habilitado,pstoploss,metodo_compra_venta,cantidad,precio_compra,estado,funcion,
-                        ganancia_segura,ganancia_infima,escala_analisis_entrada,rsi_analisis_entrada,tendencia_minima_entrada,
-                        solo_vender,solo_seniales,veces_tendencia_minima,xvela_corpulenta,cantidad_de_reserva,analisis_e7,
-                        e8_precio_inferior,e8_precio_superior,e3_ganancia_recompra,incremento_volumen_bueno,xobjetivo,
-                        shitcoin,min_notional,stoploss_habilitado,stoploss_cazaliq,uso_de_reserva,
+    obt_datos_moneda='''SELECT idpar,habilitado,metodo_compra_venta,cantidad,precio_compra,estado,funcion,
+                        ganancia_segura,ganancia_infima,tendencia_minima_entrada,
+                        solo_vender,solo_seniales,veces_tendencia_minima,cantidad_de_reserva,
+                        e3_ganancia_recompra,xobjetivo,
+                        min_notional,uso_de_reserva,
                         temporalidades,observaciones,objetivo_compra,objetivo_venta,max_entradas,
                         xmin_impulso,param_filtro_dos_emas_positivas_rapida,param_filtro_dos_emas_positivas_lenta 
                         from pares where moneda= %s and moneda_contra= %s'''
@@ -246,9 +244,6 @@ class Acceso_DB:
             p=r[0]    
         return p['cantidad']    
 
-    def persistir_shitcoin(self,shitcoin,moneda,moneda_contra):
-        self.fxdb.ejecutar_sql(self.actualiza_shitco,(shitcoin,moneda,moneda_contra))
-
     def par_persistir_datos_estadisticos(self,moneda,moneda_contra,balance,volumen,precio,coef_emar_emal):
         self.fxdb.ejecutar_sql(self.actualiza_bavopr, (float(balance),float(volumen),float(precio),float(coef_emar_emal),moneda,moneda_contra) ) 
 
@@ -275,18 +270,10 @@ class Acceso_DB:
     def ganancia_segura(self,ganancia_segura,moneda,moneda_contra):
         sql='UPDATE pares set ganancia_segura=%s WHERE moneda= %s AND moneda_contra= %s'
         self.fxdb.ejecutar_sql( sql, (ganancia_segura,moneda,moneda_contra)  )
-
-    def stop_loss(self,stop_loss,moneda,moneda_contra):
-        sql='UPDATE pares set pstoploss=%s WHERE moneda= %s AND moneda_contra= %s'
-        self.fxdb.ejecutar_sql( sql, (stop_loss,moneda,moneda_contra)  )
         
     def e3_ganancia_recompra(self,e3_ganancia_recompra,moneda,moneda_contra):
         sql='UPDATE pares set e3_ganancia_recompra=%s WHERE moneda= %s AND moneda_contra= %s'
         self.fxdb.ejecutar_sql( sql, (e3_ganancia_recompra,moneda,moneda_contra)  )
-
-    def incremento_volumen_bueno(self,p_inc_vol_bue,moneda,moneda_contra):
-        sql='UPDATE pares set incremento_volumen_bueno=%s WHERE moneda= %s AND moneda_contra= %s'
-        self.fxdb.ejecutar_sql( sql, (p_inc_vol_bue,moneda,moneda_contra)  )
         
     def set_cantidad(self,cantidad,moneda,moneda_contra):
         sql='UPDATE pares set cantidad=%s WHERE moneda= %s AND moneda_contra= %s'
@@ -299,18 +286,10 @@ class Acceso_DB:
     def set_solo_seniales(self,solo_seniales,moneda,moneda_contra):
         sql='UPDATE pares set solo_vender=%s WHERE moneda= %s AND moneda_contra= %s'
         self.fxdb.ejecutar_sql( sql, (solo_seniales,moneda,moneda_contra )  )
-
-    def set_escala_rsi_entrada_par(self,escala_analisis_entrada,rsi_analisis_entrada,moneda,moneda_contra):
-        sql='UPDATE pares set escala_analisis_entrada=%s, rsi_analisis_entrada=%s WHERE moneda= %s AND moneda_contra= %s'
-        self.fxdb.ejecutar_sql( sql, (escala_analisis_entrada,rsi_analisis_entrada,moneda,moneda_contra )  )
-
-            
+                
     def persistir_cambio_funcion(self,moneda,moneda_contra,estado,funcion):
         self.fxdb.ejecutar_sql(self.actualiza_func__,(estado,funcion,moneda,moneda_contra))
-        
-    def persistir_parametros_e8(self,moneda,moneda_contra,e8_precio_inferior,e8_precio_superior):
-        self.fxdb.ejecutar_sql(self.actualiza_parms8,(e8_precio_inferior,e8_precio_superior,moneda,moneda_contra))
-
+    
     def deshabilitar_todos_los_pares(self):
         sql="UPDATE pares set habilitado=0 WHERE habilitado=1 and funcion !='stoploss'"
         self.fxdb.ejecutar_sql(sql)

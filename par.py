@@ -60,7 +60,6 @@ class Par:
         
         self.g: Global_State = obj_global
         self.estoy_vivo=True # Se usa para detectar cuando la instancia no tiene nada mas que hacer, se elimina de la memoria.
-        self.shitcoin=0 # 0 no es shitcoin > 1 si lo es, una shitcoin es una moneda que muy probablemente suba poco y baje rápido por lo que hay que tener las maximas precauciones del caso
         self.libro=''
         self.empCount = 0
         self.ultima_orden={'orderId':0}
@@ -178,7 +177,6 @@ class Par:
 
         self.tendencias=[]
         self.veces_tendencia_minima=3
-        self.xvela_corpulenta=10  # si ha velas corpulentas de mayor a x (xvela_corpulenta) veces, no se ingresa por pump 
         
         
         self.vender_solo_en_positivo=True
@@ -187,10 +185,10 @@ class Par:
 
         self.forzar_sicronizar=False
         
-        self.stoploss_habilitado=0 # indica si debe tener habilitado el stoploss
+        self.stoploss_habilitado=0     # indica si está habilitado el stoploss. Hay una orden de stoploss activada.
+        
         self.stoploss_negativo=0# si está en 1, se permite poner stoploss negativos
 
-        self.stoploss_cazaliq=0 # porcentaje (0 100) de gananci que al menos debe tener un par para iniciar el stoploss cuando se encuentra en la funcion cazaliq, si está en cero es automático
         
         self.rango_escala={}# rangos para cada una de las escalas
 
@@ -213,14 +211,6 @@ class Par:
         #y con eso se promedian las pérdidas
         self.e3_ganancia_recompra=-15
 
-        
-
-        #estado 8 esperara que el precio sea menor o = a precio_inferior para comprar
-        #pero si el precio se >precio_superior vuelve a la funcion anterior
-        self.e8_precio_superior=0
-        self.e8_precio_inferior=0
-
-
         self.e7_filtros_superados=0
 
         # id del trade del que se toma la cantidad y el precio y al cual se debe acceder en el momento de venta
@@ -235,9 +225,6 @@ class Par:
         #instancia de un analizador para btcusdt
         self.analizador_btc=None #
         
-        #a partir de que incremento el volumen se considera bueno 
-        self.incremento_volumen_bueno=1
-
         self.uso_de_reserva=0 # algunas monedas pueden usar una parte de las resevas este es un nro entre 0...1
 
         #con esto me aseguro que to estblezcan los valores iniciales del par
@@ -280,18 +267,6 @@ class Par:
         self.log_errores.set_log_level(log_level)
         self.log_resultados.set_log_level(log_level)
         self.log_seniales.set_log_level(log_level)
-
-
-    # def set_prioridad_idicador(self):
-    #     ind:Indicadores=self.ind
-    #     prio=0
-    #     if   self.estado == 3: #and self.precio > self.precio_salir_derecho and self.stoploss_habilitado == 0:
-    #         prio=1
-    #     elif self.estado == 2:    
-    #         prio=1
-
-    #     ind.prioridad = prio  
-    #     self.oe.prioridad = prio  
 
 
     def persistir_estado_en_base_datos(self,moneda,moneda_contra,precio,estado):
@@ -337,13 +312,8 @@ class Par:
         self.set_tendencia_minima_entrada(p['tendencia_minima_entrada'])
         self.cantidad_de_reserva=p['cantidad_de_reserva'] #cantidad expresada en moneda del par. 
         self.veces_tendencia_minima=p['veces_tendencia_minima']
-        self.xvela_corpulenta=p['xvela_corpulenta']
         
-        self.analisis_e7=p['analisis_e7']
         self.xobjetivo=p['xobjetivo']
-        self.shitcoin=p['shitcoin']
-        self.stoploss_habilitado=p['stoploss_habilitado']
-        self.stoploss_cazaliq=p['stoploss_cazaliq']
         
         self.uso_de_reserva=p['uso_de_reserva']
         self.temporalidades=p['temporalidades'].split()
@@ -354,75 +324,23 @@ class Par:
         if cant>0:
             Par.lector_precios.usdt_cantidad(cant,self.par) #cantidad a comprar expresado en dolares
         
-        
-          
         #self.agregar_analizador('BTCUSDT') #lo mismo para este.
 
-        
         #self.agregar_indicador(self.par,self.log)
         ind=self.ind
         #self.agregar_analizador(self.par)
         
-        ind.incremento_volumen_bueno=p['incremento_volumen_bueno']
-        ind.incremento_volumen_bueno=p['incremento_volumen_bueno']
-        
-
-        #self.ganancia_segura=p['ganancia_segura']
-        #self.ganancia_infima=p['ganancia_infima']
-
-        #self.ind
-        
-        self.rsi_analisis_entrada    = p['rsi_analisis_entrada']
-        self.escala_analisis_entrada = p['escala_analisis_entrada']
 
         #como tomar cantidad pone en cero los trades en caso
         #de no tener nada, lo ejecuto aca para empezar 
         #sin trades en diccho caso.
         self.oe.tomar_cantidad(self.moneda)
 
-        self.pstoploss =p['pstoploss']
-
         self.estado=-1 #-1 obliga a cargar el estado inicial de la funcion #p['estado']
         if p['estado']==4: #nunca empezamos vendiendo
             self.set_estado(-1)
         else:
             self.set_estado(p['estado'])
-
-        
-
-    # def set_pstoploss(self,valor):
-        
-    #     if valor==0:#calculo automático de stoploss
-    #         #self.set_precio()
-    #         atr=self.ind.atr('1d',0)#   0 es la vela anteriar a la última, estaba en 1h y parece que era muy, lo pongo en 2h
-    #         self.actualizar_precio_ws()
-    #         sl=(atr+self.tickSize)/self.precio*100
-    #     else:
-    #         sl=valor
-
-    #     self.pstoploss=sl 
-
-               
-        
-                
-        
-    #def agregar_indicador(self,par,log):
-    #    if not par in self.ind:
-    #        
-    #        self.ind[par]=Indicadores(par,log)          
-
-    #def agregar_analizador(self,par):
-    #    if not par in self.ana:
-    #        self.ana[par]=Analizador(self.ind_pool.indicador(par))  
-
-    #def eliminar_indicador(self,par):
-    #""    if par!='BTCUSDT' and par in self.ind  :
-    #        del self.ind[par]
-
-    #def eliminar_analizador(self,par):
-    #    if par in self.ana:
-    #        del self.ana[par]
-        
 
 
     def cargar_parametros_durante_accion(self):
@@ -444,38 +362,23 @@ class Par:
         self.solo_vender = p['solo_vender']
         self.solo_seniales= p['solo_seniales']
         self.veces_tendencia_minima=p['veces_tendencia_minima']
-        self.xvela_corpulenta=p['xvela_corpulenta']
         
-        #self.ind.incremento_volumen_bueno=p['incremento_volumen_bueno']
-        self.incremento_volumen_bueno=p['incremento_volumen_bueno']
         if self.moneda_contra!='BTC': #para btc este dato se autoactualiza 
             self.cantidad_de_reserva=p['cantidad_de_reserva']
-        self.analisis_e7=p['analisis_e7']
         self.xobjetivo=p['xobjetivo']
-        self.shitcoin=p['shitcoin'] 
-        self.stoploss_cazaliq=p['stoploss_cazaliq']
-        #self.stoploss_habilitado=p['stoploss_habilitado']  comentado 6/5/2019 porque, ahora no es un parámetro de acción ya que se habilita automáticamente cuanto el precio alcanza ciertos niveles de ganancia (hoy ganancia_segura)
-        self.e8_precio_inferior=p['e8_precio_inferior']  
-        self.e8_precio_superior=p['e8_precio_superior']  
+        
+
         self.e3_ganancia_recompra=p['e3_ganancia_recompra']  
         
         self.temporalidades=p['temporalidades'].split()
         self.max_entradas = p['max_entradas']
         self.uso_de_reserva=p['uso_de_reserva']
 
-        self.rsi_analisis_entrada    = p['rsi_analisis_entrada']
-        self.escala_analisis_entrada = p['escala_analisis_entrada']
-
         self.objetivo_compra  = p['objetivo_compra']
         self.objetivo_venta   = p['objetivo_venta']
         
         self.xmin_impulso   = p['xmin_impulso']
         self.param_filtro_dos_emas_positivas   = ( p['param_filtro_dos_emas_positivas_rapida'], p['param_filtro_dos_emas_positivas_lenta'])
-
-
-
-        if self.estado==3 or self.estado==1: 
-           self.pstoploss = p['pstoploss']
         
         #detectar cambio de función: Si se detecta cambio de función
         #se debe resetear todo
@@ -569,10 +472,6 @@ class Par:
             return 2        
         elif self.funcion=="cazaliq":
             return 9
-        elif self.funcion=="stoploss":
-            return 1
-
-
         else: #no entiendo nada
             return 0 #solo miro  
 
@@ -603,8 +502,6 @@ class Par:
         self.log.log('---> Iniciando Estado =',pestado)
         if pestado==0:
             self.estado_0_inicio()
-        elif pestado==1:
-            self.estado_1_inicio()
         elif pestado==2:
             self.estado_2_inicio()
         elif pestado==3:
@@ -1565,8 +1462,6 @@ class Par:
 
             if self.estado==0:    
                 self.estado_0_accion() #nada
-            elif self.estado==1:    
-                self.estado_1_accion() #stoploss
             elif self.estado==2:
                 self.estado_2_accion() #comprar  
             elif self.estado==3:
@@ -1667,48 +1562,7 @@ class Par:
             self.tiempo_reposo = 0
 
 
-    def estado_8_accion(self):
-        self.log.log( "___E.8 ",self.par )
-
-        self.log.log("\nPrecio: ",self.format_valor_truncando( self.precio,8),  " Esp=",self.format_valor_truncando( self.e8_precio_inferior,8), " Sup=",self.format_valor_truncando( self.e8_precio_superior,8) )
-        
-        self.tiempo_reposo = 59  
-        
-        if self.esperar_para_recalcular_rango.tiempo_cumplido():
-            
-            if self.hay_algo_para_vender_en_positivo():
-                self.cambiar_funcion('vender')
-                self.tiempo_reposo = 0
-                return
-            
-            # if not self.se_dan_condiciones_para_estado_8():
-            #     self.cambiar_funcion('comprar')
-            #     self.tiempo_reposo = 0
-            #     return    
-
-        if self.precio<=self.e8_precio_inferior:# and self.filtro_btc_apto_para_altcoins():
-            self.log.log( "self.precio<=self.e8_precio_inferior: " )
-            #abtc=self.ana['BTCUSDT']
-            #antes de intentar comprar espero que btc esté tranquilo
-            #if not  (  abtc.tomando_fuerza_en_escalas('1m 5m')['resultado'] or abtc.no_es_buen_momento_para_alts()   ): 
-            self.precio_compra=0# esto hace que fondos para comprar calcule precio de compra
-            if self.fondos_para_comprar():
-                self.tiempo_reposo=1
-                self.iniciar_estado( self.estado_siguiente() )
-                
-            else:
-                self.log.log( "   Estamos en px pero no hay fondos_para_comprar" )
-                #18/01/2020 comentado para evitar el exeso de señales# self.enviar_correo_senial_8()
-
-        elif  self.precio >= self.e8_precio_superior:
-            self.log.log( "___E.8 self.precio >= self.e8_precio_superior: " )
-
-            if self.hay_suficiente_para_vender():
-                self.cambiar_funcion('vender')
-            else:
-                self.analisis_provocador_entrada='E.8'
-                self.cambiar_funcion('comprar') 
-
+ 
     def retardo_dinamico(self,segundos):
         #retardo para no matar tanto al procesador
         cpu=cpu_utilizada()
@@ -3216,105 +3070,13 @@ class Par:
     
 
 
-    def estado_1_inicio(self):
-        self.retardo_dinamico(5)
-        self.tiempo_reposo = 600
-        self.tiempo_inicio_estado =  time.time()
-        self.log.log(  "____E.1 - stoploss - INICIO",self.par )
-        self.persistir_estado_en_base_datos(self.moneda,self.moneda_contra,self.precio_compra,self.estado)
-        
-        
-        
-        trade=self.db.get_trade_menor_precio(self.moneda,self.moneda_contra)
-        #self.log.log('TRADE',trade) 
-        if trade['idtrade'] == -1:
-            err='No hay trade previo para mantener un stop loss'
-            self.log.log(err)
-            self.enviar_correo_error(err)
-            self.dormir_30_dias()
-            return
-
-        self.establecer_precio_salir_derecho_compra_anterior()
-        self.establecer_cantidad_a_vender(trade)
-        
-        self.vender_solo_en_positivo=False # para que estado 4 pueda vender en negatibo en caso de ser necesario
-        self.precio_salir_derecho= self.precio_de_venta_minimo(0)
-        
-        #self.precio_stoploss = self.precio / (1 + self.pstoploss /100)
-        self.escala_rango_sl = self.estado_1_calcular_escala_rango()
-
-
-    #def estado_1_actualizar_stoploss(self):
-    #    nuevo_stoploss = self.precio / (1 + self.pstoploss /100)
-
-    #    if nuevo_stoploss > self.precio_stoploss and\
-    #         variacion(nuevo_stoploss,self.precio_stoploss)>1:
-    #        self.precio_stoploss = nuevo_stoploss
-
-    def estado_1_calcular_precio_inicial(self):
-        '''
-        busco el precio promedio a todas las partes bajas de las escalas
-        para establecer el precio simulado como precio de compra ficticio
-        '''
-        suma=0
-        c=0
-        for esc in self.rango_escala:
-            ri=self.rango_escala[esc][0] #limite inferior del rango en la escala
-            print('ri',ri)
-            if variacion(self.precio,ri) < 2:
-                suma += ri
-                c += 1
-
-        if suma == 0:
-            ret = self.precio
-        else:
-            ret = suma / c
-
-        return ret 
-
-    def estado_1_calcular_escala_rango(self):
-        '''
-        busco una escala con el rango que contenga al precio actual
-        '''
-        escala="1d"
-        for esc in ['1h', '4h', '1d', '1M', '1w']:
-            if self.rango_escala[esc][0] < self.precio < self.rango_escala[esc][2]:
-                escala=esc
-        return escala                     
-
-
-    def estado_1_accion(self):
-        self.retardo_dinamico(5)
-        self.log.log(  "___E.1 STOP_LOSS ",self.par )
-        
-        if self.hay_algo_para_vender_en_positivo():
-            self.cambiar_funcion('vender')
-            return
-
-        #self.precio_inicial_stoploss =  self.estado_1_calcular_precio_inicial()
-
-        gan = variacion_absoluta(self.precio_compra, self.precio  ) 
-
-        self.log.log(  "self.precio..............",self.precio )
-        self.log.log(  "self.precio_compra.......",self.precio_compra ) 
-        #self.log.log(  "precio_inicial_stoploss..",self.precio_inicial_stoploss)
-        self.log.log(  "rango....................",self.rango_escala[self.escala_rango_sl], self.escala_rango_sl )
-        self.log.log(  "self.pstoploss...........",self.pstoploss )
-        #self.log.log(  "variacion px y px_ini_sl.",var )
-        self.log.log(  "ganancia.................",gan )
-
-            #se rompió el stoploss y el rango:
-        if gan < self.pstoploss * -1 and  self.precio < self.rango_escala[self.escala_rango_sl][0] / 1.01  : 
-            self.enviar_correo_generico('MOMENTO DE VENDER')
-            self.iniciar_estado( self.estado_siguiente() )
-            
-            #el trade se volvió positivo, nos ponemos a vender 
-        elif gan > 0:
-            self.cambiar_funcion('vender')    
  
 
 
 
+
+
+ 
 
 
                                                       
@@ -3595,12 +3357,6 @@ class Par:
             if self.estado == 3: #Se cambió el estado, nos vamos
                 salir = True
 
-        #vuelve a esperar el precio que se haya configurado
-        if not salir and self.funcion=='comprar+precio' and self.precio > self.e8_precio_inferior:
-            self.log.log(  "funcion=='comprar+precio' and self.precio > self.e8_precio_inferior",self.e8_precio_inferior)
-            self.iniciar_estado( self.estado_anterior )
-            salir = True
-       
         if salir:
             self.log.log(  "Salir! no se dan las condiciones de compra post revidar orden" )
 
@@ -3979,48 +3735,6 @@ class Par:
                 self.iniciar_stoploss()
                 return  
 
-            # 12/10/2020
-            # 27/7/2020  en escalas que se considan muy volátiles se pone el stoploss apenas se pueda
-            # si pasa mas de media hora sin poder poner stoploss así, se sale por los caminos normales
-            # durante los primeros 7 días.
-            #self.log.log(  self.par,"check stoploss seguro_escalas_pequeñas")
-            #if  duracion_trade < 604800 and self.escala_de_analisis in '1h 30m 15m' and \
-            #    self.precio >= self.precio_salir_derecho + ind.atr_bajos(self.escala_de_analisis,top=100,cvelas=None,restar_velas=1):
-            #    self.log.log(  self.par,"stoploss_iniciado: seguro_escalas_pequeñas")
-            #    self.iniciar_stoploss()
-            #    return
-            
-            #7/11/2020 activo el stoploss
-            #self.log.log(  self.par,"check filtro_btc_apto_para_altcoins")
-            #if gan > self.ganancia_infima and not self.filtro_btc_apto_para_altcoins():
-            #    self.log.log(  self.par,"stoploss_iniciado: BTC no apto para altcoins")
-            #    self.iniciar_stoploss()
-            #    return         
-
-            #19/9/2020 como cazaliq es un rebote, apenas estamos en salir derecho clavamos stoploss. 
-            # si pasa mas de media hora sin poder poner stoploss así, se sale por los caminos normales
-            if  self.funcion=='cazaliq' and self.stoploss_cazaliq>0 and duracion_trade < 600:
-                if gan > self.stoploss_cazaliq:
-                    self.log.log(  self.par,"stoploss_iniciado: seguro_de_cazaliq")
-                    self.iniciar_stoploss()
-                    return
-
-            # 06/7/2020 habilitación de stoploss en funciona de gt (ganancias en funcion del tiempo)
-            #self.log.log(  self.par,"check stoploss gt")
-            #if gan > self.gt(duracion_trade):
-            #    self.log.log(  self.par,"stoploss_iniciado: ganancia > gt")
-            #    self.iniciar_stoploss()
-            #    return        
-
-            #22/5/2020 no hay stoploss, estoy ganando algo y ha pasado mas de una dia desde que compramos
-            #self.log.log("duracion_trade",duracion_trade,self.fecha_trade)
-            #if  duracion_trade > self.g.escala_tiempo[self.escala_de_analisis] and \
-            #    self.calcular_tiempo_ganancia() > 600 and \
-            #    self.el_precio_esta_en_un_rango('15m',6):
-            #    self.log.log("ccc el_precio_esta_en_un_rango")
-            #    self.iniciar_stoploss()
-            #    return        
-
             #23/01/2020 si hay pump y estamos en positvo, ponemos stoploss
             if gan > self.ganancia_infima and Par.mo_pre.ema_precio_no_baja(self.par):
                 self.log.log("gan > self.ganancia_infima and Par.mo_pre.ema_precio_no_baja")
@@ -4052,9 +3766,6 @@ class Par:
                     self.iniciar_stoploss()
                     return
 
-                    
-
-            
 
             if self.analisis_provocador_entrada in "rebote_bajo_ema_patron ema_55_h+":
                 atr = ind.atr(esc_lp)
@@ -4792,45 +4503,7 @@ class Par:
             cant_ticks = 1
         return (cant_ticks * self.tickSize)    
 
-    
-    def coeficiente_temporal(self,tiempo_ganando,valor_maximo=0.8):
-        ''' retorna un nro entra 0 y valor_maximo 
-             t=0, ret=0 t=tiempo_maximo, ret=valor_maximo
-             cuanto mas tiempo pasa mas cerca de valor_maximo es el valor que retorna
-             sería algo así como un paciencia que se va perdiendo...    
-        '''
-
-        if self.shitcoin > 3:
-            can=2
-        else:
-            can=8    
-
-        tiempo_maximo=3600 * can
-        if tiempo_ganando>tiempo_maximo:
-            t=tiempo_maximo
-        else:
-            t=tiempo_ganando    
-        
-        return round( t / tiempo_maximo * valor_maximo, 4 )     
-    
-    def stop_positivo(self,stoploss): #clava stoploss positivo sobre todo se debe usar para shitcoins
-        #ind=self.ind
-        #self.tiempo_inicio_estado=time.time()
-        
-        coef_gm=3 * 900 / (900+time.time()-self.tiempo_inicio_estado) # coeficiente que se aproxima a cero a medida que pasa el tiempo
-        
-        st=stoploss
-        pxseguro=self.precio/(1+self.ganancia_infima*coef_gm/100)-self.tickSize #- 0.00000001# el precio actual menos el minimo descuento posible
-        gan_calculada=self.calculo_ganancias(self.precio_compra, pxseguro)
-        
-        self.log.log("stop_positivo: pxseguro",pxseguro,"gan_calculada",gan_calculada,"coef_gm",coef_gm,"gan.inf",self.ganancia_infima*coef_gm)
-
-        if gan_calculada>self.ganancia_infima*coef_gm and gan_calculada<self.ganancia_segura:
-            st=pxseguro
-                
-        return st   
-
-
+   
     def coef_stoploss_seguro(self): #a medida que van pasando los bucles (el tiempo) se pone mas nervioso y baja las pretensiones
         if self.estado_bucles<150: 
            coef=1.02
@@ -4840,22 +4513,6 @@ class Par:
             coef=1.01
         return coef        
 
-
-    #devuelve True cuaando hay un stoploss menor a (alguna formula en desarrolo) , muy probable que se ejecute
-    # cuando lo que se busca es solamente tener una proteccion en caso de una bajada muy brusca 
-    # pero el objetivo es aguantar hasta que suba evitando que una pequeña bajada nos arruine la espera.
-    #todo ello siempre y cuando el stoploss no haya superado al precio_objetivo en cuyo caso
-    #estamos en la ganancia esperada y todo lo que suba de aquí en mas es un regalo del cielo.
-    def se_debe_actualizar_stoploss(self):
-        ret=False
-        if self._stoplossActivo and self.ganancias()<0 :
-            if self.stoploss_actual < self.precio_objetivo and  self.precio-self.stoploss_actual < self.ind.atr('5m')*self.pstoploss:
-                self.log.log(  "stoploss_muy_cercano!",self.stoploss_actual )
-                ret =True
-        elif self.precio<self.stoploss_actual:        
-            ret=True
-
-        return ret    
 
     #VENDER# Vende a precio de libro!! 
 
@@ -5525,25 +5182,11 @@ class Par:
         #cant=self.tomar_cantidad(self.moneda) 
         #self.db.persistir_ganancias(ganusdt,self.moneda,self.moneda_contra)
 
-        #cálculo y retroalimientacion de shitcoin
-        self.retroalimentacion_shitcoin(gan)
-
+       
         texto+= self.log.tail()
         correo=Correo(self.log)
         correo.enviar_correo(titulo,texto)
         return
-
-
-    def retroalimentacion_shitcoin(self,gan): #gan ganancias como resultado compra - ventas - fees en %
-        shitcoin=self.shitcoin
-        if gan<=-2:
-            shitcoin = shitcoin + 1
-        elif gan>=20:
-            shitcoin = shitcoin -1
-            if self.shitcoin==1 and shitcoin<1:
-                shitcoin=1 # la moneda que es shitcoin, lo seguirá siendo. no se sali de shitcoin en forma automática
-        self.db.persistir_shitcoin(shitcoin,self.moneda,self.moneda_contra)
-
 
 
     def enviar_correo_filled_compra(self,txt_filled):
@@ -5606,7 +5249,6 @@ class Par:
         titulo=self.par+' Señal ' + self.analisis_provocador_entrada
         texto=titulo+'\n'
 
-        texto+=self.linea("analisis_e7=",self.analisis_e7)
           
         #texto+=self.texto_analisis_moneda() 
 
@@ -5677,21 +5319,7 @@ class Par:
         #if ind.esta_subiendo4('4h'):
         #    texto+=self.linea('4h Subiendo4')    
 
-        #if ind.volumen_bueno5('1m',self.incremento_volumen_bueno):
-        #    texto+=self.linea('1m Volumen Bueno: ', ind.volumen_porcentajes('1m'))
-
-        #if ind.volumen_bueno5('5m',self.incremento_volumen_bueno):
-        #    texto+=self.linea('5m Volumen Bueno: ',ind.volumen_porcentajes('5m'))
         
-        #if ind.volumen_bueno5('15m',self.incremento_volumen_bueno):
-        #    texto+=self.linea('15m Volumen Bueno: ',ind.volumen_porcentajes('15m'))
-        
-        #if ind.volumen_bueno5('1h',self.incremento_volumen_bueno):
-        #    texto+=self.linea('1h Volumen Bueno: ',ind.volumen_porcentajes('1h'))
-
-        #if ind.volumen_bueno5('4h',self.incremento_volumen_bueno):
-        #    texto+=self.linea('4h Volumen Bueno: ',ind.volumen_porcentajes('4h'))
-
         texto+=self.linea( 'RSI 15m :', round(ind.rsi('15m'),2)  )    
         texto+=self.linea( 'RSI 1h  :', round(ind.rsi('1h') ,2)  )    
         texto+=self.linea( 'RSI 4h  :', round(ind.rsi('4h') ,2)  )    
@@ -5821,8 +5449,6 @@ class Par:
                 return self.txt_precio_y_stoploss()
             elif self.estado==9:
                 return self.linea ( self.format_valor_truncando( self.precio,8) , self.rango   )        
-            elif self.estado==8:
-                return self.linea ( self.format_valor_truncando( self.precio,8),self.format_valor_truncando( self.e8_precio_inferior,8) ,self.format_valor_truncando( self.e8_precio_superior,8))
             elif self.estado==7:
                 return self.linea ( self.format_valor_truncando( self.precio,8),  " FS=",  self.e7_filtros_superados    )
         except Exception as e:
@@ -5871,7 +5497,6 @@ class Par:
         #texto+=self.linea( "atr 5m  (10 velas)  :", ind.vatr('5m',10) )
         #texto+=self.linea( "atr 15m (10 velas)  :", ind.vatr('15m',10) )
         #texto+=self.linea( 'Sub4   ,1m,5m,15m,1h:', ind.esta_subiendo3(), ind.esta_subiendo4('1m') , ind.esta_subiendo4('5m') , ind.esta_subiendo4('15m'),ind.esta_subiendo4('1h')     )
-        #texto+=self.linea( 'Volumenbu,1m,15m,15m:', ind.volumen_bueno('1m') , ind.volumen_bueno('5m') , ind.volumen_bueno('15m')  ,ind.volumen_bueno('1h'), 'inc_vb=',ind.incremento_volumen_bueno     )
         #texto+=self.linea( 'volumen_porcentaj 1m:', ind.volumen_porcentajes('1m'))
         #texto+=self.linea( 'volumen_porcentaj 5m:', ind.volumen_porcentajes('5m'))
         #texto+=self.linea( 'volumen_porcenta 15m:', ind.volumen_porcentajes('15m'))

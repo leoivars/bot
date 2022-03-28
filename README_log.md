@@ -5,6 +5,7 @@ This file contains changes made over time in reverse order.
 ## Actual Goal
 
 Write documentation for run the bot.
+-first need to remove unused field from par.py
 
 ## 03/26/2022
 

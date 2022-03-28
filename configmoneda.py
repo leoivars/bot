@@ -53,7 +53,6 @@ if __name__== "__main__":
     parser.add_argument("-obs", "--observaciones"     , help="Obsercaciones que se tengan de este par y puedan ser útiles para el futuro ej. 'moneda peligrosa' ")
     parser.add_argument("-can", "--cantidad"          , help="Cantidad a comprar expresada en dolares")
     parser.add_argument("-cfg", "--config"            , help="Muestra la configuración actual del par -m -c ingresado",action='store_true')
-    parser.add_argument("-vol", "--volumen"           , help="cambia el filtro de incremento_volumen_bueno")
     parser.add_argument("-gan", "--tomar_ganancias"   , help="Porcentaje de ganancias a tomar")
     parser.add_argument("-sig", "--estado_siguiente"  , help="Pasar a estado siguiente",action='store_true')
     parser.add_argument("-rei", "--reiniciar_estado"  , help="Reiniciar el estado actual",action='store_true') 
@@ -185,17 +184,6 @@ if __name__== "__main__":
             print ('Actualizando e3_ganancia_recompra',ganancia_recompra )
            
             db.e3_ganancia_recompra(ganancia_recompra,moneda,moneda_contra)
-                 
-
-    #valido incremento vol bueno
-    volumen=args.volumen
-    if volumen != None:
-        volumen=abs(float(volumen))
-        if volumen>0  and par_ok:
-            print ('Actualizando incremento volumen bueno',ganancia_recompra )
-           
-            db.incremento_volumen_bueno(volumen,moneda,moneda_contra)
-                 
 
 
     #valido cantidad
