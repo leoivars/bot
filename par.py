@@ -156,9 +156,6 @@ class Par:
         
         self.comandos=ComandosPar(self.log,self.db,self)   #self: le paso la instancia mima del para para que lo pueda manipular
         
-        if self.mercado == None:
-            self.mercado=LectorPrecios(self.client)
-
         
 
         self.reserva_btc_en_usd=50 # cantidad expresada en dolares que se deja como reserva de inversion. Se carga con cargar_parametros_json() y se usa en fondos_para_comprar
@@ -430,29 +427,15 @@ class Par:
     def primer_estado_de_funcion(self):
         if self.solo_vender==1:
             return 3
-
         if self.funcion in "comprar vender": 
             if self.hay_algo_para_vender_en_positivo():
                 return 3
             else:    
                 return 7        
-        elif self.funcion=="arbitraje":
-            return 21
-
-        elif self.funcion=="comprar+al+subir": 
-            return 9
-        elif self.funcion=="comprar+al+subir+stoploss": 
-            return 9    
-        elif self.funcion=="comprar+precio+stoploss": 
-            return 8
-        elif self.funcion=="comprar+precio": 
-            return 8  
         elif self.funcion=="vender+ya":
             return 4
         elif self.funcion=="comprar+ya":
             return 2        
-        elif self.funcion=="cazaliq":
-            return 9
         else: #no entiendo nada
             return 0 #solo miro  
 
@@ -489,10 +472,6 @@ class Par:
             self.estado_3_inicio()
         elif pestado==4:
             self.estado_4_inicio()    
-        elif pestado==8:
-            self.estado_8_inicio()
-        elif pestado==9:
-            self.estado_9_inicio()    
         elif pestado==7:
             self.estado_7_inicio()
         else:
@@ -526,48 +505,12 @@ class Par:
                     ret =  3
                 else:
                     ret =  2    
-        elif self.funcion=="arbitraje":
-            if self.estado == 21:
-                return 31
-            else:    
-                return 21
         elif self.funcion=="vender+ya":
             self.cambiar_funcion('comprar')
             ret =  -1 
 
         elif self.funcion=="comprar+ya": 
             ret =  2
-    
-        elif self.funcion=="comprar+precio": 
-            if self.estado==8:
-                ret =  2 
-            elif self.estado==2: #comprar
-                ret =  3 #esperar a que suba y vender
-            elif self.estado==3: # Por filled
-                ret =  8
-            elif self.estado==4: #vendió volvemos al 8 
-                ret =  8
-        
-        elif self.funcion=="cazaliq": 
-            if self.estado==9: #esperar fondos para comprar
-                ret =  self.pasar_a_estado_a_menos_que_haya_algo_para_vender(nuevo_estado=2)
-            if self.estado==2: #comprar
-                ret =  3 
-            elif self.estado==3: #esperar a que suba para vender                
-                ret =  self.pasar_a_estado_9___quedarse_en_3___o_fin_del_trade()
-            elif self.estado==4: #vender enviado desde estado 3 cuando se pasó de largo el stoploss. Pero nunca por estado siguiente.
-                ret =  self.pasar_a_estado_9___quedarse_en_3___o_fin_del_trade()
-            else:
-                ret =  9 #no se dió otra condicion, empezamos desde 9
-
-        elif self.funcion=="stoploss": 
-            if self.estado==0: #esperar fondos para comprar
-                ret =  0
-            if self.estado==1: #stoploss
-                ret =  4
-            elif self.estado==4: #vender enviado desde estado 1
-                self.cambiar_funcion('vender')
-                ret =  -1 
         
         #si solo_vender está activado, no permito cualquier otro estado
         if self.solo_vender==1:
@@ -664,8 +607,6 @@ class Par:
         return vta + comision
 
 
-
-
     def gt(self,tiempo_en_segundos):
         '''
         Retorna una ganancia en porcentaje en funcion del tiempo transcurrido en segundos
@@ -679,9 +620,6 @@ class Par:
     def calc_precio(self,pganancia):
         return ( -self.precio_compra - self.precio_compra*self._fee) / ( pganancia/100 -1 + self._fee)
 
-
-
-
     
     def ganancias_contra_stoploss(self):
         comision=self.precio_compra*self._fee
@@ -689,8 +627,6 @@ class Par:
         #gan=self.stoploss_actual- self.precio_compra - comision - self.tickSize
         gan=self.stoploss_actual- self.precio_compra - comision
         return round(gan/self.stoploss_actual*100,2) 
-
-    
 
     def calculo_ganancias_usdt(self,pxcompra,pxventa,cantidad):
         comision = pxcompra * cantidad * self._fee
@@ -703,8 +639,6 @@ class Par:
         comision+=pxventa*cantidad*self._fee
         gan=cantidad *(pxventa - pxcompra) - comision 
         return gan
-    
-      
 
     def tomar_info_par(self,pmin_notional=0): 
         #obtengo info de la moneda y fijo los paramentro necesarios por ahora solo la presicion de la cantidad
@@ -734,7 +668,6 @@ class Par:
     # salgan mas baratas    
     def set_cant_moneda_stoploss(self,cantidad): 
             self.cant_moneda_stoploss=cantidad
-            
 
     #deprecated ???
     def get_cant_moneda_stoploss(self):
@@ -947,47 +880,7 @@ class Par:
         px,self.calculo_precio_compra = self.calculador_precio.calcular_precio_de_compra(metodo,self.sub_escala_de_analisis)
 
         return px
-
-
-
     
-    # def restar_cuando_son_malas_condiciones(self,escala,precio):
-    #     px=precio
-    #     resta=0
-    #     ind: Indicadores =self.ind
-    
-        
-    #     if self.moneda_contra=="BTC" and self.esta_feo():
-    #         r = ind.promedio_de_maxmin_velas_negativas(escala,top=5,cvelas=10,restar_velas=1)
-    #         resta += r
-    #         self.log.log('restar_cuando_son_malas_condiciones esta_feo '+ escala ,r) 
-
-    #     #if self.moneda_contra == 'BTC' and self.ind_pool.btc_con_velas_verdes and not self.ind_pool.btc_con_pendiente_negativa: 
-    #     #    r = ind.promedio_de_maxmin_velas_negativas(self.escala_de_analisis,top=10,cvelas=30,restar_velas=1)
-    #     #    resta += r
-    #     #    self.log.log('restar_cuando_moneda_contra_BTC y fomo '+ self.escala_de_analisis ,r) 
-
-
-    #     # if not self.filtro_rsi(escala,50):
-    #     #     prsi=ind.precio_de_rsi(escala,29)
-    #     #     r =  abs(px - prsi)
-    #     #     resta += r 
-    #     #     self.log.log('restar_cuando_son_malas_condiciones filtro_rsi ->' ,r)      
-        
-    #     return px - resta
-
-
-    # def esta_feo(self):
-        
-    #     return not self.ind_pool.btc_con_velas_verdes and self.ind_pool.btc_con_pendiente_negativa  
-        
-    #     #ind: Indicadores =self.ind_pool.indicador('BTCUSDT')
-    #     #ret = False
-        
-    #     #hmacd = ind.macd_describir(escala)
-    #     #if hmacd[1] ==-1 and hmacd[0] ==-1: #macd negativo con pendiente negativa 
-    #     #    ret=True   
-        
 
     def determinar_metodo_para_compra_venta(self):
         ''' 
@@ -1428,22 +1321,18 @@ class Par:
         self.log.log("****** accion() ****** estado",self.estado,'funcion',self.funcion)
 
         try:
-            self.estado_bucles+=1 #cuanta los bucles o ciclos que hace que está en esta estado
+            self.estado_bucles+=1 #cuenta los bucles o ciclos que hace que está en esta estado
 
-            if self.estado==0:    
-                self.estado_0_accion() #nada
-            elif self.estado==2:
-                self.estado_2_accion() #comprar  
-            elif self.estado==3:
-                self.estado_3_accion() #esparar para vender  
-            elif self.estado==4:
-                self.estado_4_accion() #vender
-            elif self.estado==8:
-                self.estado_8_accion() #espera precio antes de intentar comprar 
-            elif self.estado==7:
-                self.estado_7_accion() #espera el momento de comprar
-            elif self.estado==9:
-                self.estado_9_accion() #espera fondos para comprar    
+            if self.estado == 0:    
+                self.estado_0_accion()     #nada
+            elif self.estado == 2:
+                self.estado_2_accion()     #comprar  
+            elif self.estado == 3:
+                self.estado_3_accion()     #esparar para vender  
+            elif self.estado == 4:
+                self.estado_4_accion()     #vender
+            elif self.estado == 7:
+                self.estado_7_accion()     #espera el momento de comprar
 
         except Exception as e:
             self.log.err( "*!*!___err_en_accion__*!*!*Error en accion:",self.par,self.estado,e )
@@ -1462,43 +1351,6 @@ class Par:
         self.log.log(  "Estado 0, no se hace nada" ,self.par )
         if self.funcion=="comprar" or self.funcion=="vender":
             self.sincronizar_compra_venta() 
-
-    def estado_9_inicio(self):
-        self.log.log(  "Estado 9, Esperar a tener fondos" ,self.par )
-        self.tiempo_reposo=0
-        
-        
-    def estado_9_accion(self):
-        pass
-
-        # self.log.log(  "______Estado 9, Acción()_____")
-        
-        # if self.pasar_a_estado_3_si_hay_algo_en_ganancias():
-        #     self.tiempo_reposo=0
-        #     return
-
-        # self.tiempo_reposo=450
-
-        # if self.decidir_recomprar_hmacd_rsi('1d'):
-        #     ind=self.ind
-
-            
-        #     self.log.log( 'px',self.precio,'Rango',self.rango)
-            
-        #     if self.precio < self.rango[2]: #el precio por debajo del borde superior del rango
-        #         if self.fondos_para_comprar():
-        #             self.tiempo_reposo=1
-        #             self.analisis_provocador_entrada='cazaliq'
-        #             self.calculo_precio_compra=''
-        #             self.iniciar_estado( self.estado_siguiente() )
-        #         else:
-        #             self.tiempo_reposo=600    
-        #     else:    
-        #         self.tiempo_reposo=300
-
-     
-
-    
 
 
     
