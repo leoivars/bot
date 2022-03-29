@@ -1,6 +1,6 @@
-from mercado_actualizador_socket import Mercado_Actualizador_Socket
-import websocket
-from velaset import VelaSet
+import sys
+sys.path.append('..')  
+
 from logger import Logger
 import time
 from pws import Pws

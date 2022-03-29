@@ -7,12 +7,10 @@ from binance.client import Client # Cliente python para acceso al exchangue
 from indicadores2 import Indicadores #Clase que toma datos de las velas del exchange y produce información (la version1 deprecated)
 from logger import Logger #clase para loggear
 from correo import Correo
-from LectorPrecios import LectorPrecios #clase para tomar precios de todos los pares 
 from LibroOrdenes import LibroOrdenes
 from libro_ordenes2 import Libro_Ordenes_DF
 from datetime import datetime, timedelta
 from comandos_interprete import ComandosPar
-
 from ordenes_binance import OrdenesExchange
 from actualizador_info_par import ActualizadorInfoPar
 from funciones_utiles import calcular_fecha_futura, cpu_utilizada,calc_tiempo_segundos,strtime_a_fecha,strtime_a_time,variacion,variacion_absoluta
@@ -30,7 +28,6 @@ import fauto_compra_vende.habilitar_pares
 from acceso_db_funciones import Acceso_DB_Funciones
 from acceso_db_modelo import Acceso_DB
 
-
 from numpy import isnan
 import random
 
@@ -45,7 +42,6 @@ class Par:
     #variables de clase
     client=''
     operando= False
-    lector_precios=None
     correo=None 
     log_resultados=Logger('resultados.log')
     log_errores=Logger('errores.log')
@@ -160,8 +156,8 @@ class Par:
         
         self.comandos=ComandosPar(self.log,self.db,self)   #self: le paso la instancia mima del para para que lo pueda manipular
         
-        if Par.lector_precios == None:
-            Par.lector_precios=LectorPrecios(self.client)
+        if self.mercado == None:
+            self.mercado=LectorPrecios(self.client)
 
         
 
@@ -289,7 +285,6 @@ class Par:
         self.cargar_parametros_json() #primero que todo porque influye en tomar_info_par
         p=self.db.get_valores(self.moneda,self.moneda_contra)  #necesito que esté primero 
         #antes usaba cant_monesa_compra directamete ahora dejo el parametro cargado y establezco el valor despues, en el futuro hay que mejorarlo pero por ahora lo dejo así por compatibilidad
-        Par.lector_precios.leerprecios()
         
         self.pmin_notional = p['min_notional']
         
@@ -314,9 +309,6 @@ class Par:
         self.max_entradas = p['max_entradas']
         
         cant=float(p['cantidad'])
-        
-        if cant>0:
-            Par.lector_precios.usdt_cantidad(cant,self.par) #cantidad a comprar expresado en dolares
         
         #self.agregar_analizador('BTCUSDT') #lo mismo para este.
 
@@ -704,7 +696,7 @@ class Par:
         comision = pxcompra * cantidad * self._fee
         comision += pxventa * cantidad * self._fee
         cant_final = cantidad * (pxventa - pxcompra) - comision 
-        return Par.lector_precios.valor_usdt(cant_final,self.par)
+        return self.mercado.valor_usdt(cant_final,self.par)
 
     def calculo_ganancias_moneda_contra(self,pxcompra,pxventa,cantidad):
         comision=pxcompra*cantidad*self._fee
@@ -4514,8 +4506,6 @@ class Par:
         self.establecer_cantidad_a_vender(trade) #aca se fija idtrade tambien...
 
         self.precio_salir_derecho= self.precio_de_venta_minimo(0)
-
-        Par.lector_precios.leerprecios()
                 
         #creo la orden de venta
         self.libro.actualizar() #descargo el estado actual del libro de ordenes
@@ -4802,7 +4792,7 @@ class Par:
                 self.iniciar_estado( 7  )
             else:
                 cant=self.oe.tomar_cantidad(self.moneda)
-                valor= Par.lector_precios.valor_usdt(cant,self.par)
+                valor= self.mercado.valor_usdt(cant,self.par)
                 if valor>11: # tengo suficiente para vender
                     self.iniciar_estado(3)
                 else:
@@ -4870,7 +4860,7 @@ class Par:
         #self.log.log('self.reserva_btc_en_usd=',self.reserva_btc_en_usd)
 
         if self.moneda_contra=='BTC':
-            reserva_btc_global=Par.lector_precios.valor_btc(self.reserva_btc_en_usd,'BTCUSDT')
+            reserva_btc_global=self.mercado.valor_btc(self.reserva_btc_en_usd,'BTCUSDT')
             reserva_btc_trades=0#comentado por que uso cantidad disponible #self.db.trade_btc_tradeando()
             self.log.log(self.moneda_contra,cant_total)     
             self.log.log('reserva_btc_global',reserva_btc_global) 
@@ -4887,43 +4877,14 @@ class Par:
         cant_posible=float( self.format_valor_truncando( cant / self.precio_compra,self.cant_moneda_precision) )    
         return cant_posible
  
-    
-    def calcular_cantidad_a_comprar21(self):
-         
-        self.precio_compra=1 /1.03
-
+    def unidades_posibles(self,cantidad):
         
-        #self.log.log('parametro_cantidad=',self.format_valor_truncando(self.parametro_cantidad,self.cant_moneda_precision) )   
-
-        if self.parametro_cantidad>0:
-            cant_en_moneda_contra=Par.lector_precios.convertir(self.parametro_cantidad,'USDT',self.moneda_contra)   
-            cantidad_a_comprar=Par.lector_precios.unidades_posibles(cant_en_moneda_contra,self.par)
+        if cantidad>0:
+            unidades=self.redondear_unidades(cantidad/self.precio)   
         else:
-            cantidad_a_comprar=0   
+            unidades=0
 
-        #el resultado de unidades_posibles puede ser cero tambien por eso tengo que preguntar nuevamente por valor cero.
-        # y si es cero, establezco a lo mínimo indispensable.
-        if cantidad_a_comprar==0:
-            #minimo=self.redondear_unidades(self.min_notional*1.01/self.precio)
-            if self.x_min_notional>1:
-                coeficiente=1
-            else:
-                coeficiente=1.09    
-            cantidad_a_comprar=self.redondear_unidades(self.min_notional_compra*coeficiente/self.precio_compra) # establezco una cantidad a comprar en el minimo positble + un poco mas (coeficiente) para el caso que x_min_notional =
-            self.log.log('cantidad_a_comprar==0, establezco=',cantidad_a_comprar,'min_notional_compra,coeficiente',self.min_notional_compra,coeficiente)   
-        
-        if cantidad_a_comprar<1 and self.cant_moneda_precision==0: #es una moneda que no se puede fraccionar 
-            cantidad_a_comprar=1 #establezco a 1 que es lo mínimo que se puee comprar
-
-        self.log.log('calcular_cantidad_a_comprar',cantidad_a_comprar)
-
-        
-
-
-        return cantidad_a_comprar
-    
-    
-    
+        return unidades
     
     def calcular_cantidad_a_comprar(self):
          
@@ -4933,8 +4894,8 @@ class Par:
         #self.log.log('parametro_cantidad=',self.format_valor_truncando(self.parametro_cantidad,self.cant_moneda_precision) )   
 
         if self.parametro_cantidad>0:
-            cant_en_moneda_contra=Par.lector_precios.convertir(self.parametro_cantidad,'USDT',self.moneda_contra)   
-            cantidad_a_comprar=Par.lector_precios.unidades_posibles(cant_en_moneda_contra,self.par)
+            cant_en_moneda_contra=self.mercado.convertir(self.parametro_cantidad,'USDT',self.moneda_contra)   
+            cantidad_a_comprar=self.unidades_posibles(cant_en_moneda_contra,self.par)
         else:
             cantidad_a_comprar=0   
 

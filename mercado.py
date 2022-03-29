@@ -167,6 +167,14 @@ class Mercado:
         vs = self.par_escala_ws_v[par][escala][1]
 
         return vs
+
+    def vela(self,par,escala,posicion):
+        try:
+            vs: VelaSet = self.get_velaset(par,escala)
+            ret:Vela = vs.get_vela(posicion)
+        except:
+            ret = None
+        return ret      
             
     def precio(self,par,escala):
         try:
@@ -176,13 +184,56 @@ class Mercado:
             px = -1
         return px 
 
-    def vela(self,par,escala,posicion):
+    def precio_mas_actualizado(self,par):
+        if not par in self.par_escala_ws_v:
+            return self.precio(par,'1m')
+        actualizado={}
         try:
-            vs: VelaSet = self.get_velaset(par,escala)
-            ret:Vela = vs.get_vela(posicion)
+            for esc in self.par_escala_ws_v[par].keys():
+                actualizado[esc]=self.par_escala_ws_v[par][esc][1].actualizado
+            mas_actualizado = sorted(actualizado.items(), key=lambda x: x[1] ,reverse=True   )[0]
+            ret = self.precio(par,mas_actualizado[0]) 
         except:
-            ret = None
-        return ret    
+            ret = -1
+        return ret
+
+    def  valor_usdt(self, cantidad,par):
+        pxpar = self.precio_mas_actualizado(par)
+        if par.endswith('USDT') or par.endswith('PAX') or par.endswith('DAI'):
+            px=1    
+        elif par.endswith('BTC'):
+            px=self.precio_mas_actualizado('BTCUSDT')
+        elif par.endswith('BNB'):    
+            px=self.precio_mas_actualizado('BNBUSDT')
+        elif par.endswith('ETH'):    
+            px=self.precio_mas_actualizado('ETHUSDT')
+ 
+        return cantidad*pxpar*px    
+
+    def  valor_btc(self, cantidad,par):
+
+        if par.endswith('BTC'):
+            px=1
+        elif par.endswith('USDT') or par.endswith('PAX') :
+            px=1/self.precio_mas_actualizado('BTCUSDT')
+        elif par.endswith('BNB'):    
+            px=self.precio_mas_actualizado('BNBBTC')
+        elif par.endswith('ETH'):    
+            px=self.precio_mas_actualizado('ETHBTC')
+
+        return cantidad*px     
+
+    def convertir(self,cant,moneda_a,moneda_b):
+        ret=0
+        usds=['USDT','PAX','TUSD','USDC','USDS']
+        if moneda_a in usds and moneda_b=='BTC':
+            ret=cant / self.precio_mas_actualizado('BTCUSDT') 
+        elif moneda_b in usds and moneda_a=='BTC':
+            ret=cant * self.precio_mas_actualizado('BTCUSDT') 
+        elif moneda_b in usds and moneda_a in usds or moneda_a==moneda_b:
+            ret=cant
+     
+        return ret       
 
 
 
