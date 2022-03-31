@@ -43,7 +43,7 @@ class Estrategia():
         comprar= False
         
         if not comprar:
-            ret = self.scalping_parte_muy_baja_emas(escala,250,coef_bajo,pmin_impulso,em12)
+            ret = self.scalping_parte_muy_baja_emas(escala,50,coef_bajo,pmin_impulso,em12)
             if ret[0]:
                 #if ind.control_de_inconsistemcias(esc) == -1: #no hay inconsitencias
                 self.escala_de_analisis = ret[1]
@@ -210,15 +210,15 @@ if __name__=='__main__':
     #ffin='2021-07-01 23:59:59' 
     
     #parametros de al simulacion
-    escalas=['1h']
-    escalas_mercados=['1h']
+    escalas=['1m']
+    escalas_mercados=['1m']
     emas12=[(5,10)]
     coficientes_bajo=[0.786,0.618,.5,0.382,0.236]
     #emas12=[(4,7)]
-    xmin_impulsos = [x for x in range(25,35)]
+    xmin_impulsos = [x for x in range(25,40)]
     #xmin_impulsos = [19]
-    fecha_fin =  strtime_a_obj_fecha('2021-11-30 00:00:00')  #Consiste en la ultima vela (la mas actual, que existe en la simulación)
-    fin_test  =  strtime_a_obj_fecha('2022-03-16 00:00:00')
+    fecha_fin =  strtime_a_obj_fecha('2022-03-30 00:00:00')  #Consiste en la ultima vela (la mas actual, que existe en la simulación)
+    fin_test  =  strtime_a_obj_fecha('2022-03-30 23:30:00')
     #fecha_fin =  strtime_a_obj_fecha('2022-03-14 00:00:00')  #Consiste en la ultima vela (la mas actual, que existe en la simulación)
     #fin_test  =  strtime_a_obj_fecha('2022-03-16 00:00:00')
     txt_test = 'baja_emarl_xvolumen'
@@ -226,7 +226,7 @@ if __name__=='__main__':
 
     #lista_pares=['XMRUSDT','BTCUSDT','CELRUSDT']
     #lista_pares=[ 'ADAUSDT','AVAXUSDT','BNBUSDT','DOTUSDT','XRPUSDT']
-    lista_pares=['BTCUSDT']
+    lista_pares=['CELRUSDT']
     #lista_pares=['CELRUSDT','ADAUSDT','AVAXUSDT','BNBUSDT','DOTUSDT','XRPUSDT']
 
     db.backtesting_borrar_todos_los_resultados()

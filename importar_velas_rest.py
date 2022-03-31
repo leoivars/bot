@@ -138,14 +138,14 @@ if __name__=='__main__':
     # print(fini,ffin)
     
     #pedido máximo en días por escala
-    #deltas = {'2h':120}
-    deltas = {'15m':15,'30m':30,'1h':60,'2h':120,'4h':240,'1d':1440,'1w':10080,'1M':43200}
+    deltas = {'1m':1}
+    #deltas = {'15m':15,'30m':30,'1h':60,'2h':120,'4h':240,'1d':1440,'1w':10080,'1M':43200}
     
     #UTC	2021-06-13T07:02:34Z
     ####  fini='2021-11-01 00:00:00' desde acá tengo  pares=['XMRUSDT','BTCUSDT','CELRUSDT']
     #fini='2021-11-01 00:00:00' pares=[ 'ADAUSDT','AVAXUSDT','BNBUSDT','DOTUSDT','XRPUSDT','XMRUSDT','BTCUSDT','CELRUSDT']
-    fini='2022-03-14 00:00:00'
-    ffin='2022-03-16 00:00:00' 
+    fini='2022-03-30 00:00:00'
+    ffin='2022-03-31 00:00:00' 
     
     #pares=['BTCUSDT','BNBUSDT','XRPUSDT']
     #pares=['BTCUSDT','BNBUSDT']
