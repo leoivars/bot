@@ -1612,16 +1612,8 @@ class Par:
         escalas_a_probar = self.entradas_a_escalas(self.temporalidades,entradas)
         
         for esc in escalas_a_probar:
-            # if not comprar: #and self.moneda!='BTC':
-            #     ret = self.buscar_minimo_parte_muy_baja('1h',90,0.25)
-            #     if ret[0]:
-            #         self.escala_de_analisis = ret[1]
-            #         self.sub_escala_de_analisis = ret[1]
-            #         self.analisis_provocador_entrada=ret[2]
-            #         comprar = True
-            #         break
-            if not comprar: #and self.moneda=='BTC':
-                ret = self.ema_rapida_lenta_xvolumen('1h',p_xmin_impulso=self.xmin_impulso,em12=self.param_filtro_dos_emas_positivas)
+            if not comprar: 
+                ret = self.ema_rapida_lenta_xvolumen(esc,p_xmin_impulso=self.xmin_impulso,em12=self.param_filtro_dos_emas_positivas)
                 if ret[0]:
                     self.escala_de_analisis = ret[1]
                     self.sub_escala_de_analisis = ret[1]
@@ -1681,9 +1673,6 @@ class Par:
                 ret=True
                 self.log.log(f'precio {self.precio} > {self.objetivo_compra} objetivo_compra')
         return ret    
-
-
-
 
 
     def no_se_cumple_objetivo_venta(self):
@@ -3453,7 +3442,7 @@ class Par:
  
     def momento_de_recomprar(self,escala,gan,duracion_trade):
         
-        gan_limite = self.g.escala_ganancia[escala] * -1.5
+        gan_limite = self.g.escala_ganancia[escala] * -0.5
         self.log.log( f'momento_de_recomprar?  gan {gan}, gan_limite {gan_limite} duracion {duracion_trade}' )
         #if self.moneda=='BTC' < 0.5 and duracion_trade > 60:    #experimental, esto podría comprar demasiado
         #    recomprar = True
@@ -3772,7 +3761,12 @@ class Par:
             que tenga la probabilidad mas baja (especulada) de que self.precio
             retroceda y se ejecute el stoploss
         '''
-        sl = self.ind.stoploss_ema(self.escala_de_analisis,self.precio_salir_derecho,10,5)
+        if self.g.escala_tiempo[self.escala_de_analisis] <= self.g.escala_tiempo['30m']: 
+            velas_stoploss=1
+        else:
+            velas_stoploss=6
+
+        sl = self.ind.stoploss_ema(self.escala_de_analisis,self.precio_salir_derecho,11,velas_stoploss)
 
         if sl > self.stoploss_actual:
             self.log.log(f'sl de {self.stoploss_actual} --> {sl}')
@@ -4173,7 +4167,7 @@ class Par:
         if generar_liquidez:
             sl_nuevo = self.ind.stoploss_ema(self.g.zoom(self.escala_de_analisis,1),self.precio_salir_derecho,7,3)
         else:
-            sl_nuevo = self.ind.stoploss_ema(self.escala_de_analisis,self.precio_salir_derecho,10,5)
+            sl_nuevo = self.ind.stoploss_ema(self.escala_de_analisis,self.precio_salir_derecho,11,6)
         
         self.log.log(f'sl_nuevo={sl_nuevo}')
 
@@ -4470,9 +4464,7 @@ class Par:
         self.set_tiempo_reposo()
     
     def todo_bonito_para_seguir_comprado(self):
-        return fauto_compra_vende.habilitar_pares.hay_precios_minimos_como_para_habilitar(self.ind,self.g,self.log)  or\
-            (fauto_compra_vende.habilitar_pares.el_precio_no_esta_cerca_del_maximo(self.ind,self.log) and\
-             fauto_compra_vende.habilitar_pares.para_alcista_como_para_habilitar(self.ind,self.g,self.log) )
+        return fauto_compra_vende.habilitar_pares.hay_precios_minimos_como_para_habilitar(self.ind,self.g,self.log)
  
     def deshabilitacion_de_emergencia(self,horas = 24):
         self.enviar_correo_error('deshabilitacion por '+str(horas)+ ' hrs') 
