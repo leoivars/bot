@@ -208,7 +208,7 @@ def filtro_de_rsi_minimo_cercano(ind:Indicadores,log:Logger,escala,rsi_inferior,
 
 
 def filtro_ema_rapida_lenta(ind:Indicadores,log:Logger,escala,rapida,lenta,diferencia):
-    filtro_ok,dif,pl,pr = ind.ema_rapida_mayor_lenta2( escala, rapida,lenta,diferencia_porcentual_minima=0.09 ) 
+    filtro_ok,dif,pl,pr = ind.ema_rapida_mayor_lenta2( escala, rapida,lenta,diferencia_porcentual_minima=0.01,pendientes_positivas=True ) 
     log.log(f'    {escala} diferencia% {dif}, pend rapida {pr} pend lenta {pl}')
     log.log(f'{filtro_ok} <--ok_filtro_ema_rapida_lenta: {filtro_ok}')
     return filtro_ok    
