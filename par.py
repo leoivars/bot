@@ -3762,7 +3762,7 @@ class Par:
             retroceda y se ejecute el stoploss
         '''
         if self.g.escala_tiempo[self.escala_de_analisis] <= self.g.escala_tiempo['30m']: 
-            velas_stoploss=1
+            velas_stoploss=4
         else:
             velas_stoploss=6
 
