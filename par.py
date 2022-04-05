@@ -1523,7 +1523,7 @@ class Par:
                 if self.db.trades_cantidad_de_pares_con_trades() >= self.g.maxima_cantidad_de_pares_con_trades:
                     self.log.log(f'maxima_cantidad_de_pares_con_trades superada: A dormir')  
                     dormir = True 
-                if time.time() - self.tiempo_inicio_estado >  86400:     #  un día
+                if time.time() - self.tiempo_inicio_estado >  604800:       #  7 días
                     self.log.log(f'mucho tiempo sin conseguir entradas ')  
                     dormir = True
 
@@ -1864,14 +1864,12 @@ class Par:
         self.log.log('====== scalping_parte_muy_baja ======')
         ret=[False,'xx']
         ind: Indicadores = self.ind
-        if filtro_parte_baja_rango(self.ind,self.log,escala,50,.618):
-            if filtro_ema_rapida_lenta(ind,self.log,escala,rapida=em12[0],lenta=em12[1],diferencia=0.1):  
-                if filtro_xvolumen_de_impulso(ind,self.log,escala,periodos=14,sentido=0,xmin_impulso=p_xmin_impulso):
+        if filtro_parte_baja_rango(ind,self.log,escala,50,.382):
+            if filtro_xvolumen_de_impulso(ind,self.log,escala,periodos=14,sentido=0,xmin_impulso=25):
+                if filtro_de_rsi_minimo_cercano(self.ind,self.log,escala,26,(2,3)):
                     ret = [True,escala,f'ema_rapida_lenta_xvolumen'] 
 
         return ret
-
-            
 
 
     def buscar_rsi_minimo_super_volumen(self,escala): 
@@ -2093,43 +2091,28 @@ class Par:
 
         self.log.log(f'escala_de_salida {self.escala_de_salida}' )    
 
-        if not filtro_parte_alta_rango(ind,self.log,self.escala_de_salida,45):
+        if not filtro_parte_alta_rango(ind,self.log,self.escala_de_salida,90):
             return False   
 
-        gan_min = calc_ganancia_minima(self.g,self.g.ganancia_minima[escala],self.escala_de_salida,duracion_trade)
-        precio_bajista = self.el_precio_es_bajista('4h') and self.el_precio_es_bajista(self.escala_de_salida)
-        precio_no_sube = ind.no_sube(self.escala_de_salida)
-        tiempo_trade_superado = duracion_trade > self.g.tiempo_maximo_trade[self.escala_de_salida]
-        duracion_en_velas = int(duracion_trade/self.g.escala_tiempo[self.escala_de_salida])
+        gan =   calculo_ganancias(self.g,self.precio_compra,ind.precio(escala))
+
+        gan_min = self.g.ganancia_minima[escala]
+        precio_bajista = ind.el_precio_es_bajista(escala)
+        precio_no_sube = ind.no_sube(escala)
         self.log.log(f'gan_min {gan_min} gan {gan} px_bajista {precio_bajista} px_no_sube {precio_no_sube}' )
-        self.log.log(f' duracion {duracion_trade} velas {duracion_en_velas} t_superado {tiempo_trade_superado}')
                  
-        if gan < 0.3 or self.no_se_cumple_objetivo_venta():
+        if gan < 0.3:# or self.no_se_cumple_objetivo_venta():
             return False
         elif gan < gan_min and not precio_bajista:
             return False
 
         marca_salida='S>>>'    
 
-        if tiempo_trade_superado and precio_no_sube:
-            self.log.log(f'{marca_salida} tiempo_trade_superado y precio_no_sube Velas={duracion_en_velas}')
-            return True
 
-        #rapidamente se alcanza el objetivo de self.g.escala_ganancia[escala]
-        # solo para escalas pequeñas 
-        if self.g.escala_tiempo[escala] <=  self.g.escala_tiempo['15m'] and\
-            duracion_trade <= self.g.escala_tiempo[escala] * 2 and\
-            gan > self.g.escala_ganancia[escala]:
-            self.log.log(f'{marca_salida} ganancia flash {gan} Velas={duracion_en_velas}')
-            return True
-
-
-
-        rsi_max,rsi_max_pos,rsi = ind.rsi_maximo_y_pos(self.escala_de_salida,5)
+        rsi_max,rsi_max_pos,rsi = ind.rsi_maximo_y_pos(escala,5)
         self.log.log(f'rsi {rsi} rsi_max {rsi_max} rsi_max_pos {rsi_max_pos}')
-
-
-        lista_max = ind.lista_picos_maximos_ema(self.escala_de_salida,3,10,'close')
+        
+        lista_max = ind.lista_picos_maximos_ema(escala,periodos=9,cvelas=10,origen='close',izquierda=5,derecha=2)
 
         if lista_max:
             pos_max = lista_max[0][0] 
@@ -2145,27 +2128,16 @@ class Par:
             self.log.log(f'{marca_salida} rsi_max > 70 {rsi_max}')
             return True
         
-        if rsi > 65  and self.filtro_volumen_calmado(self.escala_de_salida,3,0.7):                        #0.8 baja la barrera que tiene que superar el volumen para considirarse importante
-            self.log.log(f'{marca_salida} rsi escala >65 {rsi}, volumen_calmado 3 0.7')
-            return True
-
         if rsi_max > 53 and rsi_max > rsi and 1<= rsi_max_pos <= 3 and precio_bajista:
             self.log.log(f'{marca_salida} rsi_max > 53 {rsi_max} ,precio_bajista')
             return True
 
-        if precio_no_sube and self.precio_objetivo_superado(self.escala_de_salida):
-            return True
-    
-        if rsi_max > 50 and rsi_max > rsi and 1<= rsi_max_pos <= 3 and self.precio_bajo_ema_importante(self.escala_de_salida):
+        if rsi_max > 50 and rsi_max > rsi and 1<= rsi_max_pos <= 3 and ind.precio_bajo_ema_importante(escala):
+            self.log.log(f'precio_bajo_ema_importante')
             return True
 
-        var = variacion_absoluta(ind.ema(self.escala_de_salida,50) ,self.precio  )
-        inf = self.g.escala_ganancia[self.escala_de_salida] / -10
-        if rsi_max > 40 and 1<= rsi_max_pos <=5 and precio_no_sube and inf  <= var <= 0:
-            self.log.log(f'{marca_salida} rsi_max= {rsi_max} > 40 and rsi_max_pos {rsi_max_pos} <=5 and precio_no_sube and var {inf} <= {var} <= 0')
-            return True    
         
-        return False 
+        return False
 
     def el_precio_es_bajista(self,escala):
         ''' trato de definir si el precio es bajista cuando el precio es mayor que la ema de 50. 
@@ -3280,7 +3252,6 @@ class Par:
         self.controlar_stop_loss()
 
         #### INICIAR LIQUIDEZ#####
-        #if self.hay_que_tratar_de_tomar_ganancias(gan,atr):
         if not self.generar_liquidez and self.evaluar_si_hay_que_vender(self.escala_de_analisis,gan,duracion_trade):
             self.generar_liquidez = True
             if self.stoploss_habilitado == 1:
@@ -3761,8 +3732,10 @@ class Par:
             que tenga la probabilidad mas baja (especulada) de que self.precio
             retroceda y se ejecute el stoploss
         '''
-        if self.g.escala_tiempo[self.escala_de_analisis] <= self.g.escala_tiempo['30m']: 
-            velas_stoploss=4
+        if self.generar_liquidez:
+            velas_stoploss=1
+        elif self.g.escala_tiempo[self.escala_de_analisis] <= self.g.escala_tiempo['1h']: 
+            velas_stoploss=3
         else:
             velas_stoploss=6
 

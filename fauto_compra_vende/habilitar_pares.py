@@ -1,3 +1,4 @@
+from asyncio.log import logger
 from indicadores2 import Indicadores
 from mercado import Mercado
 from logger import Logger
@@ -7,7 +8,7 @@ from acceso_db_conexion import Conexion_DB
 from acceso_db_funciones import Acceso_DB_Funciones
 from acceso_db_modelo import Acceso_DB
 import time
-from fpar.filtros import filtro_parte_baja_rango
+from fpar.filtros import filtro_parte_baja_rango,filtro_xvolumen_de_impulso
 
 def habilitar_deshabilitar_pares(g:Global_State,db:Acceso_DB,mercado,log):
     ''' Controla la cantidad de pares que tienen trades en este momento y lo compara con 
@@ -31,7 +32,7 @@ def habilitar_deshabilitar_pares_periodicamente(g:Global_State,conn:Conexion_DB,
         habilitar_deshabilitar_pares(g,db,mercado,log)
         time.sleep(300)     
 
-def habilitar_pares(g:Global_State,db:Acceso_DB,mercado:Mercado,log,pares_con_trades):
+def habilitar_pares(g:Global_State,db:Acceso_DB,mercado:Mercado,log:Logger,pares_con_trades):
     pares=db.get_habilitables()
     c_habilitados=pares_con_trades
     for p in pares:
@@ -43,7 +44,7 @@ def habilitar_pares(g:Global_State,db:Acceso_DB,mercado:Mercado,log,pares_con_tr
         
         actualizar_volumen_precio(moneda,moneda_contra,ind,db)          # ya que estamos actualizamos volumen y precio
         
-        if hay_precios_minimos_como_para_habilitar(ind,g,log):          #habilito pares en la parte baja del rango
+        if hay_parte_baja_y_volumen_impulso(ind,log,'1h',33):            #habilito pares en la parte baja del rango
             db.habilitar(1,moneda,moneda_contra)
             c_habilitados += 1
             log.log(f'{par} habilitando total {c_habilitados}') 
@@ -68,6 +69,12 @@ def hay_precios_minimos_como_para_habilitar(ind:Indicadores,g:Global_State,log):
                 break
         return ret  
 
+def hay_parte_baja_y_volumen_impulso(ind:Indicadores,log: Logger,escala,p_xmin_impulso=35):
+    ret = False
+    if filtro_parte_baja_rango(ind,log,escala,50,.382):  
+        if filtro_xvolumen_de_impulso(ind,log,escala,periodos=14,sentido=0,xmin_impulso=p_xmin_impulso):
+            ret = True
+    return ret
 
 def precio_cerca(pxmin,precio,porcentaje=0.30):
     return precio < pxmin   or  (precio - pxmin) / precio *100 < porcentaje       

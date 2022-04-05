@@ -43,7 +43,7 @@ class Estrategia():
         comprar= False
         
         if not comprar:
-            ret = self.scalping_parte_muy_baja_emas(escala,50,coef_bajo,pmin_impulso,em12)
+            ret = self.filtros_desicion(escala,50,coef_bajo,pmin_impulso,rsi,(2,3))
             if ret[0]:
                 #if ind.control_de_inconsistemcias(esc) == -1: #no hay inconsitencias
                 self.escala_de_analisis = ret[1]
@@ -155,16 +155,14 @@ class Estrategia():
                     ret = [True,escala,f'scalping_parte_muy_baja{cvelas_rango}_{porcentaje_bajo}']
         return ret            
 
-    def scalping_parte_muy_baja_emas(self,escala,cvelas_rango=90,porcentaje_bajo=.2,p_xmin_impulso=50,em123=(4,7,21)):
+    def filtros_desicion(self,escala,cvelas_rango=90,porcentaje_bajo=.2,p_xmin_impulso=50,rsi_inf=30,pos_rsi_inf=(2,3)):
         self.log.log('====== ema_rapida_lenta_xvolumen ======')
         ret=[False,'xx']
         ind: Indicadores = self.ind
         if filtro_parte_baja_rango(self.ind,self.log,escala,cvelas_rango,porcentaje_bajo):
-            if filtro_ema_rapida_lenta(ind,self.log,escala,rapida=em12[0],lenta=em12[1],diferencia=0.1):  
-                if filtro_xvolumen_de_impulso(ind,self.log,escala,periodos=14,sentido=0,xmin_impulso=p_xmin_impulso):
-                    ret = [True,escala,f'ema_rapida_lenta_xvolumen'] 
-        
-
+            if filtro_xvolumen_de_impulso(self.ind,self.log,escala,periodos=14,sentido=0,xmin_impulso=p_xmin_impulso):
+                if filtro_de_rsi_minimo_cercano(self.ind,self.log,escala,rsi_inf,pos_rsi_inf):
+                   ret = [True,escala,f'ema_rapida_lenta_xvolumen'] 
 
         # if filtro_ema_rapida_lenta(ind,self.log,escala,rapida=em123[0],lenta=em123[1],diferencia=0.1):  
         #     if filtro_xvolumen_de_impulso(ind,self.log,escala,periodos=14,sentido=0,xmin_impulso=p_xmin_impulso):
@@ -213,12 +211,14 @@ if __name__=='__main__':
     escalas=['1m']
     escalas_mercados=['1m']
     emas12=[(5,10)]
-    coficientes_bajo=[0.786,0.618,.5,0.382,0.236]
+    vrsi=[x for x in range(15,35)]
+    #coficientes_bajo=[0.786,0.618,.5,0.382,0.236]
+    coficientes_bajo=[0.618,.5,0.382,0.236]
     #emas12=[(4,7)]
-    xmin_impulsos = [x for x in range(25,40)]
+    xmin_impulsos = [x for x in range(15,40)]
     #xmin_impulsos = [19]
     fecha_fin =  strtime_a_obj_fecha('2022-03-30 00:00:00')  #Consiste en la ultima vela (la mas actual, que existe en la simulación)
-    fin_test  =  strtime_a_obj_fecha('2022-03-30 23:30:00')
+    fin_test  =  strtime_a_obj_fecha('2022-04-04 23:30:00')
     #fecha_fin =  strtime_a_obj_fecha('2022-03-14 00:00:00')  #Consiste en la ultima vela (la mas actual, que existe en la simulación)
     #fin_test  =  strtime_a_obj_fecha('2022-03-16 00:00:00')
     txt_test = 'baja_emarl_xvolumen'
@@ -226,7 +226,7 @@ if __name__=='__main__':
 
     #lista_pares=['XMRUSDT','BTCUSDT','CELRUSDT']
     #lista_pares=[ 'ADAUSDT','AVAXUSDT','BNBUSDT','DOTUSDT','XRPUSDT']
-    lista_pares=['CELRUSDT']
+    lista_pares=['BTCUSDT']
     #lista_pares=['CELRUSDT','ADAUSDT','AVAXUSDT','BNBUSDT','DOTUSDT','XRPUSDT']
 
     db.backtesting_borrar_todos_los_resultados()
@@ -242,11 +242,17 @@ if __name__=='__main__':
         diez_minutos = timedelta(minutes=10)
         una_hora = timedelta(hours=1)
         dos_horas = timedelta(hours=2)
+        
+
+        tot= len(escalas) * len (xmin_impulsos) * len(vrsi) * len(coficientes_bajo)
+        c=0
 
         for esc in escalas:
             for xmin_imp in xmin_impulsos:
-                for em12 in emas12:
+                for rsi in vrsi:
                     for coef_bajo in coficientes_bajo:
+                        c+=1
+                        
     
                         comprado=False
                         comp_px = 0
@@ -262,9 +268,9 @@ if __name__=='__main__':
                         m.inicar_mercados(fecha_fin,300,pares,escalas_mercados)
                         while m.fecha_fin < fin_test:
                             txtf = m.fecha_fin.strftime('%Y-%m-%d %H:%M:%S')
-                            print (txtf)
+                            print(f'-------------------------------------------------{txtf}-------{esc}-{xmin_imp}-{rsi}-{coef_bajo}----{c}--->{round(c/tot*100,2)}')
                             if not comprado:
-                                if estrategia.decision_de_compra(esc,coef_bajo,xmin_imp,em12):
+                                if estrategia.decision_de_compra(esc,coef_bajo,xmin_imp,rsi):
                                     comp_px=estrategia.precio_de_compra()
                                     comp_stop_loss = estrategia.stoploss(estrategia.escala_de_analisis)
                                     comprado = True
@@ -311,7 +317,7 @@ if __name__=='__main__':
                             log.log (f'----->Termina operacion gan {gan} entradas {entradas}') 
                             comprado=False
 
-                        txt_log_paremtros = f'{txt_test}: escala={esc} coef_bajo {coef_bajo} xmin_impulso{xmin_imp} ema1,2 {em12}  fechas {fecha_fin}-{fin_test}'
+                        txt_log_paremtros = f'{txt_test}: escala={esc} coef_bajo {coef_bajo} xmin_impulso{xmin_imp} rsi {rsi}  fechas {fecha_fin}-{fin_test}'
                         txt_log_datos     = f'{par} ganancia= {gananciap} entradas {entradas} ganadas {ganadas} perdidas {perdidas}'  
                         txt_log_fin = txt_log_datos,txt_log_paremtros
                         log.log(txt_log_fin)

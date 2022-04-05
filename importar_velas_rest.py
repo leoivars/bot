@@ -144,12 +144,13 @@ if __name__=='__main__':
     #UTC	2021-06-13T07:02:34Z
     ####  fini='2021-11-01 00:00:00' desde acá tengo  pares=['XMRUSDT','BTCUSDT','CELRUSDT']
     #fini='2021-11-01 00:00:00' pares=[ 'ADAUSDT','AVAXUSDT','BNBUSDT','DOTUSDT','XRPUSDT','XMRUSDT','BTCUSDT','CELRUSDT']
-    fini='2022-03-30 00:00:00'
-    ffin='2022-03-31 00:00:00' 
+    fini='2022-03-20 00:00:00'
+    ffin='2022-04-05 00:00:00' 
     
+    pares=['BTCUSDT']
     #pares=['BTCUSDT','BNBUSDT','XRPUSDT']
     #pares=['BTCUSDT','BNBUSDT']
-    pares=[ 'ADAUSDT','AVAXUSDT','BNBUSDT','DOTUSDT','XRPUSDT','XMRUSDT','BTCUSDT','CELRUSDT']
+    #pares=[ 'ADAUSDT','AVAXUSDT','BNBUSDT','DOTUSDT','XRPUSDT','XMRUSDT','BTCUSDT','CELRUSDT']
     # fini='202-01-01 00:00:00' 
     # ffin='2021-07-01 00:00:00' 
     obj_fini=strtime_a_obj_fecha(fini)

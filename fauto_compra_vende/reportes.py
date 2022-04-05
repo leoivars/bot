@@ -38,9 +38,7 @@ def reporte_de_muerte(log):
 def reporte_correo(log:Logger,db:Acceso_DB,e:Global_State,mercado:Mercado,inicio_funcionamiento,cuenta_de_reinicios):
     
     reporte  = reporte_de_ciclo(e,mercado,inicio_funcionamiento,cuenta_de_reinicios) +'\n'
-
-    reporte += reporte_resumen_errores()
-    
+        
     reporte += reporte_de_inactivos(e) +'\n' #reporto pares inactivos por mas de 30 minutos (1800 s)
 
     reporte += log_pares_estado_ordenado_por_ganancia(e,3,199)
@@ -66,6 +64,8 @@ def reporte_correo(log:Logger,db:Acceso_DB,e:Global_State,mercado:Mercado,inicio
         if mes == 0:
             mes = 12
             anio -= 1
+
+    reporte += reporte_resumen_errores()        
 
     titulo='Reporte estado '+ datetime.now().strftime('%m%d %H:%M')
     texto=titulo+'\n' + reporte

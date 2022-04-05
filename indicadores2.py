@@ -415,9 +415,11 @@ class Indicadores:
         '''    
         df=self.get_df(self.par,escala)
         ema = ta.ema(df[origen],length=periodos) 
+        if ema is None:
+            return []
         
         lista=[]
-
+ 
         l=len(ema)
         lneg = l * -1
         
