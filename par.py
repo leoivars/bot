@@ -23,7 +23,7 @@ from mercado import Mercado
 
 from fpar.filtros import filtro_parte_baja_rango, filtro_zona_volumen, filtro_pendientes_emas_positivas,filtro_parte_alta_rango
 from fpar.filtros import filtro_pico_minimo_ema_low,filtro_velas_de_impulso,filtro_dos_emas_positivas
-from fpar.filtros import filtro_xvolumen_de_impulso,filtro_de_rsi_minimo_cercano,filtro_ema_rapida_lenta,filtro_rsi
+from fpar.filtros import filtro_xvolumen_de_impulso,filtro_ema_positiva,filtro_ema_rapida_lenta,filtro_rsi
 import fauto_compra_vende.habilitar_pares
 from acceso_db_funciones import Acceso_DB_Funciones
 from acceso_db_modelo import Acceso_DB
@@ -1864,11 +1864,10 @@ class Par:
         self.log.log('====== scalping_parte_muy_baja ======')
         ret=[False,'xx']
         ind: Indicadores = self.ind
-        if filtro_parte_baja_rango(ind,self.log,escala,50,.382):
-            if filtro_xvolumen_de_impulso(ind,self.log,escala,periodos=14,sentido=0,xmin_impulso=25):
-                if filtro_de_rsi_minimo_cercano(self.ind,self.log,escala,26,(2,3)):
+        if filtro_parte_baja_rango(ind,self.log,escala,200,.382):
+            if filtro_xvolumen_de_impulso(ind,self.log,escala,periodos=14,sentido=0,xmin_impulso=30):
+                if filtro_ema_positiva(ind,self.log,escala,5):
                     ret = [True,escala,f'ema_rapida_lenta_xvolumen'] 
-
         return ret
 
 

@@ -10,6 +10,7 @@ from acceso_db_modelo import Acceso_DB
 import time
 from fpar.filtros import filtro_parte_baja_rango,filtro_xvolumen_de_impulso
 
+
 def habilitar_deshabilitar_pares(g:Global_State,db:Acceso_DB,mercado,log):
     ''' Controla la cantidad de pares que tienen trades en este momento y lo compara con 
         g.maxima_cantidad_de_pares_con_trades que establece la cantidad máxima de pares con trades. 
@@ -44,7 +45,7 @@ def habilitar_pares(g:Global_State,db:Acceso_DB,mercado:Mercado,log:Logger,pares
         
         actualizar_volumen_precio(moneda,moneda_contra,ind,db)          # ya que estamos actualizamos volumen y precio
         
-        if hay_parte_baja_y_volumen_impulso(ind,log,'1h',33):            #habilito pares en la parte baja del rango
+        if hay_parte_baja_y_volumen_impulso(ind,log,g,'1h',33):            #habilito pares en la parte baja del rango
             db.habilitar(1,moneda,moneda_contra)
             c_habilitados += 1
             log.log(f'{par} habilitando total {c_habilitados}') 
@@ -69,11 +70,13 @@ def hay_precios_minimos_como_para_habilitar(ind:Indicadores,g:Global_State,log):
                 break
         return ret  
 
-def hay_parte_baja_y_volumen_impulso(ind:Indicadores,log: Logger,escala,p_xmin_impulso=35):
+def hay_parte_baja_y_volumen_impulso(ind:Indicadores,log: Logger,g:Global_State,escala,p_xmin_impulso=26):
     ret = False
-    if filtro_parte_baja_rango(ind,log,escala,50,.382):  
-        if filtro_xvolumen_de_impulso(ind,log,escala,periodos=14,sentido=0,xmin_impulso=p_xmin_impulso):
-            ret = True
+    escala_sup=g.zoom_out(escala,2)
+    if filtro_parte_baja_rango(ind,log,escala_sup,200,.382):
+        if filtro_parte_baja_rango(ind,log,escala,200,.382):  
+            if filtro_xvolumen_de_impulso(ind,log,escala,periodos=14,sentido=0,xmin_impulso=p_xmin_impulso):
+                ret = True
     return ret
 
 def precio_cerca(pxmin,precio,porcentaje=0.30):

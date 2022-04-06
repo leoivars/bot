@@ -13,7 +13,7 @@ from indicadores2 import Indicadores
 from calc_px_compra import Calculador_Precio_Compra
 from binance.client import Client #para el cliente
 from fpar.filtros import filtro_parte_baja_rango, filtro_xvolumen_de_impulso,filtro_dos_emas_positivas,filtro_parte_alta_rango,filtro_de_rsi_minimo_cercano,filtro_tres_emas_positivas
-from fpar.filtros import filtro_ema_rapida_lenta,filtro_rsi
+from fpar.filtros import filtro_ema_positiva
 from fpar.ganancias import calculo_ganancias,precio_de_venta_minimo
 
 
@@ -33,7 +33,7 @@ class Estrategia():
         self.calculador_px_compra = Calculador_Precio_Compra(self.par,self.g,log,self.ind)
         #print('--precio_mas_actualizado--->',self.ind.precio_mas_actualizado()  )
 
-    def decision_de_compra(self,escala,coef_bajo,pmin_impulso,em12):
+    def decision_de_compra(self,escala,cvelas,coef_bajo,pmin_impulso,ema):
         '''
         agrupo acá todos los grandes filtros que toman la dicisión nucleo
         y que luego de ejecutan constantemente  en estado 2
@@ -43,7 +43,7 @@ class Estrategia():
         comprar= False
         
         if not comprar:
-            ret = self.filtros_desicion(escala,50,coef_bajo,pmin_impulso,rsi,(2,3))
+            ret = self.filtros_desicion(escala,cvelas,coef_bajo,pmin_impulso,ema)
             if ret[0]:
                 #if ind.control_de_inconsistemcias(esc) == -1: #no hay inconsitencias
                 self.escala_de_analisis = ret[1]
@@ -155,13 +155,13 @@ class Estrategia():
                     ret = [True,escala,f'scalping_parte_muy_baja{cvelas_rango}_{porcentaje_bajo}']
         return ret            
 
-    def filtros_desicion(self,escala,cvelas_rango=90,porcentaje_bajo=.2,p_xmin_impulso=50,rsi_inf=30,pos_rsi_inf=(2,3)):
+    def filtros_desicion(self,escala,cvelas_rango=90,porcentaje_bajo=.2,p_xmin_impulso=50,ema_per=5):
         self.log.log('====== ema_rapida_lenta_xvolumen ======')
         ret=[False,'xx']
         ind: Indicadores = self.ind
         if filtro_parte_baja_rango(self.ind,self.log,escala,cvelas_rango,porcentaje_bajo):
             if filtro_xvolumen_de_impulso(self.ind,self.log,escala,periodos=14,sentido=0,xmin_impulso=p_xmin_impulso):
-                if filtro_de_rsi_minimo_cercano(self.ind,self.log,escala,rsi_inf,pos_rsi_inf):
+                if filtro_ema_positiva(self.ind,self.log,escala,ema_per):
                    ret = [True,escala,f'ema_rapida_lenta_xvolumen'] 
 
         # if filtro_ema_rapida_lenta(ind,self.log,escala,rapida=em123[0],lenta=em123[1],diferencia=0.1):  
@@ -211,12 +211,14 @@ if __name__=='__main__':
     escalas=['1m']
     escalas_mercados=['1m']
     emas12=[(5,10)]
-    vrsi=[x for x in range(15,35)]
+    vemas=[x for x in range(3,10)]
+    vcvelas=[25,50,75,100,125,150,200]
+    
     #coficientes_bajo=[0.786,0.618,.5,0.382,0.236]
     coficientes_bajo=[0.618,.5,0.382,0.236]
     #emas12=[(4,7)]
-    xmin_impulsos = [x for x in range(15,40)]
-    #xmin_impulsos = [19]
+    xmin_impulsos = [x for x in range(25,37)]
+    #xmin_impulsos = [15]
     fecha_fin =  strtime_a_obj_fecha('2022-03-30 00:00:00')  #Consiste en la ultima vela (la mas actual, que existe en la simulación)
     fin_test  =  strtime_a_obj_fecha('2022-04-04 23:30:00')
     #fecha_fin =  strtime_a_obj_fecha('2022-03-14 00:00:00')  #Consiste en la ultima vela (la mas actual, que existe en la simulación)
@@ -244,83 +246,84 @@ if __name__=='__main__':
         dos_horas = timedelta(hours=2)
         
 
-        tot= len(escalas) * len (xmin_impulsos) * len(vrsi) * len(coficientes_bajo)
+        tot= len(escalas) * len (xmin_impulsos) * len(vemas) * len(coficientes_bajo) * len(vcvelas)
         c=0
 
         for esc in escalas:
             for xmin_imp in xmin_impulsos:
-                for rsi in vrsi:
+                for ema in vemas:
                     for coef_bajo in coficientes_bajo:
-                        c+=1
-                        
-    
-                        comprado=False
-                        comp_px = 0
-                        comp_stop_loss =0
-                        ganancia =0
-                        gananciap =0
-                        entradas=0
-                        ganadas=0
-                        perdidas=0
-                        cantidad=0.0001
-                        gan_min=0
-                        
-                        m.inicar_mercados(fecha_fin,300,pares,escalas_mercados)
-                        while m.fecha_fin < fin_test:
-                            txtf = m.fecha_fin.strftime('%Y-%m-%d %H:%M:%S')
-                            print(f'-------------------------------------------------{txtf}-------{esc}-{xmin_imp}-{rsi}-{coef_bajo}----{c}--->{round(c/tot*100,2)}')
-                            if not comprado:
-                                if estrategia.decision_de_compra(esc,coef_bajo,xmin_imp,rsi):
-                                    comp_px=estrategia.precio_de_compra()
-                                    comp_stop_loss = estrategia.stoploss(estrategia.escala_de_analisis)
-                                    comprado = True
-                                    gan_min = abs(g.calculo_ganancia_porcentual(comp_px,comp_stop_loss))
-                                    log.log ('gogogo-->',txtf,estrategia.escala_de_analisis,estrategia.par)
-                                    log.log (f'comp_px {comp_px}, comp_sto_loss {comp_stop_loss}')
-                            else:
-                                px_vta=estrategia.precio()
-                                vendido = False
-                                if px_vta < comp_stop_loss:
-                                    px_vta = comp_stop_loss
-                                    vendido = True
-
-                                gan=g.calculo_ganancia_porcentual(comp_px,px_vta)
-                                log.log (f'{txtf} -comprado-> {gan}%  sl {comp_stop_loss} ')    
-
-                                if not vendido and  estrategia.decision_venta(comp_px,gan_min,estrategia.escala_de_analisis):
-                                    vendido = True
-
-                                if vendido:
-                                    gananciap+=gan
-                                    if gan >0:
-                                        signo='+'
-                                        ganadas+=1
-                                    else:
-                                        perdidas+=1 
-                                        signo='-'   
-                                    entradas+=1
-                                    log.log (f'----->Termina operacion {signo} gan {gan} entradas {entradas}') 
-                                    comprado=False
-                                else:
-                                    comp_stop_loss = estrategia.stoploss_subir(comp_stop_loss,comp_px)    
-                            m.avanzar_tiempo(una_hora)
-                            m.actualizar_mercados()  
-
-                        if comprado:   #guardo compra abierta    
+                        for cvelas in vcvelas:
+                            c+=1
                             
-                            gananciap+=gan
-                            if gan >0:
-                                ganadas+=1
-                            else:
-                                perdidas+=1    
-                            entradas+=1
-                            log.log (f'----->Termina operacion gan {gan} entradas {entradas}') 
+        
                             comprado=False
+                            comp_px = 0
+                            comp_stop_loss =0
+                            ganancia =0
+                            gananciap =0
+                            entradas=0
+                            ganadas=0
+                            perdidas=0
+                            cantidad=0.0001
+                            gan_min=0
+                            
+                            m.inicar_mercados(fecha_fin,300,pares,escalas_mercados)
+                            while m.fecha_fin < fin_test:
+                                txtf = m.fecha_fin.strftime('%Y-%m-%d %H:%M:%S')
+                                print(f'-------------------------------------------------{txtf}----{esc}--cvelas{cvelas}-imp-{xmin_imp}-ema{ema}--coef {coef_bajo}----{c}--->{round(c/tot*100,2)}')
+                                if not comprado:
+                                    if estrategia.decision_de_compra(esc,cvelas,coef_bajo,xmin_imp,ema):
+                                        comp_px=estrategia.precio_de_compra()
+                                        comp_stop_loss = estrategia.stoploss(estrategia.escala_de_analisis)
+                                        comprado = True
+                                        gan_min = abs(g.calculo_ganancia_porcentual(comp_px,comp_stop_loss))
+                                        log.log ('gogogo-->',txtf,estrategia.escala_de_analisis,estrategia.par)
+                                        log.log (f'comp_px {comp_px}, comp_sto_loss {comp_stop_loss}')
+                                else:
+                                    px_vta=estrategia.precio()
+                                    vendido = False
+                                    if px_vta < comp_stop_loss:
+                                        px_vta = comp_stop_loss
+                                        vendido = True
 
-                        txt_log_paremtros = f'{txt_test}: escala={esc} coef_bajo {coef_bajo} xmin_impulso{xmin_imp} rsi {rsi}  fechas {fecha_fin}-{fin_test}'
-                        txt_log_datos     = f'{par} ganancia= {gananciap} entradas {entradas} ganadas {ganadas} perdidas {perdidas}'  
-                        txt_log_fin = txt_log_datos,txt_log_paremtros
-                        log.log(txt_log_fin)
-                        log_resultados.log (txt_log_fin) 
-                        db.backtesting_agregar_resultado(par,txt_log_paremtros,ganadas,perdidas,gananciap)
+                                    gan=g.calculo_ganancia_porcentual(comp_px,px_vta)
+                                    log.log (f'{txtf} -comprado-> {gan}%  sl {comp_stop_loss} ')    
+
+                                    if not vendido and  estrategia.decision_venta(comp_px,gan_min,estrategia.escala_de_analisis):
+                                        vendido = True
+
+                                    if vendido:
+                                        gananciap+=gan
+                                        if gan >0:
+                                            signo='+'
+                                            ganadas+=1
+                                        else:
+                                            perdidas+=1 
+                                            signo='-'   
+                                        entradas+=1
+                                        log.log (f'----->Termina operacion {signo} gan {gan} entradas {entradas}') 
+                                        comprado=False
+                                    else:
+                                        comp_stop_loss = estrategia.stoploss_subir(comp_stop_loss,comp_px)    
+                                m.avanzar_tiempo(una_hora)
+                                m.actualizar_mercados()  
+
+                            if comprado:   #guardo compra abierta    
+                                
+                                gananciap+=gan
+                                if gan >0:
+                                    ganadas+=1
+                                else:
+                                    perdidas+=1    
+                                entradas+=1
+                                log.log (f'----->Termina operacion gan {gan} entradas {entradas}') 
+                                comprado=False
+
+                            txt_log_paremtros = f'{txt_test}: escala={esc} cvelas={cvelas} coef_bajo {coef_bajo} xmin_impulso{xmin_imp} ema {ema}  fechas {fecha_fin}-{fin_test}'
+                            txt_log_datos     = f'{par} ganancia= {gananciap} entradas {entradas} ganadas {ganadas} perdidas {perdidas}'  
+                            txt_log_fin = txt_log_datos,txt_log_paremtros
+                            log.log(txt_log_fin)
+                            log_resultados.log (txt_log_fin) 
+                            db.backtesting_agregar_resultado(par,txt_log_paremtros,ganadas,perdidas,gananciap)
                     
