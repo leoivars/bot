@@ -695,19 +695,19 @@ class Indicadores:
         df['recorrido'] = df.high - df.low
         return df["recorrido"].min()
 
-    def minimo(self,escala,cvelas):
-        df=self.mercado.get_panda_df(self.par, escala, cvelas + 1)
+    def minimo(self,escala,cvelas,excluir_velas=0):
+        df = self.mercado.get_panda_df(self.par, escala, cvelas + 1)
+        if excluir_velas > 0:
+            df.drop(df.tail(excluir_velas).index, inplace = True)     # Dropping last n rows using drop
         return df["low"].min()
     
-    def minimo_maximo(self,escala,cvelas):
+    def minimo_maximo(self,escala,cvelas,excluir_velas=0):
         ''' retorna el mínimo y el máximo de *escala* para 
         las ultimas *cvelas*  '''
         df=self.mercado.get_panda_df(self.par, escala, cvelas + 1)
+        if excluir_velas > 0:
+            df.drop(df.tail(excluir_velas).index, inplace = True)    # Dropping last n rows using drop
         return df["low"].min(), df["high"].max() 
-
-
-
-
         
     def rsi_contar_picos_maximos(self,escala,cvelas,mayor_de):
         ''' cuanta la cantidad de picos maximo desde el final por cvelas 
@@ -1452,6 +1452,25 @@ class Indicadores:
         rsi= round( df_rsi.iloc[-1]   ,2     )
 
         return rsi
+
+    def precio_de_rsi_mas_bajo(self,escala,prsi_objetivo):
+        
+        rsi_objetivo = prsi_objetivo
+        df=self.mercado.get_panda_df(self.par, escala, 60) #self.velas[escala].panda_df(cvelas + 60)
+        df_rsi = df.ta.rsi()
+        px = df.iloc[-1]['close']
+
+        if df_rsi.iloc[-1] < rsi_objetivo:
+            rsi_objetivo = df_rsi.iloc[-1] - 5
+            if rsi_objetivo < 0:
+                rsi_objetivo = 1
+
+        while df_rsi.iloc[-1] > rsi_objetivo:
+            px = px / 1.005
+            df.iloc[-1]['close'] = px
+            df_rsi = df.ta.rsi()
+
+        return px
 
 
     def pendiente_positiva_ema(self,escala,periodos):

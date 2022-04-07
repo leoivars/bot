@@ -14,6 +14,7 @@ class Calculador_Precio_Compra:
         self.g :Global_State = g
         self.escala_de_analisis = '1d'
         self.libro: Libro_Ordenes_DF = libro
+        self.calculo_precio_compra='indefinido'
 
     def calcular_precio_de_compra(self,metodo,escala):
         ind: Indicadores = self.ind_par
@@ -47,17 +48,14 @@ class Calculador_Precio_Compra:
             self.calculo_precio_compra='market'
             self.log.log('calc.market',px)
 
-        if metodo=="minimo_del_rango":
-            px1,maximo = ind.minimo_maximo_por_rango_velas_imporantes(escala,120) 
-            px2 = self.libro.precio_compra_grupo_porc_acumulado(25)
-            px = (px1+px2) / 2
-            self.calculo_precio_compra='minimo_del_rango'
-            self.log.log(f'minimo {px1} %25acum {px2}')
-            self.log.log('calc.minimo_del_rango',px)
-            self.libro.actualizar()
-            self.log.log(self.libro.dump_libro()) 
-
-        
+        if metodo=="minimo_del_rango_rsi_bajo":
+            self.calculo_precio_compra='minimo_del_rango_rsi_bajo' 
+            precio_actual = ind.precio(escala)
+            px_min,px_max = ind.minimo_maximo(escala,200,excluir_velas=1)
+            px = px_min + (px_max - px_min) * .236
+            if precio_actual <= px:
+                px =  ind.precio_de_rsi_mas_bajo(escala,25)
+            self.log.log('calc.minimo_del_rango_rsi_bajo',px)   
 
         elif metodo=="scalping":
             px,_ =self.ind_par.minimo_maximo_por_rango_velas_imporantes(escala,100)

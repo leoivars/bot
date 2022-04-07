@@ -393,16 +393,28 @@ def probar_stoploss_ema(escala,precio_salir_derecho,periodos_iniciales_ema,cvela
     ret = ind.stoploss_ema(escala,precio_salir_derecho,periodos_iniciales_ema,cvelas)  
     print(ret)
 
+def probar_precio_de_rsi_mas_bajo(escala,prsi):
+    ind=Indicadores(par,log,globales,mercado)
+    ret = ind.precio_de_rsi_mas_bajo(escala,prsi)
+    print(ret)    
+
+def probar_precio_de_compra(escala):
+    ind=Indicadores(par,log,globales,mercado)
+    precio_actual = ind.precio(escala)
+    px_min,px_max = ind.minimo_maximo(escala,200,excluir_velas=1)
+    px = px_min + (px_max - px_min) * .236
+    print(f'minimo {px_min} maximo {px_max} px {px} ')
+
 
 
 t = time.time()
 
-moneda='BTC'
+moneda='AVAX'
 par = moneda+'USDT'
 
 ind=Indicadores(par,log,globales,mercado)
 while time.time() -t < 1200:
-    probar_stoploss_ema('4h',44099.82,10,5)
+    probar_precio_de_compra('1h')
     time.sleep(15)
 
 mercado.detener_sockets()

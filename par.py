@@ -23,7 +23,7 @@ from mercado import Mercado
 
 from fpar.filtros import filtro_parte_baja_rango, filtro_zona_volumen, filtro_pendientes_emas_positivas,filtro_parte_alta_rango
 from fpar.filtros import filtro_pico_minimo_ema_low,filtro_velas_de_impulso,filtro_dos_emas_positivas
-from fpar.filtros import filtro_xvolumen_de_impulso,filtro_ema_positiva,filtro_ema_rapida_lenta,filtro_rsi
+from fpar.filtros import filtro_xvolumen_de_impulso,filtro_ema_positiva,filtro_ema_rapida_lenta,filtro_rsi,filtro_ema_no_positiva
 import fauto_compra_vende.habilitar_pares
 from acceso_db_funciones import Acceso_DB_Funciones
 from acceso_db_modelo import Acceso_DB
@@ -897,7 +897,7 @@ class Par:
         if not listo:
             for ana in ["ema_rapida_lenta_xvolumen","minimo_ema","vela_martillo_importante","patron_"]:
                 if ana in self.analisis_provocador_entrada: # esto es viejo --> in "buscar_ema_positiva buscar_rebote_rsi":
-                    metodo="market"
+                    metodo="minimo_del_rango_rsi_bajo"
                     listo=True 
                     break
 
@@ -1338,6 +1338,8 @@ class Par:
             self.log.err( "*!*!___err_en_accion__*!*!*Error en accion:",self.par,self.estado,e )
             tb = traceback.format_exc()
             self.log.err( tb)
+            self.log.err(traceback.format_stack())
+            
             self.imprimir()
             self.estado_0_inicio()
 
@@ -1866,7 +1868,7 @@ class Par:
         ind: Indicadores = self.ind
         if filtro_parte_baja_rango(ind,self.log,escala,200,.382):
             if filtro_xvolumen_de_impulso(ind,self.log,escala,periodos=14,sentido=0,xmin_impulso=30):
-                if filtro_ema_positiva(ind,self.log,escala,5):
+                if filtro_ema_no_positiva(ind,self.log,escala,5):
                     ret = [True,escala,f'ema_rapida_lenta_xvolumen'] 
         return ret
 
@@ -3738,7 +3740,7 @@ class Par:
         else:
             velas_stoploss=6
 
-        sl = self.ind.stoploss_ema(self.escala_de_analisis,self.precio_salir_derecho,11,velas_stoploss)
+        sl = self.ind.stoploss_ema(self.escala_de_analisis,self.precio_salir_derecho,21,velas_stoploss)
 
         if sl > self.stoploss_actual:
             self.log.log(f'sl de {self.stoploss_actual} --> {sl}')
