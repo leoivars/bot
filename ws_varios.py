@@ -13,7 +13,7 @@ import traceback
 
 
 class WS_stream(Thread):
-    ''' web socket para suscribir invormacion varia  <symbol>@forceOrder  '''
+    ''' web socket para suscribir informacion varia  <symbol>@forceOrder  '''
 
     
     def __init__(self,log,estado_general):

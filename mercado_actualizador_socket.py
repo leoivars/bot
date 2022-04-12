@@ -54,7 +54,7 @@ class Mercado_Actualizador_Socket(Thread):
             try:
                 ws = create_connection("wss://stream.binance.com:9443/ws")       
                 ws.settimeout(300)
-                self.log.log('conectado',str(ws)) 
+                #self.log.log('conectado',str(ws)) 
                 break
             except Exception as e:
                 self.log.log('Error en conectar()',str(e))
@@ -66,7 +66,7 @@ class Mercado_Actualizador_Socket(Thread):
             result =  self.ws.recv()
             self.procesar_recibido(result) 
         except  Exception as e:
-            self.log.log('recibir()', str(e))
+            #self.log.log('recibir()', str(e))
             self.renovar_conexion()
 
     def renovar_conexion_fea(self):
@@ -94,7 +94,7 @@ class Mercado_Actualizador_Socket(Thread):
         self.activo = False        
 
     def renovar_conexion(self):
-        self.log.log('-------renovar_conexion----------')
+        #self.log.log('-------renovar_conexion----------')
         ws_nuevo = self.conectar()
         time.sleep(1)
         self.renovar_suscribir(ws_nuevo)
@@ -177,7 +177,7 @@ class Mercado_Actualizador_Socket(Thread):
         try:
             msg = str( json.dumps(mensaje) )
             ws.send( msg    )
-            self.log.log(self.ws,msg)
+            #self.log.log(self.ws,msg)
             time.sleep(1)
         except Exception as e:
             print('Error al enviar:',e)

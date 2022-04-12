@@ -255,7 +255,7 @@ class Indicadores:
             if cvel > cvelas:
                 break
             # print(f'if {rsi.iloc[i-1]} > {rsi.iloc[i]}:')
-            if self.hay_minimo_en(low,i):
+            if self.hay_minimo_en(low,i,2):
                 #print(    strtime_a_fecha(  df.iloc[i]['close_time'] )   )
                 pos=l-i
                 vol = df.iloc[i-2]['volume'] + df.iloc[i-1]['volume'] + df.iloc[i]['volume']  # volumen de al vela + volumen de las dos anteriores
@@ -281,7 +281,7 @@ class Indicadores:
             if cvel > cvelas:
                 break
             # print(f'if {rsi.iloc[i-1]} > {rsi.iloc[i]}:')
-            if self.hay_maximo_en(high,i):
+            if self.hay_maximo_en(high,i,2):
                 #print(    strtime_a_fecha(  df.iloc[i]['close_time'] )   )
                 pos=l-i
                 vol = df.iloc[i-1]['volume'] + df.iloc[i]['volume'] + df.iloc[i+1]['volume']
@@ -700,6 +700,36 @@ class Indicadores:
         if excluir_velas > 0:
             df.drop(df.tail(excluir_velas).index, inplace = True)     # Dropping last n rows using drop
         return df["low"].min()
+
+    def minimo_maximo_y_posicion(self,escala,cvelas):
+        lista_min = self.lista_picos_minimos_x_vol(escala,cvelas)
+        lista_max = self.lista_picos_maximos_x_vol(escala,cvelas)
+
+        try:
+            minimos = sorted(lista_min, key=lambda x: x[1]  )                        # ordeno por precio mas chico primero
+            maximos = sorted(lista_max, key=lambda x: x[1], reverse= True  )         # ordeno por precio mas grade primero
+            print(minimos)
+            print(maximos)
+            minimo  = minimos[0][1]
+            pos_minimo =  minimos[0][0]
+            maximo = maximos[0][1]
+            pos_maximo = maximos[0][0]
+        except Exception as ex:
+            self.log.log(str(ex))
+            minimo=None
+            pos_minimo=None
+            maximo=None
+            pos_maximo=None
+
+        return minimo,pos_minimo,maximo,pos_maximo    
+
+
+        
+
+
+
+
+
     
     def minimo_maximo(self,escala,cvelas,excluir_velas=0):
         ''' retorna el mínimo y el máximo de *escala* para 
@@ -1309,7 +1339,6 @@ class Indicadores:
         return ret
 
 
-
     def get_df(self,par,escala):
         df =self.get_cache('get_panda_df',(par,escala))
         if df is None:
@@ -1461,7 +1490,7 @@ class Indicadores:
         px = df.iloc[-1]['close']
 
         if df_rsi.iloc[-1] < rsi_objetivo:
-            rsi_objetivo = df_rsi.iloc[-1] - 5
+            rsi_objetivo = df_rsi.iloc[-1] - 1
             if rsi_objetivo < 0:
                 rsi_objetivo = 1
 

@@ -401,15 +401,18 @@ def probar_precio_de_rsi_mas_bajo(escala,prsi):
 def probar_precio_de_compra(escala):
     ind=Indicadores(par,log,globales,mercado)
     precio_actual = ind.precio(escala)
-    px_min,px_max = ind.minimo_maximo(escala,200,excluir_velas=1)
-    px = px_min + (px_max - px_min) * .236
-    print(f'minimo {px_min} maximo {px_max} px {px} ')
+    minimo,pos_minimo,maximo,pos_maximo = ind.minimo_maximo_y_posicion(escala,50)
+    print(minimo,pos_minimo,maximo,pos_maximo)
+    
+    # px_min,px_max = ind.minimo_maximo(escala,200,excluir_velas=1)
+    # px = px_min + (px_max - px_min) * .236
+    # print(f'minimo {px_min} maximo {px_max} px {px} ')
 
 
 
 t = time.time()
 
-moneda='AVAX'
+moneda='DUSK'
 par = moneda+'USDT'
 
 ind=Indicadores(par,log,globales,mercado)

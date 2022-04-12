@@ -20,7 +20,7 @@ class WS_binance(Thread):
            self.activo = True
            self.time_conexion = time.time()
            while self.activo:
-               print('.')
+               #print('.')
                result =  self.ws.recv()
                self.procesar_recibido(result)
                
@@ -30,7 +30,7 @@ class WS_binance(Thread):
     
 
     def renovar_conexion(self):
-        print('----------------renovar-------------conexion-----------')
+        #print('----------------renovar-------------conexion-----------')
         ws_nuevo = create_connection("wss://stream.binance.com:9443/ws")
         self.renovar_suscribir(ws_nuevo)
         time.sleep( 1 + len(self.subscripciones) )
@@ -96,7 +96,7 @@ class WS_binance(Thread):
     def __enviar(self,mensaje,ws=None):
         if ws is None:
             ws = self.ws
-        print('__enviar',mensaje)     
+        #print('__enviar',mensaje)     
         #self.ws.lock.acquire(True)
         
         try:
@@ -107,11 +107,11 @@ class WS_binance(Thread):
 
         #self.ws.lock.release()
         time.sleep(0.001)
-        #print('__enviar release')     
+        ##print('__enviar release')     
 
     def __recibir(self):
         ret = None
-        print('__recibir acquire')
+        #print('__recibir acquire')
         #self.lock_ws.acquire(True)
         try:
             ret = self.ws.recv()
@@ -120,21 +120,21 @@ class WS_binance(Thread):
 
         #self.lock_ws.release()
         time.sleep(0.001)
-        print('__recibir release')
+        #print('__recibir release')
 
         return ret
     
     
     def procesar_recibido(self,result):
         jresult=json.loads(result)
-        #print('-->', result)
-        #print('jj>', jresult)
-        if 'e' in jresult:
-            if  jresult['e']=='kline':
-                print (jresult['s'])
-                #print (jresult['k'])
+        ##print('-->', result)
+        ##print('jj>', jresult)
+        #if 'e' in jresult:
+        #    if  jresult['e']=='kline':
+                #print (jresult['s'])
+                ##print (jresult['k'])
 
-        #print(result)
+        ##print(result)
 
 
     #{'e': 'kline', 'E': 1621565351925, 's': 'BTCUSDT', 'k': {'t': 1621565100000, 'T': 1621565399999, 's': 'BTCUSDT', 'i': '5m', 'f': 855298743, 'L': 855303322, 'o': '41240.01000000', 'c': '41205.84000000', 'h': '41373.48000000', 'l': '41176.63000000', 'v': '173.64903400', 'n': 4580, 'x': False, 'q': '7163749.40667776', 'V': '81.53978200', 'Q': '3363836.13903928', 'B': '0'}}
@@ -152,9 +152,9 @@ if __name__=='__main__':
 
     for i in range(60):
         time.sleep(1)
-        #print(ws.ws.lock.locked(),ws.ws.readlock.locked())
+        ##print(ws.ws.lock.locked(),ws.ws.readlock.locked())
 
-    print ('----------------------------------------------------------------------')    
+    #print ('----------------------------------------------------------------------')    
 
     
     
@@ -166,7 +166,7 @@ if __name__=='__main__':
     
     for i in range(60):
         time.sleep(1)
-        #print(ws.ws.lock.locked(),ws.ws.readlock.locked())
+        ##print(ws.ws.lock.locked(),ws.ws.readlock.locked())
 
 
     ws.desuscribir('ASTBTC','5m')
@@ -177,9 +177,9 @@ if __name__=='__main__':
 
     for i in range(30):
         time.sleep(1)
-        print('=========------->',i)
+        #print('=========------->',i)
 
 
     ws.activo = False
     ws.join()
-    print('fin')      
+    #print('fin')      

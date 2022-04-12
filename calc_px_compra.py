@@ -51,11 +51,23 @@ class Calculador_Precio_Compra:
         if metodo=="minimo_del_rango_rsi_bajo":
             self.calculo_precio_compra='minimo_del_rango_rsi_bajo' 
             precio_actual = ind.precio(escala)
-            px_min,px_max = ind.minimo_maximo(escala,200,excluir_velas=1)
-            px = px_min + (px_max - px_min) * .236
-            if precio_actual <= px:
-                px =  ind.precio_de_rsi_mas_bajo(escala,25)
-            self.log.log('calc.minimo_del_rango_rsi_bajo',px)   
+            px=precio_actual
+            px_min,pos_minimo,px_max,pos_maximo = ind.minimo_maximo_y_posicion(escala,50)
+            self.log.log(f'{px} px_min {px_min} pos_minimo {pos_minimo} px_max {px_max} pos_maximo {pos_maximo} ')
+            if not px_min is None and pos_minimo < pos_maximo  :        #el el minimo esta ubicado primero que el maximo
+                px = px_min + (px_max - px_min) * .1
+                self.calculo_precio_compra='calc. px_min + (px_max - px_min) * 0.1'
+                self.log.log(f'calc. px_min + (px_max - px_min) * .1 ')
+            
+            if px >= precio_actual:
+                self.calculo_precio_compra='precio_de_rsi_mas_bajo(escala,29)'
+                px =  ind.precio_de_rsi_mas_bajo(escala,29)
+                self.log.log('px - ind.recorrido_maximo',px)
+
+            if px >= precio_actual:
+                self.calculo_precio_compra='px - recorrido_maximo'
+                px =  self.precio - ind.recorrido_maximo(self.escala_de_analisis,75)      #ind.precio_de_rsi_mas_bajo(escala,26)
+                self.log.log('px - recorrido_maximo',px)    
 
         elif metodo=="scalping":
             px,_ =self.ind_par.minimo_maximo_por_rango_velas_imporantes(escala,100)

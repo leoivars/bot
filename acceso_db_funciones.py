@@ -43,7 +43,7 @@ class Acceso_DB_Funciones:
 
             else:
                 if time.time() - tprimero > 180:
-                    self.log.err('DEMORA:',primero,'<-- borrado cola =',len(Acceso_DB.cola) )
+                    #self.log.err('DEMORA:',primero,'<-- borrado cola =',len(Acceso_DB.cola) )
                     self.cola.pop(0)
 
             if primero == ticket_acceso:

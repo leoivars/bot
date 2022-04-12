@@ -118,7 +118,7 @@ class Cola_de_uso:
                         demora = time.time() - tprimero
                         dpromedio=self.demora_de_cola()
                         if demora >  dpromedio * 1.1: #self.__tiempo_maximo_espera_cola:
-                            print('Espera agotada',primero,'<-- borrado cola =',len(Cola_de_uso.colas[idx]),'demora_promedio',dpromedio,'demora',demora )
+                            #print('Espera agotada',primero,'<-- borrado cola =',len(Cola_de_uso.colas[idx]),'demora_promedio',dpromedio,'demora',demora )
                             if len(Cola_de_uso.colas[idx]) > 0:
                                 Cola_de_uso.colas[idx].pop(0)
                             else:    

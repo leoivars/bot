@@ -155,7 +155,7 @@ class Actualizador_rest:
                 time.sleep(tiempo_espara) # espero en caso de errors
                 
             else:
-                self.log.log('Carga inicial:', par,escala, ret.df.count() )
+                #self.log.log('Carga inicial:', par,escala, ret.df.count() )
                 
                 break    
          
@@ -189,8 +189,8 @@ class Actualizador_rest:
     def operacion_terminar(self):
         #control de rendimiento
         demora=time.time() - self.__inicio_ocupando_turno
-        if demora > self.cola.demora_promedio * 10:
-            self.log.err('DEMORA!=',round(demora,4), 'ticket', self.cola.ticket_acceso,'cola',self.cola.largo(),'demora_promedio',self.cola.demora_de_cola() )
+        #if demora > self.cola.demora_promedio * 10:
+        #self.log.err('DEMORA!=',round(demora,4), 'ticket', self.cola.ticket_acceso,'cola',self.cola.largo(),'demora_promedio',self.cola.demora_de_cola() )
             
               
         self.cola.acceso_finalizar_turno(demora)

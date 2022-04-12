@@ -445,7 +445,7 @@ class Par:
             self.set_estado(pestado)
         #se quiere cambiar al mismo estado en el que estaba, haría un bucle infinito entonce reiniciamos la funcion.
         elif pestado==self.estado and pestado==self.estado_anterior:
-            pestado==self.primer_estado_de_funcion()  
+            self.estado_anterior = 0  
         else: #un parámetro negativo hace que el estado se quede en el mismo lugar si ejecutar set_estado que memoriza el estado anterior, esto es para quedarse en el mismo estado recordando cual era el estado anteror
             pestado=self.estado
 
@@ -576,20 +576,17 @@ class Par:
         
     def ganancias(self):
         ''' ganancia representada en porcentaje '''
-        comision=self.precio_compra*self._fee
-        comision+=self.precio*self._fee
-        
-        gan= self.precio - self.precio_compra - comision 
-        if self.precio!=0:
-            return round(gan/self.precio*100,2)
-        else:
-            return -0.000000001    
+        return self.calculo_ganancias(self.precio_compra,self.precio)    
     
     def calculo_ganancias(self,pxcompra,pxventa):  #esta es la funcion definitiva a la que se tienen que remitir el resto.
         comision=pxcompra*self._fee
         comision+=pxventa*self._fee
         gan=pxventa - pxcompra - comision #- self.tickSize
-        return round(gan/pxcompra*100,3)          
+        try:
+            ret = round(gan/pxcompra*100,3)
+        except:
+            ret = 0    
+        return ret
 
     def ganancia_total(self,cant=1):
         ''' ganancia representana en moneda contra '''
@@ -812,7 +809,7 @@ class Par:
         
         elif 'code=-2010' in ret:
             ret = 'BALANCE'
-            self.log.log( "Error crear_orden_compra_limit: SIN BALANCE SUFICIENTE",self.min_notional )
+            self.log.log( f"Error crear_orden_compra_limit:{self.par} SIN BALANCE SUFICIENTE",self.min_notional )
             self.iniciar_estado( self.estado_anterior )
 
         return ret    
@@ -1414,11 +1411,8 @@ class Par:
         if self.estado!=7:
             return
 
-
-
         self.cant_moneda=self.oe.tomar_cantidad(self.moneda)
-        
-
+       
 
                     # 77777777777777777777
                     # 7::::::::::::::::::7
@@ -1557,7 +1551,7 @@ class Par:
         #ahora esta bueno= el precio ha superado al precio_salir_derecho_compra_anterior
         
         if self.trade_anterior_cerca():
-                self.iniciar_estado(3) #Esperar para vender
+            self.iniciar_estado(3) #Esperar para vender
 
 
     def trade_anterior_cerca(self):
@@ -1866,10 +1860,12 @@ class Par:
         self.log.log('====== scalping_parte_muy_baja ======')
         ret=[False,'xx']
         ind: Indicadores = self.ind
-        if filtro_parte_baja_rango(ind,self.log,escala,200,.382):
-            if filtro_xvolumen_de_impulso(ind,self.log,escala,periodos=14,sentido=0,xmin_impulso=30):
-                if filtro_ema_no_positiva(ind,self.log,escala,5):
-                    ret = [True,escala,f'ema_rapida_lenta_xvolumen'] 
+        if filtro_parte_baja_rango(ind,self.log,'1d',200,.382):
+            if filtro_parte_baja_rango(ind,self.log,'4h',200,.382):  
+                if filtro_parte_baja_rango(ind,self.log,escala,200,.382):
+                    #if filtro_xvolumen_de_impulso(ind,self.log,escala,periodos=14,sentido=0,xmin_impulso=20):
+                    if filtro_ema_no_positiva(ind,self.log,escala,14):
+                        ret = [True,escala,f'ema_rapida_lenta_xvolumen'] 
         return ret
 
 
@@ -2927,11 +2923,13 @@ class Par:
         ret=self.crear_orden_compra(self.cant_moneda_compra,self.precio_compra)
         
         if ret!='OK':
+            time.sleep(60)
             self.iniciar_estado( self.primer_estado_de_funcion() )
             
             return
 
         self.tiempo_calcular_px_compra = Crontraldor_Calculo_Px_Compra(self.sub_escala_de_analisis)
+        self.ct_controlar_compra = Controlador_De_Tiempo(180)
         self.bucles_partial_filled=0
         #self.persistir_estado_en_base_datos()
 
@@ -2946,10 +2944,6 @@ class Par:
     
     def estado_2_accion(self):  #comprar
         
-        
-        
-        #ind=self.ind  
-         
         self.retardo_dinamico(1)
         self.set_tiempo_reposo()
         ahora = time.time()
@@ -2961,100 +2955,92 @@ class Par:
         hay_que_salir =self.es_momento_de_salir_estado_2()  #2020-04-01 esto lo calculo antes porque si demora se me puede llenar la orden durente el cálculo 
 
         
-        orden=self.oe.consultar_estado_orden(self.ultima_orden)
-        precio_orden=orden['precio']
-        estado_orden=orden['estado']
-        can_comprada=orden['ejecutado']
-
+        #control del estado orden
+        minimo_reciente = self.ind.minimo('1m',2)
+        if minimo_reciente <= self.precio_compra or self.ct_controlar_compra.tiempo_cumplido():
+            orden=self.oe.consultar_estado_orden(self.ultima_orden)
+            precio_orden=orden['precio']
+            estado_orden=orden['estado']
+            can_comprada=orden['ejecutado']
+             
+            if estado_orden in 'NO_SE_PUDO_CONSULTAR UNKNOWN_ORDER NO_EXISTE':
+                self.enviar_correo_error('Error al consultar Orden')
+                self.db.set_no_habilitar_hasta(self.calcular_fecha_futura(1440),self.moneda,self.moneda_contra)
+                self.detener()
+                return
         
+            self.imprimir_estado_par_en_compra()
 
-        if estado_orden in 'NO_SE_PUDO_CONSULTAR UNKNOWN_ORDER NO_EXISTE':
-            self.enviar_correo_error('Error al consultar Orden')
-            self.db.set_no_habilitar_hasta(self.calcular_fecha_futura(1440),self.moneda,self.moneda_contra)
-            self.detener()
-            return
-        # ORDER_STATUS_NEW = 'NEW'
-        # ORDER_STATUS_PARTIALLY_FILLED = 'PARTIALLY_FILLED'
-        # ORDER_STATUS_FILLED = 'FILLED'
-        # ORDER_STATUS_CANCELED = 'CANCELED'
-        # ORDER_STATUS_PENDING_CANCEL = 'PENDING_CANCEL'
-        # ORDER_STATUS_REJECTED = 'REJECTED'
-        # ORDER_STATUS_EXPIRED = 'EXPIRED' 
-        #self.libro.actualizar() #descargo el estado actual del libro de ordenes
-        
-        self.imprimir_estado_par_en_compra()
+            #calculo nuevo precio de compra, como este proceso es lento al final vuelvo a consultar el estado de la orden
+            hay_nuevo_precio=False
+            if estado_orden=='NEW': 
+                #si cumplió el tiempo para recalcular el precio o ha cambiado la subescala de análisis recalculamos precio
+                if self.tiempo_calcular_px_compra.tiempo_cumplido()  or sub_escala_antes !=self.sub_escala_de_analisis:
+                    self.log.log(  "self.calcular_precio_de_compra()...in" )
+                    self.establecer_cantidad_a_comprar() # calcula cant y precio
+                    varpc = variacion(self.precio_actual_en_orden_compra,self.precio_compra)
+                    self.log.log('----Variación_Precio:',varpc)
+                    hay_nuevo_precio = varpc > 0.02
+                    self.log.log(  "self.calcular_precio_de_compra()...fi" , self.format_valor_truncando(self.precio_compra,8) )
 
-        #calculo nuevo precio de compra, como este proceso es lento al final vuelvo a consultar el estado de la orden
-        hay_nuevo_precio=False
-        if estado_orden=='NEW': 
-            #si cumplió el tiempo para recalcular el precio o ha cambiado la subescala de análisis recalculamos precio
-            if self.tiempo_calcular_px_compra.tiempo_cumplido()  or sub_escala_antes !=self.sub_escala_de_analisis:
-                self.log.log(  "self.calcular_precio_de_compra()...in" )
-                self.establecer_cantidad_a_comprar() # calcula cant y precio
-                varpc = variacion(self.precio_actual_en_orden_compra,self.precio_compra)
-                self.log.log('----Variación_Precio:',varpc)
-                hay_nuevo_precio = varpc > 0.02
-                self.log.log(  "self.calcular_precio_de_compra()...fi" , self.format_valor_truncando(self.precio_compra,8) )
+                    orden=self.oe.consultar_estado_orden(self.ultima_orden)
+                    precio_orden=orden['precio']
+                    estado_orden=orden['estado']
+                    can_comprada=orden['ejecutado']
+                    if estado_orden in 'NO_SE_PUDO_CONSULTAR UNKNOWN_ORDER NO_EXISTE':
+                        self.enviar_correo_error('Error al consultar Orden')
+                        self.db.set_no_habilitar_hasta(self.calcular_fecha_futura(1440),self.moneda,self.moneda_contra)
+                        self.detener()
+                        return
 
-                orden=self.oe.consultar_estado_orden(self.ultima_orden)
-                precio_orden=orden['precio']
-                estado_orden=orden['estado']
-                can_comprada=orden['ejecutado']
-                if estado_orden in 'NO_SE_PUDO_CONSULTAR UNKNOWN_ORDER NO_EXISTE':
-                    self.enviar_correo_error('Error al consultar Orden')
-                    self.db.set_no_habilitar_hasta(self.calcular_fecha_futura(1440),self.moneda,self.moneda_contra)
-                    self.detener()
-                    return
-
-
-        #ahora proceso el resultado de la orden
-        if estado_orden=='NEW': #no ha pasado nada todavía
-            self.log.log(  "Estado NEW:" )
-            if not hay_que_salir:
-                if hay_nuevo_precio: # tenemos un nuevo precio de compra ponemos denuevo la orden
-                    self.log.log(  "----->>Reajustamos precio de compra =",self.precio_compra )
-                    if self.cancelar_ultima_orden():
-                        if self.cant_moneda_compra * self.precio_compra < self.min_notional: 
-                            self.log.log('self.cant_moneda_compra * self.precio_compra < self.min_notional',self.cant_moneda_compra,self.precio,self.min_notional)
-                            self.iniciar_estado( self.estado_anterior )
-                            return
-                        else:
-                            ret = self.crear_orden_compra(self.cant_moneda_compra,self.precio_compra)
-                            if ret!='OK':
-                                self.iniciar_estado( self.primer_estado_de_funcion() )
+            #ahora proceso el resultado de la orden
+            if estado_orden=='NEW': #no ha pasado nada todavía
+                self.log.log(  "Estado NEW:" )
+                if not hay_que_salir:
+                    if hay_nuevo_precio: # tenemos un nuevo precio de compra ponemos denuevo la orden
+                        self.log.log(  "----->>Reajustamos precio de compra =",self.precio_compra )
+                        if self.cancelar_ultima_orden():
+                            if self.cant_moneda_compra * self.precio_compra < self.min_notional: 
+                                self.log.log('self.cant_moneda_compra * self.precio_compra < self.min_notional',self.cant_moneda_compra,self.precio,self.min_notional)
+                                self.iniciar_estado( self.estado_anterior )
                                 return
+                            else:
+                                ret = self.crear_orden_compra(self.cant_moneda_compra,self.precio_compra)
+                                if ret!='OK':
+                                    self.iniciar_estado( self.primer_estado_de_funcion() )
+                                    return
+                        else:
+                            self.intentar_recuperar_compra()
+                            return
+                                    
+            
+            elif estado_orden=='FILLED':
+                self.log.log(  "Estado FILLED:" )
+                self.precio_compra=precio_orden
+                self.cant_moneda_compra=can_comprada
+                txt_filled = f'{self.precio_compra}'
+                self.orden_llena_o_parcilamente_llena_estado_2(can_comprada,precio_orden,txt_filled,orden) #FI por Filled 
+                return 
+
+            elif estado_orden=='PARTIALLY_FILLED': 
+                if self.bucles_partial_filled>80: # 20 bucles de 90 segundos, 30 minutos aprox
+                    orden_cancelada=self.ultima_orden
+                    if self.cancelar_ultima_orden():
+                        #consulto la orden para ver como quedó
+                        orden=self.oe.consultar_estado_orden(orden_cancelada)
+                        precio_orden=orden['precio']
+                        can_comprada=orden['ejecutado']
+                        self.precio_compra=precio_orden
+                        self.cant_moneda_compra=can_comprada
+                        txt_filled = f'PARCIALMENTE-LLENTA.{self.precio_compra}'
+                        self.orden_llena_o_parcilamente_llena_estado_2(can_comprada,precio_orden,txt_filled,orden) #PF por Partial Filled
+
+                        self.sincronizar_compra_venta()
                     else:
                         self.intentar_recuperar_compra()
                         return
-                                
-        
-        elif estado_orden=='FILLED':
-            self.log.log(  "Estado FILLED:" )
-            self.precio_compra=precio_orden
-            self.cant_moneda_compra=can_comprada
-            txt_filled = f'{self.precio_compra}'
-            self.orden_llena_o_parcilamente_llena_estado_2(can_comprada,precio_orden,txt_filled,orden) #FI por Filled 
-            return 
-
-        elif estado_orden=='PARTIALLY_FILLED': 
-            if self.bucles_partial_filled>80: # 20 bucles de 90 segundos, 30 minutos aprox
-                orden_cancelada=self.ultima_orden
-                if self.cancelar_ultima_orden():
-                    #consulto la orden para ver como quedó
-                    orden=self.oe.consultar_estado_orden(orden_cancelada)
-                    precio_orden=orden['precio']
-                    can_comprada=orden['ejecutado']
-                    self.precio_compra=precio_orden
-                    self.cant_moneda_compra=can_comprada
-                    txt_filled = f'PARCIALMENTE-LLENTA.{self.precio_compra}'
-                    self.orden_llena_o_parcilamente_llena_estado_2(can_comprada,precio_orden,txt_filled,orden) #PF por Partial Filled
-
-                    self.sincronizar_compra_venta()
-                else:
-                    self.intentar_recuperar_compra()
-                    return
-            self.bucles_partial_filled+=1 
-            return
+                self.bucles_partial_filled+=1 
+                return
         
         if self.estado_2_detenerse:
             self.detener()
@@ -3283,15 +3269,7 @@ class Par:
 
             precio_minimo_sl_positivo = self.precio_salir_derecho * (1+self.g.ganancia_minima[self.escala_de_analisis]/100)
             self.log.log(f'precio {self.precio}  precio_minimo_sl_positivo {precio_minimo_sl_positivo}')
-            if self.precio < precio_minimo_sl_positivo:    #caso stoploss negativo
-                sl_negativo = self.calculo_stoploss_negativo()
-                gan_sl_negativo = calculo_ganancias(self.g,self.precio_compra,sl_negativo)
-                self.log.log(f'sl_negativo {sl_negativo}  gan_sl_negativo {gan_sl_negativo}')
-                if  gan_sl_negativo > -10:
-                    self.stoploss_negativo = 1
-                    self.iniciar_stoploss()
-                    
-            else:                              #caso stoploss positivo
+            if self.precio > precio_minimo_sl_positivo:    #caso stoploss negativo
                 self.iniciar_stoploss()    
 
 
@@ -3325,12 +3303,14 @@ class Par:
 
     def controlar_stop_loss(self): 
         if self.stoploss_habilitado == 0:
+            self.stoploss_negativo = self.calculo_stoploss_negativo()
             return
-        ind = self.ind    
-        vela:Vela = ind.ultimas_velas('1m',1)[0]
-        if self.precio < self.stoploss_actual or vela.low < self.stoploss_actual or self.ct_controlar_stoploss.tiempo_cumplido():
+        
+        minimo_reciente = self.ind.minimo('1m',2)
+        if self.precio < self.stoploss_actual or minimo_reciente <= self.stoploss_actual or self.ct_controlar_stoploss.tiempo_cumplido():
             self.ct_controlar_stoploss.reiniciar()
             self.controlar_orden_stop_loss()
+        self.log.log('controlar_stop_loss..fin')    
             
 
     def controlar_orden_stop_loss(self):
@@ -3415,11 +3395,11 @@ class Par:
     def momento_de_recomprar(self,escala,gan,duracion_trade):
         
         gan_limite = self.g.escala_ganancia[escala] * -0.5
-        self.log.log( f'momento_de_recomprar?  gan {gan}, gan_limite {gan_limite} duracion {duracion_trade}' )
+        self.log.log( f'momento_de_recomprar?  gan {gan}, gan_limite {gan_limite} duracion {duracion_trade}  stoploss_negativo {self.stoploss_negativo}' )
         #if self.moneda=='BTC' < 0.5 and duracion_trade > 60:    #experimental, esto podría comprar demasiado
         #    recomprar = True
         #else:    
-        recomprar =  gan < gan_limite and duracion_trade > 60
+        recomprar =  gan < gan_limite and duracion_trade > 60  or self.stoploss_habilitado == 0 and  self.precio <= self.stoploss_negativo
         ret = False            
         if recomprar:
             self.log.log( 'Intento recomprar---> Sí')
@@ -3714,10 +3694,10 @@ class Par:
         if stoploss is None:
             stoploss=self.calcular_stoploss() 
 
-        derecho_gan_min = self.precio_salir_derecho * (1+self.g.ganancia_minima[self.escala_de_analisis]/100)
-        if self.stoploss_negativo == 0 and  stoploss < derecho_gan_min: # abortamos, hemos calculado no es válido
+        #derecho_gan_min = self.precio_salir_derecho * (1+self.g.ganancia_minima[self.escala_de_analisis]/100)
+        if self.stoploss_negativo == 0 and  stoploss < self.precio_salir_derecho: # abortamos, hemos calculado no es válido
             #este stoploss calculado es inválido, pero si hay un stoploss puesto de antes válido, lo deja
-            self.log.log('No se pude poner stoploss ',stoploss,' < ',derecho_gan_min,'derecho_gan_min'  )
+            self.log.log('No se pude poner stoploss ',stoploss,' < ',self.precio_salir_derecho,'precio_salir_derecho'  )
             return
                 
         if self.cancelar_ultima_orden():
@@ -3744,8 +3724,21 @@ class Par:
 
         if sl > self.stoploss_actual:
             self.log.log(f'sl de {self.stoploss_actual} --> {sl}')
-        else:    
-            sl = self.stoploss_actual    
+        else:  
+            #recorrido = self.ind.recorrido_promedio(self.escala_de_analisis,10)
+            if self.precio  > self.precio_salir_derecho:
+                self.log.log(f'sl de {self.stoploss_actual} a precio_salir_derecho --> {sl}')
+                sl = self.precio_salir_derecho
+            else:    
+                sl = self.stoploss_actual    
+
+        # trato de tomar un porcentaje mayor cuando sea posible
+        gan_sl = self.g.calculo_ganancia_porcentual(self.precio_compra,sl)
+        gan_px = self.g.calculo_ganancia_porcentual(self.precio_compra,self.precio)
+        if gan_px - gan_sl > 1:
+            ex_sl = sl
+            sl = self.precio_compra * (1 + (gan_sl + 1) /100)
+            self.log.log(f'sl de {ex_sl} a  --> {sl}')
 
         return sl 
 
@@ -3753,7 +3746,8 @@ class Par:
         if not forzado and not self.ct_subir_stoploss.tiempo_cumplido():         #para evitar subir el stoploss por este método, muy seguido
             return
         nuevo_stoploss = self.px_stoploss_positivo()
-        if nuevo_stoploss + self.tickSize * 2 < self.precio:
+        distancia_seguridad = self.ind.recorrido_promedio(self.escala_de_analisis,50)
+        if nuevo_stoploss >= self.precio_salir_derecho and nuevo_stoploss + distancia_seguridad * 2 < self.precio:
             if self.stoploss_habilitado==1 and nuevo_stoploss > self.stoploss_actual:
                 if self.cancelar_ultima_orden():
                     resultado = self.ajustar_stoploss(nuevo_stoploss)
@@ -3767,7 +3761,7 @@ class Par:
             else:
                 ret=f'no se puede subir sl a {nuevo_stoploss}  stoploss_actual={self.stoploss_actual}'    
         else:
-            ret=f'no se puede subir sl a {nuevo_stoploss} muy cerca del precio {self.precio}'    
+            ret=f'no se puede subir sl a {nuevo_stoploss}'    
 
         return ret
     
@@ -4059,12 +4053,15 @@ class Par:
 
     def calculo_stoploss_negativo(self):
         for cvelas in range(50,300,50):
-            sl = self.ind.minimo(self.escala_de_analisis,cvelas)  / 1.01
+            sl = self.ind.minimo(self.escala_de_analisis,cvelas)  - self.ind.recorrido_promedio(self.escala_de_analisis,cvelas) * 2
             if sl < self.precio:
                 break
-        
         if sl > self.precio:
             sl = self.precio - self.ind.recorrido_maximo(self.escala_de_analisis,50)
+
+        if sl - self.precio <= self.ind.recorrido_minimo(self.escala_de_analisis,50):
+            sl2 = self.ind.precio_de_rsi_mas_bajo(self.escala_de_analisis,19)
+
         return sl
 
     def calcular_stoploss(self):
@@ -5176,7 +5173,7 @@ class Par:
     def txt_precio_y_stoploss(self):
         try:
             if self.stoploss_habilitado==1:
-                st=f'[sl {self.format_valor_truncando( self.stoploss_actual,self.cant_moneda_precision)}]  '
+                st=f'[sl {self.format_valor_truncando( self.stoploss_actual,self.moneda_precision)}]  '
             else:
                 st=' '    
             #stop_loss_calculado=self.calcular_stoploss()
