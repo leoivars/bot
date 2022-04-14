@@ -1,6 +1,7 @@
 
-from no_se_usa.acceso_db import *
-from acceso_db_conexion import *
+from acceso_db_conexion import Conexion_DB
+from acceso_db_funciones import Acceso_DB_Funciones
+from acceso_db_modelo import Acceso_DB
 from pws import Pws
 from logger import *
 from binance.client import Client
@@ -12,8 +13,11 @@ def main():
     
     pws= Pws()
     log=Logger('mercados.log') 
-    conn=Conexion_DB(log)
-    db=Acceso_DB(log,conn.pool)
+    
+    conn=Conexion_DB(log)                            #apertura del poll de conexiones
+    fxdb=Acceso_DB_Funciones(log,conn.pool)          #funciones para acceso a datos
+    db = Acceso_DB(log,fxdb) 
+
     client = Client(pws.api_key, pws.api_secret)
 
 
