@@ -30,7 +30,7 @@ client = crear_cliente(pws,log)
 esperar_correcto_funcionamiento(client,e,log)    #antes de hacer algo, controlo que el exchange esté funcionando
 
 conn=Conexion_DB(log)                            #apertura del poll de conexiones
-fxdb=Acceso_DB_Funciones(log,conn.pool)          #funciones para accedo a datos
+fxdb=Acceso_DB_Funciones(log,conn.pool)          #funciones para acceso a datos
 hpdb = Acceso_DB(log,fxdb)                       #modelo hpdb hilo principal db
 
 logm=Logger('mercado.log')                       #log para para mercado 
