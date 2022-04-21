@@ -873,8 +873,8 @@ class Par:
     def calcular_precio_de_compra(self):
         
         metodo=self.determinar_metodo_para_compra_venta()
-
-        px,self.calculo_precio_compra = self.calculador_precio.calcular_precio_de_compra(metodo,self.sub_escala_de_analisis)
+        compras_recientes = self.db.trades_cantidad_nuevos(self.moneda,self.moneda_contra,10)
+        px,self.calculo_precio_compra = self.calculador_precio.calcular_precio_de_compra(metodo,self.sub_escala_de_analisis,compras_recientes)
 
         return px
     
@@ -3239,6 +3239,7 @@ class Par:
         self.controlar_stop_loss()
 
         #### INICIAR LIQUIDEZ#####
+        self.log.log(f' generar_liquidez {self.generar_liquidez}')
         if not self.generar_liquidez and self.evaluar_si_hay_que_vender(self.escala_de_analisis,gan,duracion_trade):
             self.generar_liquidez = True
             if self.stoploss_habilitado == 1:
@@ -3714,13 +3715,16 @@ class Par:
             retroceda y se ejecute el stoploss
         '''
         if self.generar_liquidez:
-            velas_stoploss=1
-        elif self.g.escala_tiempo[self.escala_de_analisis] <= self.g.escala_tiempo['1h']: 
-            velas_stoploss=3
+            vela = self.ind.ultima_vela_cerrada(self.escala_de_analisis)
+            sl = vela.low
+            self.log.log(f'sl ultima_vela_cerrada.{vela.low}')
         else:
-            velas_stoploss=6
+            if self.g.escala_tiempo[self.escala_de_analisis] <= self.g.escala_tiempo['1h']: 
+                velas_stoploss=3
+            else:
+                velas_stoploss=6
 
-        sl = self.ind.stoploss_ema(self.escala_de_analisis,self.precio_salir_derecho,21,velas_stoploss)
+            sl = self.ind.stoploss_ema(self.escala_de_analisis,self.precio_salir_derecho,21,velas_stoploss)
 
         if sl > self.stoploss_actual:
             self.log.log(f'sl de {self.stoploss_actual} --> {sl}')
@@ -3746,8 +3750,7 @@ class Par:
         if not forzado and not self.ct_subir_stoploss.tiempo_cumplido():         #para evitar subir el stoploss por este método, muy seguido
             return
         nuevo_stoploss = self.px_stoploss_positivo()
-        distancia_seguridad = self.ind.recorrido_promedio(self.escala_de_analisis,50)
-        if nuevo_stoploss >= self.precio_salir_derecho and nuevo_stoploss + distancia_seguridad * 2 < self.precio:
+        if nuevo_stoploss >= self.precio_salir_derecho and self.stop_con_margen_de_seguridad(nuevo_stoploss) < self.precio:
             if self.stoploss_habilitado==1 and nuevo_stoploss > self.stoploss_actual:
                 if self.cancelar_ultima_orden():
                     resultado = self.ajustar_stoploss(nuevo_stoploss)
@@ -3764,6 +3767,24 @@ class Par:
             ret=f'no se puede subir sl a {nuevo_stoploss}'    
 
         return ret
+
+    def stop_con_margen_de_seguridad(self,stoploss):
+        ''' calcula monto para agregar al stoploss de manera tal que si el precio regresa
+            sea poco probable que toque el stoploss.
+            Para ello hace uso del recorrido promedio de xx velas hacia atras.
+            En el caso particular de que no haya volatilidad, el recorrido promedio 
+            puede ser muy chico entonces utilizo el recorrido maximo.
+            Si aún así no es fuciciente regreso un minimo de dos ticks
+        '''    
+        minimo= self.tickSize * 2
+        
+        margen = self.ind.recorrido_promedio(self.escala_de_analisis,50) * 2
+        if margen < minimo:
+            margen = self.ind.recorrido_maximo(self.escala_de_analisis,50)
+            if margen < minimo:
+                margen = minimo
+        
+        return margen + stoploss
     
     def subir_stoploss_viejo(self,tikcs,forzado=False):
         if not forzado and not self.ct_subir_stoploss.tiempo_cumplido(): #para evitar subir el stoploss por este método, muy seguido
@@ -4149,8 +4170,6 @@ class Par:
       
         if  sl_nuevo > sl:
             sl = sl_nuevo
-
-        sl = self.st_correccion_final(sl)    
 
         self.log.log( f'calculo_basico_stoploss(generar_liquidez={generar_liquidez}) ret={sl} ')    
 

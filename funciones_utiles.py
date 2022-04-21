@@ -54,9 +54,9 @@ def timestampk_to_strtime(timestampk):
     fecha=datetime.fromtimestamp(timestampk/1000)
     return fecha.strftime('%Y-%m-%d %H:%M:%S %z')
 
-
-def str_fecha_hora_mysql():
-    fecha = datetime.now()
+def str_fecha_hora_mysql(fecha):
+    if fecha is None:
+        fecha = datetime.now()
     return fecha.strftime('%Y-%m-%d %H:%M:%S')
 
 def strtime_a_time(strtime):
@@ -130,6 +130,4 @@ def linea(*args):
         return lin        
 
 if __name__ == '__main__':
-    fecha = str_fecha_hora_a_timestamp('2021-06-13 01:00:00') 
-    print (  fecha*1000)
- 
+    print(str_fecha_hora_mysql(datetime.now() -timedelta(days=10)                ))

@@ -16,7 +16,7 @@ class Calculador_Precio_Compra:
         self.libro: Libro_Ordenes_DF = libro
         self.calculo_precio_compra='indefinido'
 
-    def calcular_precio_de_compra(self,metodo,escala):
+    def calcular_precio_de_compra(self,metodo,escala,compras_recientes=99):
         ind: Indicadores = self.ind_par
         self.precio = ind.precio(escala)
         self.escala_de_analisis = escala
@@ -51,13 +51,16 @@ class Calculador_Precio_Compra:
         if metodo=="minimo_del_rango_rsi_bajo":
             self.calculo_precio_compra='minimo_del_rango_rsi_bajo' 
             precio_actual = ind.precio(escala)
+            
+            p_bajo = self.porcentaje_bajo(compras_recientes)     
+
             px=precio_actual
             px_min,pos_minimo,px_max,pos_maximo = ind.minimo_maximo_y_posicion(escala,50)
             self.log.log(f'{px} px_min {px_min} pos_minimo {pos_minimo} px_max {px_max} pos_maximo {pos_maximo} ')
             if not px_min is None and pos_minimo < pos_maximo  :        #el el minimo esta ubicado primero que el maximo
-                px = px_min + (px_max - px_min) * .2
-                self.calculo_precio_compra='calc. px_min + (px_max - px_min) * 0.2'
-                self.log.log(f'calc. px_min + (px_max - px_min) * 0.2 ')
+                px = px_min + (px_max - px_min) * p_bajo
+                self.calculo_precio_compra=f'calc. px_min + (px_max - px_min) * {p_bajo}'
+                self.log.log(f'calc. px_min + (px_max - px_min) * {p_bajo} ')
             
             if px >= precio_actual:
                 self.calculo_precio_compra='precio_de_rsi_mas_bajo(escala,29)'
@@ -189,7 +192,13 @@ class Calculador_Precio_Compra:
         
         return px,self.calculo_precio_compra
 
-    
+    def porcentaje_bajo(self,cant_compras):
+        lista_porcentajes=[0.47,0.35,0.20]
+        i = cant_compras
+        if i > len(lista_porcentajes):
+            i = len(lista_porcentajes)
+        return lista_porcentajes[i]    
+
     def calc_pefil_volumen(self):
         vp = self.ind_par.vp(self.escala_de_analisis,24)
         precio_actual = self.ind_par.precio(self.escala_de_analisis)

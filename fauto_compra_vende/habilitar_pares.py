@@ -45,7 +45,7 @@ def habilitar_pares(g:Global_State,db:Acceso_DB,mercado:Mercado,log:Logger,pares
         
         actualizar_volumen_precio(moneda,moneda_contra,ind,db)          # ya que estamos actualizamos volumen y precio
         
-        if hay_parte_baja_y_volumen_impulso(ind,log,g,33):            #habilito pares en la parte baja del rango
+        if hay_parte_baja_y_volumen_impulso(ind,log,g,25):            #habilito pares en la parte baja del rango
             db.habilitar(1,moneda,moneda_contra)
             c_habilitados += 1
             log.log(f'{par} habilitando total {c_habilitados}') 

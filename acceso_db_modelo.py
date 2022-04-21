@@ -1,6 +1,7 @@
 # # -*- coding: UTF-8 -*-
 import time
-from datetime import datetime
+from datetime import datetime,timedelta
+from funciones_utiles import str_fecha_hora_mysql
 
 class Acceso_DB:
     '''
@@ -52,6 +53,7 @@ class Acceso_DB:
     
     trade_id________='SELECT * from trades where idtrade=%s'
     trades_cantidad_='select count(1) as cantidad  from trades where moneda=%s and moneda_contra=%s and ejecutado = 0'
+    trades_cant_nuevos = 'select count(1) as cantidad from trades where moneda=%s and moneda_contra=%s and ejecutado = 0 and fecha >= %s'
     trade_borrar_id_='DELETE from trades where idtrade=%s'
     trade_btc_reserv="select cantidad-ejecutado as cantidad from trades where moneda='BTC' and ejecutado=0 order by precio limit 1"
     trades_pend_no_h='''select trades.moneda, trades.moneda_contra, trades.precio from trades,pares 
@@ -159,6 +161,14 @@ class Acceso_DB:
     def trades_cantidad(self,moneda,moneda_contra):
         ''' retorna la cantidad de trades que hay en un par'''
         return self.fxdb.ejecutar_sql_ret_1_valor(self.trades_cantidad_,(moneda,moneda_contra))    
+
+    def trades_cantidad_nuevos(self,moneda,moneda_contra,dias_atras=1):
+        ''' retorna la cantidad de trades nuevos que hay en un par
+            tomando como nuevos a los trades que se hayan realizado los 
+            ultimso <dias_atras>
+        '''
+        fecha = str_fecha_hora_mysql(  datetime.now() - timedelta(days=10) ) 
+        return self.fxdb.ejecutar_sql_ret_1_valor(self.trades_cant_nuevos,(moneda,moneda_contra,fecha))    
 
     def total_moneda_en_trades(self,moneda):
          
