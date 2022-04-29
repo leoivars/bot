@@ -37,6 +37,9 @@ logm=Logger('mercado.log')                       #log para para mercado
 logm.set_log_level(e.log_level)
 mercado = Mercado(logm,e,client)                 #objeto encargado de la obtención de datos desde el exchange
 
+print(mercado.precio('BTCUSDT','1d'))            #fuerzo la carga BTCUSDT en un día  necesaria para algunas operaciones que consultan todos los pares
+
+
 try:
     cuenta_de_reinicios= int(sys.argv[1])        #cuenta de reinicios pasado como parámetros
     inicio_funcionamiento = datetime.strptime(sys.argv[2], '%Y-%m-%d %H:%M:%S.%f')     #fecha para cacular cuanto tiempo lleva funcionando pasad como parametro

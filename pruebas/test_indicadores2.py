@@ -408,6 +408,11 @@ def probar_precio_de_compra(escala):
     # px = px_min + (px_max - px_min) * .236
     # print(f'minimo {px_min} maximo {px_max} px {px} ')
 
+def probar_ema_rapida_mayor_lenta2(par,parametros):
+    ind=Indicadores(par,log,globales,mercado)
+    
+    for param in parametros:
+        print(f'{param} \t {ind.ema_rapida_mayor_lenta2(param[0],param[1],param[2],param[3],param[4]) }' )
 
 
 t = time.time()
@@ -417,7 +422,15 @@ par = moneda+'USDT'
 
 ind=Indicadores(par,log,globales,mercado)
 while time.time() -t < 1200:
-    probar_precio_de_compra('1h')
+    parametros=[]
+    escalas=['1d','4h','1h']
+    diferencias=[0.5,0.4,0.1,0.01]
+    for esc in escalas:
+        for dif in diferencias:
+            parametros.append([esc,10,21,dif,True])
+            parametros.append([esc,10,21,dif,False])
+
+    probar_ema_rapida_mayor_lenta2('BTCUSDT',parametros)
     time.sleep(15)
 
 mercado.detener_sockets()

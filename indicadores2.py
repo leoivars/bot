@@ -1334,7 +1334,7 @@ class Indicadores:
         if ema_ok and ema.iloc[-2] > precio_salir_derecho:
             ret =  ema.iloc[-2]
         else:
-            ret = -1 
+            ret = -1
 
         return ret
 

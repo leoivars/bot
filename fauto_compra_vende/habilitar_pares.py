@@ -45,7 +45,7 @@ def habilitar_pares(g:Global_State,db:Acceso_DB,mercado:Mercado,log:Logger,pares
         
         actualizar_volumen_precio(moneda,moneda_contra,ind,db)          # ya que estamos actualizamos volumen y precio
         
-        if hay_parte_baja_y_volumen_impulso(ind,log,g,25):            #habilito pares en la parte baja del rango
+        if hay_parte_baja_y_volumen_impulso(ind,log,g,25):              #habilito pares en la parte baja del rango
             db.habilitar(1,moneda,moneda_contra)
             c_habilitados += 1
             log.log(f'{par} habilitando total {c_habilitados}') 
@@ -73,10 +73,10 @@ def hay_precios_minimos_como_para_habilitar(ind:Indicadores,g:Global_State,log):
 def hay_parte_baja_y_volumen_impulso(ind:Indicadores,log: Logger,g:Global_State,p_xmin_impulso=26):
     ret = False
     if filtro_rsi(ind,log,'1d',30) or filtro_parte_baja_rango(ind,log,'1d',200,.236):
-            if filtro_parte_baja_rango(ind,log,'4h',200,.236):  
-                if filtro_parte_baja_rango(ind,log,'1h',200,.236):  
-                    if filtro_xvolumen_de_impulso(ind,log,'1h',periodos=14,sentido=0,xmin_impulso=p_xmin_impulso):
-                        ret = True
+        if filtro_parte_baja_rango(ind,log,'4h',200,.236):  
+            if filtro_parte_baja_rango(ind,log,'1h',200,.236):  
+                if filtro_xvolumen_de_impulso(ind,log,'1h',periodos=14,sentido=0,xmin_impulso=p_xmin_impulso):
+                    ret = True
     return ret
 
 def precio_cerca(pxmin,precio,porcentaje=0.30):

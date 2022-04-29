@@ -1,15 +1,18 @@
+from curses import BUTTON_CTRL
 from indicadores2 import Indicadores
 from libro_ordenes2 import Libro_Ordenes_DF
 from logger import Logger
+from mercado import Mercado
 from variables_globales import Global_State
 from funciones_utiles import format_valor_truncando
 from numpy import isnan
 
 
 class Calculador_Precio_Compra:
-    def __init__(self,par,g: Global_State,log:Logger,ind_par:Indicadores,libro:Libro_Ordenes_DF=None):
+    def __init__(self,par,g: Global_State,log:Logger,mercado:Mercado,libro:Libro_Ordenes_DF=None):
         self.par = par 
-        self.ind_par :Indicadores = ind_par
+        self.ind_par :Indicadores = Indicadores(par,log,g,mercado)
+        self.ind_btc :Indicadores = Indicadores('BTCUSDT',log,g,mercado)
         self.log:Logger = log
         self.g :Global_State = g
         self.escala_de_analisis = '1d'
@@ -193,11 +196,30 @@ class Calculador_Precio_Compra:
         return px,self.calculo_precio_compra
 
     def porcentaje_bajo(self,cant_compras):
-        lista_porcentajes=[0.47,0.35,0.20]
+
+        if self.btc_sube_y_no_habria_peligro_de_caer():    
+            lista_porcentajes=[0.47,0.35,0.20]
+        else:    
+            lista_porcentajes=[0.20,0.10,0.05]    
+
         i = cant_compras
-        if i > len(lista_porcentajes):
-            i = len(lista_porcentajes)
+        max_i = len(lista_porcentajes) -1 
+        if i >  max_i :
+            i = max_i
         return lista_porcentajes[i]    
+
+    def btc_sube_y_no_habria_peligro_de_caer(self):
+        ret = False
+
+        rsi = self.ind_btc.rsi('1d')
+        self.log.log(f'rsi_btc 1d {rsi}')
+        if rsi < 70:
+            emas_btc_ok, diferencia_porcentual,pend_r,pend_l=self.ind_btc.ema_rapida_mayor_lenta2('1d',10,21,0.5,True)
+            self.log.log(f'emas_btc_ok {emas_btc_ok} ,diferencia_porcentual {diferencia_porcentual},pend_r {pend_r},pend_l {pend_l}')
+            ret = emas_btc_ok
+       
+        return ret
+
 
     def calc_pefil_volumen(self):
         vp = self.ind_par.vp(self.escala_de_analisis,24)

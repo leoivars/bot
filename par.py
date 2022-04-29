@@ -237,12 +237,9 @@ class Par:
         #self.actualizador = ActualizadorInfoPar(conn, self.oe ,self.log) #13/9/2021 no actualizamo  mas por ahora 
 
 
-        
-
-        
         #par,g: Global_State,log:Logger,ind_par
         self.libro2=Libro_Ordenes_DF(client,moneda,moneda_contra,25) #cleación del libro
-        self.calculador_precio = Calculador_Precio_Compra(self.par,self.g,self.log,self.ind,self.libro2)
+        self.calculador_precio = Calculador_Precio_Compra(self.par,self.g,self.log,self.mercado,self.libro2)
 
         self.fecha_utimo_px_ws = time.time() - 5000 # alguna fecha vieja para que tenga un valor pero esté desactualizado
         self.fecha_cargar_parametros_durante_accion =  time.time() - 5000 # alguna fecha vieja para que tenga un valor pero esté desactualizado
@@ -3268,10 +3265,19 @@ class Par:
                     self.iniciar_stoploss()   
                     return
 
-            precio_minimo_sl_positivo = self.precio_salir_derecho * (1+self.g.ganancia_minima[self.escala_de_analisis]/100)
+            precio_minimo_sl_positivo = self.calculo_precio_minimo_sl_positivo(1)
             self.log.log(f'precio {self.precio}  precio_minimo_sl_positivo {precio_minimo_sl_positivo}')
-            if self.precio > precio_minimo_sl_positivo:    #caso stoploss negativo
+            if self.precio > precio_minimo_sl_positivo:    
                 self.iniciar_stoploss()    
+
+    
+    def calculo_precio_minimo_sl_positivo(self,coeficiente):
+        '''
+        calcula un precio que tienga menos probabilidades de regresar al self.precio_salir_derecho
+        '''
+        ret = self.precio_salir_derecho * (1+self.g.ganancia_minima[self.escala_de_analisis]/100)
+        return ret * coeficiente
+
 
 
     # def iniciar_stop_loss_en_caso_de_ser_posible(self):
@@ -4163,10 +4169,9 @@ class Par:
         
         self.log.log(f'sl_nuevo={sl_nuevo}')
 
-        if sl_nuevo < self.precio_salir_derecho and self.precio > self.precio_salir_derecho and self.stoploss_negativo==0:
-            ex_sl_nuevo = sl_nuevo
-            sl_nuevo =self.precio_salir_derecho + (self.precio-self.precio_salir_derecho) / 2  
-            self.log.log(f'sl_nuevo={ex_sl_nuevo} < precio_salir_derecho, recalculo={sl_nuevo}')
+        if sl_nuevo == -1:
+            sl_nuevo = self.precio_salir_derecho ##//* (1+self.g.ganancia_minima[self.escala_de_analisis]/100)
+            self.log.log(f'sl_nuevo corregido a--> {sl_nuevo}')
       
         if  sl_nuevo > sl:
             sl = sl_nuevo
