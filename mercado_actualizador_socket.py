@@ -65,6 +65,7 @@ class Mercado_Actualizador_Socket(Thread):
         try:       
             result =  self.ws.recv()
             self.procesar_recibido(result) 
+            time.sleep(0.01)
         except  Exception as e:
             #self.log.log('recibir()', str(e))
             self.renovar_conexion()
@@ -238,11 +239,4 @@ class Mercado_Actualizador_Socket(Thread):
                     
                     #if v_is_closed:
                         #print(par,escala,v_volume)
-            else:
-                print('-no-k->',jresult)            
-        # except Exception as e:
-        #     print('Error en procesar_recibido:',str(e))  
-        #     tb = traceback.format_exc()
-        #     print(tb) 
-        #     print(f'--->{result}<---')             
-
+        

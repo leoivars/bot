@@ -2,7 +2,6 @@
 import datetime
 import time
 
-
 class Logger:
     
     def __init__(self, nombrearchivolog=None,dirlogs="./logs/"):
@@ -23,7 +22,6 @@ class Logger:
     def set_log_level(self,log_level):
         self.log_level=log_level
 
-
     def log(self,*args):
         linea_log=self.__linealog__(' '.join([str(a) for a in args]))
         self.__logmem__(linea_log)
@@ -36,7 +34,7 @@ class Logger:
         self.__logmem__(linea_log)
         if self.loguear and self.log_level>0:
             self.__log_archivo__(linea_log)
-        print(linea_log)
+        time.sleep(0.01)
 
     def tail(self): # entrega las ultimas líneas
         txt='últimas líneas del log:\n'
@@ -56,6 +54,7 @@ class Logger:
             flog=open(self.nlog,'a')
             flog.write(linea_log)
             flog.close()
+            time.sleep(0.01)
         except:
             print("no se pudo crear archivo log",self.nlog)
     
@@ -73,5 +72,3 @@ class Logger:
         lin = ' '.join([str(a) for a in args])       
         lin += '\n'
         return lin 
-
-
