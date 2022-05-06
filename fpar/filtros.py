@@ -180,7 +180,7 @@ def filtro_ema_positiva(ind:Indicadores,log:Logger,escala,ema_per):
     return ret 
 
 def filtro_ema_no_positiva(ind:Indicadores,log:Logger,escala,ema_per):
-    ret = not ind.pendiente_positiva_ema(escala,ema_per)
+    ret = ind.pendiente_negativa_ema(escala,ema_per,-1)
     log.log(f'filtro_ema_no_positiva ({escala},{ema_per}) {ret}')
     return ret     
 

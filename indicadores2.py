@@ -1514,6 +1514,25 @@ class Indicadores:
         
         return pend >0 
 
+    def pendiente_negativa_ema(self,escala,periodos,pendiente_maxima=0):
+        '''
+        retorna True si la pendiente es menor < pediente_maxima
+        para que funcione correctamente pediente_maxima debe ser <=0
+        '''
+        if pendiente_maxima >0:   
+            pendiente_maxima =0
+
+        df=self.mercado.get_panda_df(self.par,escala,periodos+50)
+        df_ema=ta.ema(df['close'],length=periodos) 
+
+        pend=round( self.pendientes(escala,df_ema.to_list(),1)[0] * 100,9 )
+
+        ret = pend < pendiente_maxima
+        self.log.log(f' pendiente_negativa_ema pend {pend} pendiente_maxima {pendiente_maxima}  {ret}')
+        
+        return  ret
+
+
     def pendientes_positivas_ema(self,escala,periodos,cpendientes=2):
         '''
         retorna True si las ultimas cpendientes son positivas
