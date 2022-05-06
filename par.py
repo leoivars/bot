@@ -3754,9 +3754,10 @@ class Par:
 
     def subir_stoploss(self,forzado=False):
         if not forzado and not self.ct_subir_stoploss.tiempo_cumplido():         #para evitar subir el stoploss por este método, muy seguido
+            self.log.log(f' subir_stoploss->salida')
             return
         nuevo_stoploss = self.px_stoploss_positivo()
-        if nuevo_stoploss >= self.precio_salir_derecho and self.stop_con_margen_de_seguridad(nuevo_stoploss) < self.precio:
+        if nuevo_stoploss >= self.precio_salir_derecho and self.esta_bueno_poner_este_stoploss(nuevo_stoploss,forzado):
             if self.stoploss_habilitado==1 and nuevo_stoploss > self.stoploss_actual:
                 if self.cancelar_ultima_orden():
                     resultado = self.ajustar_stoploss(nuevo_stoploss)
@@ -3764,16 +3765,21 @@ class Par:
                         ret='sl subido ' + str(nuevo_stoploss) 
                         self.ct_subir_stoploss.reiniciar()
                     else:    
-                        ret='falló subir el stoploss'
+                        ret='no_se_sube_sl, falló subir el stoploss'
                 else:
                     self.intentar_recuperar_venta()    
             else:
-                ret=f'no se puede subir sl a {nuevo_stoploss}  stoploss_actual={self.stoploss_actual}'    
+                ret=f'no_se_sube_sl a {nuevo_stoploss} < stoploss_actual={self.stoploss_actual}'    
         else:
-            ret=f'no se puede subir sl a {nuevo_stoploss}'    
-
+            ret=f'no_se_sube_sl a {nuevo_stoploss}'    
         return ret
 
+    def esta_bueno_poner_este_stoploss(self,stoploss,forzado):
+        if forzado:
+            return True
+        else:
+            return self.stop_con_margen_de_seguridad(stoploss) < self.precio
+        
     def stop_con_margen_de_seguridad(self,stoploss):
         ''' calcula monto para agregar al stoploss de manera tal que si el precio regresa
             sea poco probable que toque el stoploss.
@@ -3791,7 +3797,9 @@ class Par:
                 margen = minimo
         
         return margen + stoploss
+
     
+        
     def subir_stoploss_viejo(self,tikcs,forzado=False):
         if not forzado and not self.ct_subir_stoploss.tiempo_cumplido(): #para evitar subir el stoploss por este método, muy seguido
             return
