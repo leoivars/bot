@@ -1861,7 +1861,7 @@ class Par:
             if filtro_parte_baja_rango(ind,self.log,'4h',200,.382):  
                 if filtro_parte_baja_rango(ind,self.log,escala,200,.382):
                     #if filtro_xvolumen_de_impulso(ind,self.log,escala,periodos=14,sentido=0,xmin_impulso=20):
-                    if filtro_ema_no_positiva(ind,self.log,escala,14):
+                    if filtro_ema_no_positiva(ind,self.log,escala,7, -self.g.escala_pend_ema[escala]):
                         ret = [True,escala,f'ema_rapida_lenta_xvolumen'] 
         return ret
 

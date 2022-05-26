@@ -1628,10 +1628,14 @@ class Indicadores:
         try:
             # print(lista)
             l=len(lista)
-            unidad = self.g.escala_tiempo[escala]
+            #unidad = self.g.escala_tiempo[escala]
             #print(unidad)
             for i in range(l-cpendientes,l):
-                m= (lista[i] - lista[i-1]) / unidad 
+                #1-x/y
+                y = lista[i]
+                if y == 0:
+                    y = 0.0000000000001
+                m = 1 - lista[i-1] / y
                 ret.append(m) 
 
         except Exception as e: 

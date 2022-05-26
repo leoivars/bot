@@ -56,6 +56,9 @@ class Global_State:
     escala_ganancia ={'1m':.5  ,'3m':0.7  ,'5m': .9  ,'15m': 2   ,'30m':2.5 ,'1h':3 ,'2h':3.5, '4h':4  ,'1d':5  , '1w':15,'1M':30}
     escala_entorno  ={'1m':.25 ,'3m':0.35 ,'5m': .45 ,'15m': 0.55,'30m':0.75,'1h':1 ,'2h':1.25,'4h':1.5,'1d':2.5, '1w':3 ,'1M':5 }
     
+    escala_pend_ema ={'1m':.5  ,'3m':0.7  ,'5m': .9  ,'15m': 2   ,'30m':2.5 ,'1h':3 ,'2h':3.5, '4h':4  ,'1d':5  , '1w':15,'1M':30}
+
+
     hay_pump = {'velas':5,'xatr':12,'xvol':12}
 
     #tiempo maximo que debe durar una entrada
@@ -115,6 +118,8 @@ class Global_State:
                 self.max_inversion_btc         = float(parconfig['max_inversion_btc'])
                 self.max_inversion_usdt        = float(parconfig['max_inversion_usdt'])
                 self.hay_pump                  = parconfig['hay_pump'] 
+                self.escala_pend_ema           = parconfig['escala_pend_ema'] 
+                
                 
                 
             except Exception as e:
