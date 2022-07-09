@@ -60,55 +60,55 @@ class Actualizador_rest:
         rango_fin=int(ahora * 1000  )
         
         if escala=='1m':
-            cvel=300
+            cvel=500
             ch=int(cvel/60)+1 #60 velas por hora
             rango_pedido = str(ch)+" hour ago UTC"
             intervalo = Client.KLINE_INTERVAL_1MINUTE
         elif escala=='3m':
-            cvel=300
+            cvel=500
             ch=int(cvel/20)+1 #20 velas por hora
             rango_pedido = str(ch)+" hour ago UTC"
             intervalo = Client.KLINE_INTERVAL_3MINUTE
         elif escala=='5m':
-            cvel=300
+            cvel=500
             ch=int(cvel/12)+1 #12 velas por hora
             rango_pedido = str(ch)+" hour ago UTC"
             intervalo = Client.KLINE_INTERVAL_5MINUTE
         elif escala=='15m':
-            cvel=300
+            cvel=500
             cd=int(cvel/96)+1 #96 velas por dia
             rango_pedido = str(cd)+" day ago UTC"
             intervalo = Client.KLINE_INTERVAL_15MINUTE
         elif escala=='30m':
-            cvel=300
+            cvel=500
             cd=int(cvel/96/2)+1 #96/2 velas por dia
             rango_pedido = str(cd)+" day ago UTC"
             intervalo = Client.KLINE_INTERVAL_30MINUTE
         elif escala=='1h':
-            cvel=300
+            cvel=500
             cd=int(cvel/24)+1 #24 velas por dia
             rango_pedido = str(cd)+" day ago UTC"
             intervalo = Client.KLINE_INTERVAL_1HOUR
         elif escala=='2h':
-            cvel=300
+            cvel=500
             cd=int(cvel/12)+1 #12 velas por dia
             rango_pedido = str(cd)+" day ago UTC"
             intervalo = Client.KLINE_INTERVAL_2HOUR
         elif escala=='4h':
-            cvel=300
+            cvel=500
             cd=int(cvel/6)+1 #6 velas por dia
             rango_pedido = str(cd)+" day ago UTC"
             intervalo = Client.KLINE_INTERVAL_4HOUR
         elif escala=='1d':
-            cvel=300
+            cvel=500
             rango_pedido = "180 day ago UTC"
             intervalo = Client.KLINE_INTERVAL_1DAY
         elif escala=='1w':
-            cvel=300
+            cvel=500
             rango_pedido = "399 day ago UTC"
             intervalo = Client.KLINE_INTERVAL_1WEEK
         elif escala=='1M':
-            cvel=48
+            cvel=500
             rango_pedido =  "1460 day ago UTC"
             intervalo = Client.KLINE_INTERVAL_1MONTH
 

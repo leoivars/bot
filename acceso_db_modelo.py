@@ -557,11 +557,11 @@ class Acceso_DB:
 
 
 
-    def backtesting_agregar_resultado(self,par,datos_backtesting,ganadas,perdidas,ganancia):
+    def backtesting_agregar_resultado(self,par,datos_backtesting,ganadas,perdidas,ganancia,recompras):
         sql=f"""insert into resultados_backtesting 
-                (par,datos_backtesting,ganadas,perdidas,ganancia) 
+                (par,datos_backtesting,ganadas,perdidas,ganancia,recompras) 
                values 
-                ('{par}','{datos_backtesting}',{ganadas},{perdidas},{ganancia}) 
+                ('{par}','{datos_backtesting}',{ganadas},{perdidas},{ganancia},{recompras}) 
             """
         ret =  self.fxdb.ejecutar_sql( sql )      
         self.fxdb.conexion.commit() 

@@ -8,7 +8,7 @@ from acceso_db_conexion import Conexion_DB
 from acceso_db_funciones import Acceso_DB_Funciones
 from acceso_db_modelo import Acceso_DB
 import time
-from fpar.filtros import filtro_parte_baja_rango,filtro_xvolumen_de_impulso,filtro_rsi
+from fpar.filtros import Filtros
 
 
 def habilitar_deshabilitar_pares(g:Global_State,db:Acceso_DB,mercado,log):
@@ -64,21 +64,22 @@ def actualizar_volumen_precio(moneda,moneda_contra,ind:Indicadores,db:Acceso_DB)
 def hay_precios_minimos_como_para_habilitar(ind:Indicadores,g:Global_State,log):
         ret = True
         escalas=['1d','4h'] 
+        filtro = Filtros(ind,log)
         for e in escalas:
-            if not filtro_parte_baja_rango(ind,log,e,120,0.2):
+            if not  filtro.parte_baja_rango(e,0,2): 
                 ret = False
                 break
         return ret  
 
 def hay_parte_baja_y_volumen_impulso(ind:Indicadores,log: Logger,g:Global_State,p_xmin_impulso=26):
     ret = False
-    if filtro_rsi(ind,log,'1d',30) or filtro_parte_baja_rango(ind,log,'1d',200,.236):
-        if filtro_parte_baja_rango(ind,log,'4h',200,.236):  
-            if filtro_parte_baja_rango(ind,log,'1h',200,.236):  
-                if filtro_xvolumen_de_impulso(ind,log,'1h',periodos=14,sentido=0,xmin_impulso=p_xmin_impulso):
+    filtro = Filtros(ind,log)
+    if  filtro.rsi_maximo('1d',30) or filtro.parte_baja_rango('1d',.236):
+        if filtro.parte_baja_rango('4h',.236):  
+            if filtro.parte_baja_rango('1h',.236):  
+                if filtro.xvolumen_de_impulso('1h',periodos=14,sentido=0,xmin_impulso=p_xmin_impulso): 
                     ret = True
     return ret
 
 def precio_cerca(pxmin,precio,porcentaje=0.30):
     return precio < pxmin   or  (precio - pxmin) / precio *100 < porcentaje       
-

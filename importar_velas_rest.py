@@ -138,23 +138,26 @@ if __name__=='__main__':
     # print(fini,ffin)
     
     #pedido máximo en días por escala
-    deltas = {'1m':1}
+    #deltas = {'1m':1,'5m':5,'1h':60,'1d':1440,'4h':240}
+    deltas = {'5m':5}
     #deltas = {'15m':15,'30m':30,'1h':60,'2h':120,'4h':240,'1d':1440,'1w':10080,'1M':43200}
     
     #UTC	2021-06-13T07:02:34Z
     ####  fini='2021-11-01 00:00:00' desde acá tengo  pares=['XMRUSDT','BTCUSDT','CELRUSDT']
-    #fini='2021-11-01 00:00:00' pares=[ 'ADAUSDT','AVAXUSDT','BNBUSDT','DOTUSDT','XRPUSDT','XMRUSDT','BTCUSDT','CELRUSDT']
-    fini='2022-03-20 00:00:00'
-    ffin='2022-04-05 00:00:00' 
+    #fini='2021-11-01 00:00:00' pars=[ 'ADAUSDT','AVAXUSDT','BNBUSDT','DOTUSDT','XRPUSDT','XMRUSDT','BTCUSDT','CELRUSDT']
+    from pruebas.periodos_a_analizar import Periodos_a_analizar
     
-    pares=['BTCUSDT']
+    periodo= Periodos_a_analizar()
+    _,obj_fini,obj_ffin = periodo.junio_julio_22()
+        
+    pares=['DOTUSDT']
     #pares=['BTCUSDT','BNBUSDT','XRPUSDT']
     #pares=['BTCUSDT','BNBUSDT']
     #pares=[ 'ADAUSDT','AVAXUSDT','BNBUSDT','DOTUSDT','XRPUSDT','XMRUSDT','BTCUSDT','CELRUSDT']
     # fini='202-01-01 00:00:00' 
     # ffin='2021-07-01 00:00:00' 
-    obj_fini=strtime_a_obj_fecha(fini)
-    obj_ffin=strtime_a_obj_fecha(ffin)
+    #obj_fini=strtime_a_obj_fecha(fini)
+    #obj_ffin=strtime_a_obj_fecha(ffin)
     
 
     for par in pares:

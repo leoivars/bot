@@ -22,7 +22,7 @@ import pandas_ta as ta
 
 from  variables_globales import Global_State
 
-from funciones_utiles import strtime_a_fecha, strtime_a_obj_fecha, variacion,compara,signo, variacion_absoluta
+from funciones_utiles import strtime_a_fecha, strtime_a_obj_fecha, variacion,compara,signo, variacion_absoluta,signo
 from mercado import Mercado
 from mercado_back_testing import Mercado_Back_Testing
 from vela_op import *
@@ -382,7 +382,8 @@ class Indicadores:
        
         return minimo,maximo       
 
-
+      
+        
     def lista_picos_minimos_ema(self,escala,periodos,cvelas,origen='close',izquierda=5,derecha=2):
         ''' entrega lista de picos minimos desde el final por cvelas
             para la ema origen 
@@ -467,6 +468,8 @@ class Indicadores:
         df_emar=ta.ema(df['close'],length=per_rapida) 
         df_emal=ta.ema(df['close'],length=per_lenta)  
 
+
+      
         l = len(df) 
 
         y_ant = signo( df_emar.iloc[-1] - df_emal.iloc[-1] )
@@ -576,10 +579,11 @@ class Indicadores:
         #print(df['closed'])
         #print(df.iloc[-1]['closed'])
 
+        
         if df.iloc[-1]['closed']:
-            v = Vela(df.iloc[-1])
+            v = Vela(df.iloc[-1],df.index.values[-1])
         else:
-            v = Vela(df.iloc[-2])
+            v = Vela(df.iloc[-2],df.index.values[-2])
         return v 
 
     def ultimas_velas(self,escala,cvelas,cerradas=True):  
@@ -1080,6 +1084,8 @@ class Indicadores:
         '''
         df=self.mercado.get_panda_df(self.par, escala)     
         df_ma_vol=ta.ma('ma',df['volume'],length=20)
+        df['cuerpo'] = abs(df.open - df.close) 
+        cuerpo_promedio= df["cuerpo"].mean()
 
         cant_velas=len(df)      
         if vela_fin < -cant_velas+41:
@@ -1095,11 +1101,63 @@ class Indicadores:
                 i -= 1
                 v:Vela = Vela(df.iloc[i])
                 if v.sentido() == sentido:
+                    x_cuerpo = round( v.cuerpo() / cuerpo_promedio ,2)
                     x_vol = round( v.volume / volumen_testigo ,2)
-                    if  x_vol > 3:   
-                        lista.append([ i*-1, x_vol ])
+                    if  x_vol > 2 and x_cuerpo >2:   
+                        lista.append([ i*-1, x_vol,x_cuerpo ])
 
         return lista  
+
+    def velas_volumen(self,escala,vela_fin=-20):
+        ''' retorna un lista con los siguintes valoros
+            1 = vela pequeña sin volumen
+            2 = vela pequeña con volumen
+            4 = vela grande con volumen
+            3 = vela grande sin volumen
+            
+            positvo vela verde, nagativo vela roja
+
+        '''
+        df=self.mercado.get_panda_df(self.par, escala)     
+        df_ma_vol=ta.ma('ma',df['volume'],length=20)
+        df['cuerpo'] = abs(df.open - df.close) 
+        cuerpo_promedio= df["cuerpo"].mean()
+
+        cant_velas=len(df)      
+        if vela_fin < -cant_velas+41:
+            vela_fin = -cant_velas+41      
+
+        lista=[]
+        i= -1
+
+        volumen_testigo = df_ma_vol.iloc[vela_fin -1] 
+
+        if (volumen_testigo) >0:
+            while i > vela_fin:
+                v:Vela = Vela(df.iloc[i])
+                sentido = v.sentido()
+                tipo='--'
+                cuerpo=v.cuerpo()
+                x_cuerpo = round( cuerpo / cuerpo_promedio ,2)
+                x_vol = round( v.volume / volumen_testigo ,2)
+                x = 3
+                if x_cuerpo < x and x_vol < x:     #pequeña sin volumen
+                    tipo=1
+                elif x_cuerpo < x and x_vol > x:    #pequeña con volumen
+                    tipo=2
+                elif x_cuerpo > x and x_vol > x:    #grande con volumen
+                    tipo=4
+                else:
+                    tipo=3                          #grande sin volumen
+
+                
+                 
+                lista.append([ i*-1,tipo,sentido, x_cuerpo,x_vol ])
+                
+                i -= 1
+
+        return lista  
+    
 
     def xvolumen_de_impulso(self,escala,sentido=1,vela_fin=-20):
         ''' suma todo el volumen de impulso a la baja(sentido=-1) al alza(sentido=1) o todo(sentido=0) y lo devuelve comparado con 
@@ -1482,6 +1540,21 @@ class Indicadores:
 
         return rsi
 
+    def pendientes_adx(self,escala,cpendientes):
+        df=self.mercado.get_panda_df(self.par, escala, cpendientes +30) #self.velas[escala].panda_df(cvelas + 60)
+        df_adx = df.ta.adx()
+        lista_adx = df_adx['ADX_14'].to_list()
+        pendientes = self.pendientes( escala,lista_adx,cpendientes )
+        return pendientes , lista_adx[-1] 
+
+    def pendiente_sma_rsi(self,escala,sma_per=10):
+        df=self.mercado.get_panda_df(self.par, escala, 60) #self.velas[escala].panda_df(cvelas + 60)
+        serie_rsi = df.ta.rsi()
+        df_sma= ta.sma(serie_rsi.to_frame()['RSI_14'],lenth=10)    
+        pendientes=  self.pendientes(escala,df_sma.to_list(),5)   
+        pend=round( pendientes[-1] * 100,2 )
+        return pend
+
     def precio_de_rsi_mas_bajo(self,escala,prsi_objetivo):
         
         rsi_objetivo = prsi_objetivo
@@ -1548,6 +1621,12 @@ class Indicadores:
                 break
         return ret
 
+
+    def pendientes_ema(self,escala,periodos):
+       
+        df=self.mercado.get_panda_df(self.par,escala,periodos+50)
+        df_ema=ta.ema(df['close'],length=periodos) 
+        return  self.pendientes(escala,df_ema.to_list(),5 )
  
     def minimo_en_ma(self,escala,periodos,datos='close',cvelas=3):
         '''retorna un minimo en la media movil y su posicion'''
@@ -1626,22 +1705,32 @@ class Indicadores:
     def pendientes(self,escala,lista,cpendientes):
         ret=[]
         try:
-            # print(lista)
             l=len(lista)
-            #unidad = self.g.escala_tiempo[escala]
-            #print(unidad)
             for i in range(l-cpendientes,l):
-                #1-x/y
                 y = lista[i]
                 if y == 0:
                     y = 0.0000000000001
-                m = 1 - lista[i-1] / y
+                m =  1 - (lista[i-1] / y)
                 ret.append(m) 
 
         except Exception as e: 
             self.log.err(str(e))       
-        #print('pendientes', ret)
         return ret
+
+    def pendientes_histograma(self,escala,lista,cpendientes):
+        ret=[]
+        try:
+            fin = len(lista)
+            ini = fin - cpendientes
+            if ini < 1:
+                ini = 1
+            for i in range(ini,fin):
+                m =  (lista[i] - lista[i-1] ) 
+                ret.append(m) 
+
+        except Exception as e: 
+            self.log.err(str(e))       
+        return ret    
 
     def diff_vectores(self,lista_superior,lista_inferior):
         ret=[]
@@ -1669,12 +1758,17 @@ class Indicadores:
         
         return vector[ vector.size - velas :vector.size ]        
               
-    def vp(self,escala,cvelas=None):
-        
-        df=self.mercado.velas[escala].panda_df(cvelas)
+    def vp(self,escala,cvelas):
+        df=self.mercado.get_panda_df(self.par,escala,cvelas)
         vp = df.ta.vp()
         
         return vp
+
+    def vp_min_med_max(self,escala,cvelas):
+        df=self.mercado.get_panda_df(self.par,escala,cvelas)
+        vp = df.ta.vp()
+        df_max_vol=vp.iloc[vp['total_volume'].idxmax()]  #fila con el maximo volumen
+        return df_max_vol['low_close'],df_max_vol['mean_close'],df_max_vol['high_close']
 
     def volume(self,escala):
 
@@ -1786,6 +1880,14 @@ class Indicadores:
         else:
             return round( p1 * 100 ,2)    
         
+    def posicion_rango_semanal(self):
+        vela:Vela = self.ultima_vela_cerrada('1w')
+        rango = vela.high - vela.low
+        precio = self.precio_mas_actualizado()
+
+        posicion=(precio - vela.low) / rango
+        self.log.log(f'rango_semanal hight {vela.high} low {vela.low} posicion {posicion}'  )
+        return  posicion    
 
     def tiempo_a_escala_velas(self,horas):
        
@@ -1808,6 +1910,47 @@ class Indicadores:
         #print ('escalas,velas',escala,velas)    
         return escala,velas
 
+    
+    def pendiente_histograma_squeeze(self,escala,cvelas):
+ 
+        df=self.mercado.get_panda_df(self.par,escala,cvelas+50)
+        sqz = df.ta.squeeze( lazybear = True)
+        histograma = sqz['SQZ_20_2.0_20_1.5_LB'].to_list()
+        pendientes = self.pendientes_histograma(escala,histograma,cvelas)
+        cant_velas_histograma =self.cant_velas_histograma_squeeze(histograma)
+
+        return pendientes,histograma[-cvelas:],cant_velas_histograma
+
+    def squeeze_negativo_sqz_off(self,escala,cvelas):
+ 
+        df=self.mercado.get_panda_df(self.par,escala,cvelas+50)
+        sqz = df.ta.squeeze( lazybear = True)
+        histograma = sqz['SQZ_20_2.0_20_1.5_LB'].iloc[-1]
+        sqz_off= sqz['SQZ_OFF'].iloc[-1]
+
+        return histograma <0 and sqz_off == 1
+
+
+    def cant_velas_histograma_squeeze(self,histograma):
+        ''' cuenta las velas del histograma actual'''
+        l = len(histograma)
+        i=-1
+        signo_histograma =  signo(histograma[i])
+        cvelas=0
+        while i > -l and signo_histograma == signo(histograma[i]):
+            cvelas +=1
+            i -=1
+        
+        return cvelas    
+            
+        
+
+    def histograma_squeeze(self,escala,cvelas):
+        df=self.mercado.get_panda_df(self.par,escala,cvelas+50)
+        sqz = df.ta.squeeze( lazybear = True)
+        histograma = sqz['SQZ_20_2.0_20_1.5_LB'].to_list()
+        return histograma[-cvelas:]    
+        
     def sqzmon_lb(self,escala,cvelas=None):
         
         df=self.mercado.velas[escala].panda_df(cvelas)
@@ -1822,8 +1965,8 @@ class Indicadores:
 
 
     def sqzmon_lb_df(self,escala,cvelas=None):
-        
-        df=self.mercado.velas[escala].panda_df(cvelas)
+              
+        df=self.mercado.get_panda_df(self.par,escala,cvelas+50)
         sqz = df.ta.squeeze( lazybear = True)
         #print(sqz)
         return sqz  
@@ -2205,7 +2348,7 @@ class Indicadores:
                 actualizado[esc]=self.mercado.par_escala_ws_v[self.par][esc][1].actualizado
 
             mas_actualizado = sorted(actualizado.items(), key=lambda x: x[1] ,reverse=True   )[0]
-            print(f'Escala_precio_mas_actualizado-->{mas_actualizado}')
+            #print(f'Escala_precio_mas_actualizado-->{mas_actualizado}')
 
             ret = self.precio(mas_actualizado[0]) #retorno el precio del mas actualizado
 
@@ -2289,7 +2432,7 @@ if __name__=='__main__':
     from acceso_db_modelo import Acceso_DB
     
     from logger import Logger
-    from no_se_usa.acceso_db import Acceso_DB
+    
     
     log=Logger(f'test_indicadores.log')
     pws=Pws()

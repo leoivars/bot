@@ -14,10 +14,8 @@ import json
 from formateadores import format_valor_truncando
 from cola_de_uso import Cola_de_uso, Promediador_de_tiempos
 
-
-
 class OrdenesExchange:
-    
+        
     def __init__(self,client,par,log,estado_general): #ind...>indicadores previamente instanciado y funcionando
         self.client=client
         self.log=log
@@ -150,7 +148,7 @@ class OrdenesExchange:
     
     def consulta_ordenes_activas(self):
         
-        intentos=2
+        intentos=3
         ejecutado= False
         while intentos>0 and not ejecutado:
             self.__empezar('consulta_ordenes_activas')
@@ -167,9 +165,9 @@ class OrdenesExchange:
                 if 'APIError(code=-2011)' in err:
                     self.__terminar()    
                     break
-
+            self.__terminar()
+            intentos-=1    
         return ordenes
-
     
     def cancelar_todas_las_ordenes_activas(self):
         

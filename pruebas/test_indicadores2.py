@@ -414,24 +414,59 @@ def probar_ema_rapida_mayor_lenta2(par,parametros):
     for param in parametros:
         print(f'{param} \t {ind.ema_rapida_mayor_lenta2(param[0],param[1],param[2],param[3],param[4]) }' )
 
+def probar_pendiente_sma_rsi(par):
+    ind=Indicadores(par,log,globales,mercado)
+    print(ind.pendiente_sma_rsi('1m'))
+
+def probar_squeeze_df_describir(par,escala): 
+    
+    ind=Indicadores(par,log,globales,mercado)
+    sqz = ind.sqzmon_lb_df(escala,50)
+    print (sqz)
+
+def probar_pendiente_histograma_squeeze(par,escala): 
+    
+    ind=Indicadores(par,log,globales,mercado)
+    print( ind.pendiente_histograma_squeeze(escala,5)  )
+
+def probar_pendiente_adx(par,escala): 
+    
+    ind=Indicadores(par,log,globales,mercado)
+    print( ind.pendiente_adx(escala)  )
+
+def probar_velas_volumen(par,escala): 
+    
+    ind=Indicadores(par,log,globales,mercado)
+    print( ind.velas_volumen(escala,-6)  )    
+
+def probar_vp(par,escala): 
+    
+    ind=Indicadores(par,log,globales,mercado)
+    print( ind.vp(escala,250)  )
+    print( ind.vp_min_med_max(escala,250)  )
+
+def ultima_vela_cerrada(par,escala): 
+    
+    ind=Indicadores(par,log,globales,mercado)
+    ind.ultima_vela_cerrada(escala).imprimir()
+
+def probar_squeeze_negativo_sqz_off(par,escala): 
+    
+    ind=Indicadores(par,log,globales,mercado)
+    print( f'  >>> {ind.squeeze_negativo_sqz_off(escala,5)}  <<<<'  )
+
+
+
 
 t = time.time()
 
-moneda='DUSK'
+moneda='BTC'
 par = moneda+'USDT'
 
 ind=Indicadores(par,log,globales,mercado)
 while time.time() -t < 1200:
-    parametros=[]
-    escalas=['1d','4h','1h']
-    diferencias=[0.5,0.4,0.1,0.01]
-    for esc in escalas:
-        for dif in diferencias:
-            parametros.append([esc,10,21,dif,True])
-            parametros.append([esc,10,21,dif,False])
-
-    probar_ema_rapida_mayor_lenta2('BTCUSDT',parametros)
-    time.sleep(15)
+    probar_squeeze_negativo_sqz_off('BTCUSDT','5m')
+    time.sleep(40)
 
 mercado.detener_sockets()
 

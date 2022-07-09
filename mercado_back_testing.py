@@ -76,7 +76,7 @@ class Mercado_Back_Testing:
                 #print('FECHA_INI',  timestampk_to_strtime(fecha_ini),fecha_ini,self.fecha_fin.timestamp()*1000 )
                 cursor = self.db.get_velas_rango(par,esc,fecha_ini.timestamp()*1000,self.fecha_fin.timestamp()*1000 )
                 vs.poner_velas_db_en_df(cursor)
-            vs.get_vela_desde_ultima(1).imprimir()    
+            #vs.get_vela_desde_ultima(1).imprimir()    
                 
 
     def actualizar_mercados_a_vela(self,open_time):

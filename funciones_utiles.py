@@ -129,5 +129,13 @@ def linea(*args):
         lin = ' '.join([str(a) for a in args])       
         return lin        
 
+def signo(n):
+    if n<0:
+        s=-1
+    elif n>0:
+        s=1
+    else:
+        s=0
+    return s            
 if __name__ == '__main__':
-    print(str_fecha_hora_mysql(datetime.now() -timedelta(days=10)                ))
+    print(f'{signo(40)}'    )
