@@ -1,9 +1,6 @@
 # # -*- coding: UTF-8 -*-
 from funciones_utiles import linea
 from threading import  Lock
-import time
-import datetime
-
 
 class Metricas:
     __metricas = {}

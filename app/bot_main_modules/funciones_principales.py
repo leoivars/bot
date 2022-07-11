@@ -3,7 +3,7 @@ from binance.client import Client
 from variables_globales import Global_State
 from logger import Logger
 import time
-from fauto_compra_vende.materializar_pares import eliminar_pares_muertos
+from bot_main_modules.materializar_pares import eliminar_pares_muertos
 
 def crear_cliente(pws,log:Logger):
     client = None

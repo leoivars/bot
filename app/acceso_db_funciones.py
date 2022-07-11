@@ -5,6 +5,7 @@ import time
 from threading import Lock
 from datetime import datetime
 from dbutils.pooled_db import PooledDB
+from logger import Logger
 #import traceback
 
 
@@ -15,10 +16,10 @@ class Acceso_DB_Funciones:
 
     def __init__(self,log,pool):
 
-        self.pool:PooledDB =pool
-        self.log=log
-        self.conexion=None
-        self.cursor=None
+        self.pool:PooledDB = pool
+        self.log:Logger = log
+        self.conexion = None
+        self.cursor = None
         
     def acceso_pedir(self,referencia='xx'):
         ticket_acceso = referencia + ' ' + str(time.time())
@@ -88,10 +89,11 @@ class Acceso_DB_Funciones:
             self.conexion.close()
         except Exception as e:
             self.log.err(  'error: cursor_liberar',e)
-
+        
+        #print('cursor_liberar conexion',self.conexion)
         self.conexion=None
         self.cursor=None
-        print('cursor_liberar conexion',self.conexion)
+        
 
     def ejecutar_sql(self,sql,paramentros=None):
         ret=None

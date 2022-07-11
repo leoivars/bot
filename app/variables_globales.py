@@ -1,5 +1,5 @@
-import time
 import json
+import os
 from metricas import Metricas
 
 ## variables globales
@@ -94,12 +94,14 @@ class Global_State:
 
     metricas = Metricas()
 
-    def __init__(self,gestor_de_posicion=None):
-        self.cargar_parametros_de_config_json()
+    def __init__(self,gestor_de_posicion=None,config_file=None):
+        if not config_file:
+            config_file =  self.dirlogs = os.path.join( os.getcwd() , os.getenv('CONFIG_FILE', 'config.json')   )         
+        self.cargar_parametros_de_config_json(config_file)
         self.max_pares_activos = self.max_pares_activos_config
     
-    def cargar_parametros_de_config_json(self):
-        parconfig = self.cargar_config_json('config.json')
+    def cargar_parametros_de_config_json(self,config_file):
+        parconfig = self.cargar_config_json(config_file)
         if parconfig != None:
             try:
                 self.trabajando = bool(parconfig['trabajando'])
@@ -123,7 +125,7 @@ class Global_State:
                 
                 
             except Exception as e:
-                print ( "cargar_parametros_de_config_json:",str(e) )     
+                print ( "cargar_parametros_de_config_json:",str(e),'\n',config_file )     
                 
 
 
@@ -148,13 +150,13 @@ class Global_State:
 
 
     def cargar_config_json(self,archivo):
-        with open(archivo,'r') as f:
-            try:
+        try:
+           with open(archivo,'r') as f:
                 config = json.load(f)
-            except  Exception as e:
-                print(str(e))
-                config = None   
-            f.close() 
+                f.close() 
+        except  Exception as e:
+            print(str(e),'\n',archivo)
+            config = None   
         return config             
     
     def menor_tiempo(self,temporalidades):

@@ -23,7 +23,11 @@ class Estrategia():
         self.calculador_px_compra = Calculador_Precio_Compra(self.par,self.g,log,self.ind)
         self.filtro = Filtros(self.ind,self.log)
         self.escala_rapida = escala_rapida
-        #print('--precio_mas_actualizado--->',self.ind.precio_mas_actualizado()  )
+        
+        #parametros a configurar luego de haber probado la estrategia
+        self.costo_estrategia_escala='5m'
+        self.costo_estrategia_en_trades = 10
+        self.escala_recompra ={'1m':-0.8 ,'3m': -0.8  ,'5m': -0.8  ,'15m': -1.6 ,'30m':-2.5 ,'1h': -3 ,'2h': -3.5, '4h': -4  ,'1d':-5  , '1w':-15,'1M':-30}
 
     def set_escala(self,escala):
         self.escala_rapida = escala
@@ -141,7 +145,5 @@ class Estrategia():
     
  
     def __gan_limite__(self):
-        return -0.8
-        #gan_limite = self.g.escala_ganancia[self.escala_rapida] * -4
-        #return gan_limite
+        return self.escala_recompra[self.escala_rapida]
     

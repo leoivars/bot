@@ -12,19 +12,17 @@ from libro_ordenes2 import Libro_Ordenes_DF
 from datetime import datetime, timedelta
 from comandos_interprete import ComandosPar
 from ordenes_binance import OrdenesExchange
-from actualizador_info_par import ActualizadorInfoPar
 from funciones_utiles import calcular_fecha_futura, cpu_utilizada,calc_tiempo_segundos,strtime_a_fecha,strtime_a_time,variacion,variacion_absoluta
 from controlador_de_tiempo import *
 from variables_globales import Global_State
 from calc_px_compra import Calculador_Precio_Compra
 from intentar_recuperar_venta_perdida import intentar_recuperar_venta_perdida
 from fpar.ganancias import calc_ganancia_minima, calculo_ganancias
+from fpar.determinador_escalala import determinar_escala
 from mercado import Mercado
-
-import fauto_compra_vende.habilitar_pares
 from acceso_db_funciones import Acceso_DB_Funciones
 from acceso_db_modelo import Acceso_DB
-
+from escalas import *
 from estrategia_squeeze import Estrategia
 
 from numpy import isnan
@@ -835,28 +833,6 @@ class Par:
     # asegurando una ganancia
     #basánsose en el precio actual
 
-    def zoom(self,escala,x):
-        esc=escala
-        for i in range(x):
-            e=self.g.escala_anterior[esc]
-            esc=e
-            if e == 'xx':
-                #esc=escala
-                break
-            
-        return esc    
-    
-    def esc_ant(self,escala,x):
-        esc=escala
-        for i in range(x):
-            e=self.g.escala_anterior[esc]
-            esc=e
-            if e == 'xx':
-                esc='1m'
-                break
-        return esc
-
-    
     def precio_de_recompra_minimo(self,precio_venta,pganancia):
         coef=(1+self._fee)/(1-self._fee)
         ret=precio_venta/coef/(1+pganancia/100)
@@ -1375,9 +1351,8 @@ class Par:
 
     def super_decision_de_compra(self,entradas=0):
         '''
-        agrupo acá todos los grandes filtros que toman la dicisión nucleo
-        y que luego de ejecutan constantemente  en estado 2
-        para mantener el estado de compra
+        Acá se toma la decisión de comprar en funcion de la estrategia.
+        Pero previo a decidir se imponen filtros que evitan comprar.
         
         '''
                 
@@ -1397,16 +1372,17 @@ class Par:
             return False
 
         comprar= False
-        escalas_a_probar = self.entradas_a_escalas(self.temporalidades,entradas)
         
-        for esc in escalas_a_probar:
-            self.estrategia.set_escala(esc)
-            if self.estrategia.decision_de_compra():
-                self.escala_de_analisis = esc
-                self.analisis_provocador_entrada = self.estrategia.nombre
-                comprar = True
-                break      
-       
+        esc = determinar_escala(self.min_notional_compra,self.estrategia.costo_estrategia_en_trades,\
+                 self.estrategia.costo_estrategia_escala,self.oe.cantidad_disponible(self.moneda_contra))
+        
+        self.log.log(f'escala decision_de_compra {esc}')
+        self.estrategia.set_escala(esc)
+        if self.estrategia.decision_de_compra():
+            self.escala_de_analisis = esc
+            self.analisis_provocador_entrada = self.estrategia.nombre
+            comprar = True
+            
         return comprar  
 
     def entradas_a_escalas(self,escalas,entradas):
@@ -1470,11 +1446,11 @@ class Par:
         #self.log.log('0. buscar_rsi_bajo',escala)
         ind: Indicadores =self.ind
         
-        if ind.ema_rapida_mayor_lenta(self.g.zoom_out(escala,5),10,55): #analizo solamente en mercado alcista
+        if ind.ema_rapida_mayor_lenta(zoom_out(escala,5),10,55): #analizo solamente en mercado alcista
             rsi = ind.rsi(escala)
             #self.log.log(f'_.rsi {escala} {rsi}')
             if 50 < rsi < 70:
-                if ind.variacion_px_actual_px_minimo(self.g.zoom_out( escala,3 ), 48)  < 10:
+                if ind.variacion_px_actual_px_minimo(zoom_out( escala,3 ), 48)  < 10:
                     if ind.dos_emas_favorables(escala,7,20):
                         ret = [True,escala,'buscar_dos_emas_rsi']
         
@@ -1600,7 +1576,7 @@ class Par:
     def filtro_escala_superior_alcista(self,escala):
         #en caso alcista en la escala superior, no utilizo este filtro
         ind:Indicadores=self.ind
-        esc_sup = self.g.zoom_out(escala,1)
+        esc_sup = zoom_out(escala,1)
         self.log.log(f'Escala Superior--> {esc_sup}')
         if ind.ema_rapida_mayor_lenta(esc_sup,50,200,diferencia_porcentual_minima=0.15):
             self.log.log(f'True <-- escala_superior_alcista')
@@ -1904,7 +1880,7 @@ class Par:
         #costruccion de lista de armónicos hacia abajo
         z=1
         while c < cantidad_de_armonicos:
-            esc=self.g.zoom(escala,z)
+            esc=zoom(escala,z)
             if esc==escala: #no ha mas chica
                 break
             else:
@@ -1915,7 +1891,7 @@ class Par:
         # no alcanzó sigo construyendo la lista hacia arriba
         z=1
         while c < cantidad_de_armonicos:
-            esc=self.g.zoom_out(escala,z)
+            esc=zoom_out(escala,z)
             if esc==escala: #no haya mas grande
                 break
             else:
@@ -1991,7 +1967,7 @@ class Par:
                 filtro_ok=True
                 break
             else:
-                escala = self.zoom(escala,1)
+                escala = zoom(escala,1)
         
         return filtro_ok
 
@@ -2082,7 +2058,7 @@ class Par:
             if escala == escala_salida:
                 break
 
-            escala = self.zoom(escala,1)
+            escala = zoom(escala,1)
          
         ret = [comprar,escala]
         self.log.log('---> decidir_comprar',ret)
@@ -3458,7 +3434,7 @@ class Par:
         sl = self.stoploss_actual
 
         if generar_liquidez:
-            sl_nuevo = self.ind.stoploss_ema(self.g.zoom(self.escala_de_analisis,1),self.precio_salir_derecho,7,3)
+            sl_nuevo = self.ind.stoploss_ema(zoom(self.escala_de_analisis,1),self.precio_salir_derecho,7,3)
         else:
             sl_nuevo = self.ind.stoploss_ema(self.escala_de_analisis,self.precio_salir_derecho,11,6)
         
@@ -3544,7 +3520,7 @@ class Par:
 
         if not tomar_ganancias:
             tomar_ganancias = self.filtro_rsi_mayor(self.escala_de_analisis,70) or\
-                              self.filtro_rsi_mayor(self.g.zoom_out(self.escala_de_analisis,1),70)     
+                              self.filtro_rsi_mayor(zoom_out(self.escala_de_analisis,1),70)     
 
         return tomar_ganancias
 
@@ -3595,7 +3571,7 @@ class Par:
             nuevo_stoploss = self.precio - atr
 
             i -= 1
-            esc = self.zoom(esc,1) 
+            esc = zoom(esc,1) 
 
         self.log.log('intentar_subir_stoploss_atr', escala,'-->',esc, nuevo_stoploss)    
 

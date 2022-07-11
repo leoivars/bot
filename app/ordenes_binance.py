@@ -1,24 +1,19 @@
 # # -*- coding: UTF-8 -*-
-#from binance.enums import * #para  create_order
 from binance.client import Client # Cliente python para acceso al exchangue
 from binance.enums import *
-from indicadores2 import Indicadores #Clase que toma datos de las velas del exchange y produce información (la version1 deprecated)
 from logger import Logger #clase para loggear
-
-#from termcolor import colored #para el libro de ordenes
-import sys
 import time
-#from rsi0 import *
-#import traceback
-import json
 from formateadores import format_valor_truncando
 from cola_de_uso import Cola_de_uso, Promediador_de_tiempos
 
 class OrdenesExchange:
+
+    __cantidad_disponible={}     #{'USDT':(cantidad,fecha_actualizacion)}
+
         
     def __init__(self,client,par,log,estado_general): #ind...>indicadores previamente instanciado y funcionando
         self.client=client
-        self.log=log
+        self.log:Logger = log
         self.cola = Cola_de_uso(log,estado_general)
         self.par = par
 
@@ -41,20 +36,30 @@ class OrdenesExchange:
         del self.client
         del self.log
 
-
     def __empezar(self,ref=''):
-        
         self.cola.acceso_pedir(ref+self.referencia,self.prioridad) # todas las ordenes son prioritarias a las consultas
         self.cola.acceso_esperar_mi_turno()
         self.__inicio_ocupando_turno = time.time()
-        
         
     def __terminar(self):
         #control de rendimiento
         demora=time.time() - self.__inicio_ocupando_turno
         self.cola.acceso_finalizar_turno(demora)
- 
-            
+
+    def __actualizar_cantidad_disponible(self,parametro_asset:str ,cantidad:float):
+        asset = parametro_asset.upper()  
+        OrdenesExchange.__cantidad_disponible[asset] = (cantidad,time.time())
+
+    def cantidad_disponible(self,parametro_asset:str,actualizar=False):
+        if actualizar:                                                                         #actualizo en forma forzada 
+            self.tomar_cantidad_disponible(parametro_asset)
+        if not parametro_asset in OrdenesExchange.__cantidad_disponible:                       #si no hay datos,actualizo
+            self.tomar_cantidad_disponible(parametro_asset)
+        elif - time.time() - OrdenesExchange.__cantidad_disponible[parametro_asset][1] > 600:  #actualizo si el dato tiene mas de 10 minutos
+            self.tomar_cantidad_disponible(parametro_asset)
+        cantidad = OrdenesExchange.__cantidad_disponible[parametro_asset][0]
+        return cantidad    
+
     def tomar_cantidad(self,parametro_asset):
         #self.log.log( 'tomar cantidad',parametro_asset)
         ret=0
@@ -64,6 +69,7 @@ class OrdenesExchange:
             try:
                 balance = self.client.get_asset_balance(asset=parametro_asset)
                 ret=float(balance['free'])+float(balance['locked'])
+                self.__actualizar_cantidad_disponible(parametro_asset,float(balance['free']))
                 ejecutado=True
             except Exception as e:
                 ret=0
@@ -86,6 +92,7 @@ class OrdenesExchange:
             try:
                 balance = self.client.get_asset_balance(asset=parametro_asset)
                 ret=float(balance['free'])
+                self.__actualizar_cantidad_disponible(parametro_asset,float(balance['free']))
                 ejecutado=True
             except Exception as e:
                 self.log.err( e )

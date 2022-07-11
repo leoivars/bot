@@ -1,20 +1,29 @@
+import os
 import sys
-sys.path.append('..')  
+from pathlib import Path
+sys.path.append(str(Path('..').absolute().parent))          #para que se pueda usar app. como mudulo
+sys.path.append(str(Path('..').absolute().parent)+"/app")   #para que los modulos dentro de app encuentren a otros modulos dentro de su mismo directorio
 
-from mercado import Mercado
-from indicadores2 import Indicadores
-from logger import *
+print ('------------------getcwd()----->', os.getcwd())
+print ('----------------__file__------->', __file__)
+print ('---------------DIR_LOGS-------->', os.getenv('DIR_LOGS', '????'))
+print ('---------------CONFIG_FILE----->', os.getenv('CONFIG_FILE', '????'))
+
+
+from app.mercado import Mercado
+from app.indicadores2 import Indicadores
+from app.logger import *
 import time
-from pws import Pws
+from app.pws import Pws
 from binance.client import Client #para el cliente
 from numpy import isnan
-from par_propiedades import Par_Propiedades
-from variables_globales import Global_State
-from  formateadores import format_valor_truncando
-from acceso_db_conexion import Conexion_DB
-from acceso_db_funciones import Acceso_DB_Funciones
-from acceso_db_modelo import Acceso_DB
-from vela import Vela
+from app.par_propiedades import Par_Propiedades
+from app.variables_globales import Global_State
+from app.formateadores import format_valor_truncando
+from app.acceso_db_conexion import Conexion_DB
+from app.acceso_db_funciones import Acceso_DB_Funciones
+from app.acceso_db_modelo import Acceso_DB
+
 #from gestor_de_posicion import Gestor_de_Posicion
 
 pws=Pws()

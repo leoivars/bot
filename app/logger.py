@@ -1,14 +1,19 @@
 # # -*- coding: UTF-8 -*-
 import datetime
+import os
 import time
 
 class Logger:
     
-    def __init__(self, nombrearchivolog=None,dirlogs="./logs/"):
+    def __init__(self, nombrearchivolog=None,dirlogs=None):
+        if dirlogs:
+            self.dirlogs = dirlogs
+        else:
+            self.dirlogs = os.path.join( os.getcwd() ,os.getenv('DIR_LOGS', './logs/') )
+
         self.loguear= nombrearchivolog != None
-        self.dirlogs = dirlogs
         self.nombrearchivolog = nombrearchivolog
-        self.nlog=dirlogs+nombrearchivolog
+        self.nlog=self.dirlogs+nombrearchivolog
         self.log_level=2
         self.__ultimas_lineas__=[]
         self.horario_actualizado=time.time()

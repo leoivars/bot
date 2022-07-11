@@ -1,5 +1,6 @@
 
-from fauto_compra_vende.reporte_resumen_errores import reporte_resumen_errores
+from bot_main_modules.reporte_resumen_errores import reporte_resumen_errores
+from bot_main_modules.funciones_logs import log_pares_estado_ordenado_por_ganancia,log_pares_estado
 from mercado import Mercado
 from variables_globales import Global_State
 from acceso_db_modelo import Acceso_DB
@@ -7,8 +8,7 @@ from logger import Logger
 from funciones_utiles import linea
 from par import Par
 from correo import Correo
-from datetime import datetime #, timedelta
-from fauto_compra_vende.funciones_logs import log_pares_estado_ordenado_por_ganancia,log_pares_estado
+from datetime import datetime 
 from reporte_estado import ReporteEstado
 from datetime import datetime
 from funciones_utiles import memoria_consumida,cpu_utilizada,calc_tiempo,linea

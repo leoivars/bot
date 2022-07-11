@@ -1,3 +1,4 @@
+import os
 import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
@@ -14,8 +15,11 @@ class Correo:
         self.username = pws.mail_user
         self.password = pws.mail_pass
         self.log = log
+        self.send_mails = 'YES' == os.getenv('BOT_SEND_MAILS', 'YES') 
 
     def enviar_correo(self,titulo,mensaje):
+        if not self.send_mails:
+            return
     
         msg = MIMEMultipart()
         msg['From'] = self.fromaddr
